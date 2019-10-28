@@ -81,6 +81,10 @@ extern "C" {
       
     LOOP_NTIME_PER_CU:
       for(k = 0; k < NTIME_PER_CU; k++){
+	#pragma HLS PIPELINE II=1
+	#pragma HLS DEPENDENCE variable=average_pol1_burst inter false
+	#pragma HLS DEPENDENCE variable=average_pol2_burst inter false
+	
 	loc = k * NBURST_PER_TIME + i;
 	in_pol1_burst = in_pol1[loc];
 	in_pol2_burst = in_pol2[loc];
