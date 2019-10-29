@@ -61,10 +61,9 @@ extern "C" {
     
     int i;
     int j;
-    int k;
-    
+    int k;    
     int loc;
-
+    
   LOOP_NBURST_PER_TIME:
     for(i = 0; i < NBURST_PER_TIME; i++){
       cal_pol1_burst     = cal_pol1[i];
@@ -72,18 +71,15 @@ extern "C" {
       sky_burst          = sky[i];
  
     LOOP_NSAMP_PER_BURST_1:
-      for(j = 0; j < NSAMP_PER_BURST; j++){
-	average_pol1_burst.data[2*j]   = 0;
-	average_pol1_burst.data[2*j+1] = 0;
-	average_pol2_burst.data[2*j]   = 0;
-	average_pol2_burst.data[2*j+1] = 0;
+      for(j = 0; j < NDATA_PER_BURST; j++){
+#pragma HLS UNROLL
+	average_pol1_burst.data[j]   = 0;
+	average_pol2_burst.data[j]   = 0;
       }
       
     LOOP_NTIME_PER_CU:
       for(k = 0; k < NTIME_PER_CU; k++){
-	#pragma HLS PIPELINE II=1
-	#pragma HLS DEPENDENCE variable=average_pol1_burst inter false
-	#pragma HLS DEPENDENCE variable=average_pol2_burst inter false
+#pragma HLS PIPELINE II=1
 	
 	loc = k * NBURST_PER_TIME + i;
 	in_pol1_burst = in_pol1[loc];
@@ -91,6 +87,7 @@ extern "C" {
 
       LOOP_NSAMP_PER_BURST_2:
 	for(j = 0; j < NSAMP_PER_BURST; j++){
+#pragma HLS UNROLL
 	  average_pol1_burst.data[2*j]   += in_pol1_burst.data[2*j];
 	  average_pol1_burst.data[2*j+1] += in_pol1_burst.data[2*j+1];
 	  average_pol2_burst.data[2*j]   += in_pol2_burst.data[2*j];
@@ -99,11 +96,12 @@ extern "C" {
 	  out_burst.data[2*j] = in_pol1_burst.data[2*j]*cal_pol1_burst.data[2*j] - in_pol1_burst.data[2*j+1]*cal_pol1_burst.data[2*j+1] + // Real of pol 1 after cal
 	    in_pol2_burst.data[2*j]*cal_pol2_burst.data[2*j] - in_pol2_burst.data[2*j+1]*cal_pol2_burst.data[2*j+1] - // Real of pol 2 after cal
 	    sky_burst.data[2*j];// Real of sky
-	  
+
 	  out_burst.data[2*j+1] = in_pol1_burst.data[2*j]*cal_pol1_burst.data[2*j+1] + in_pol1_burst.data[2*j+1]*cal_pol1_burst.data[2*j] + // Image of pol 1 after cal
 	      in_pol2_burst.data[2*j]*cal_pol2_burst.data[2*j+1] + in_pol2_burst.data[2*j+1]*cal_pol2_burst.data[2*j] - // Image of pol 2 after cal
-	    sky_burst.data[2*j+1];// Image of sky
+	    sky_burst.data[2*j+1];// Image of sky	  
 	}
+	
 	out[loc] = out_burst;
       }
       

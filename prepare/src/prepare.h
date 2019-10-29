@@ -13,6 +13,9 @@
 #include <stdbool.h>
 #include <complex>
 
+#define MEM_ALIGNMENT 4096
+#define RAND_RANGE 4096
+
 #define NDATA_PER_SAMP 2      // We are using complex numbers
 #define CORE_DATA_WIDTH 32    // We are using float complex numbers
 #define BURST_DATA_WIDTH 512  // Memory width of xilinx, hard limit
@@ -24,6 +27,10 @@
 #define NANT 30
 #define NCHAN 288        // possible numbers: 288, 288, 672
 #define NTIME_PER_CU 64    // configurable number, depends the available memory
+
+//#define NANT 4
+//#define NCHAN 64
+//#define NTIME_PER_CU 3
 
 #define NBASELINE (NANT*(NANT-1)/2)
 #define NSAMP_PER_TIME (NCHAN*NBASELINE)
@@ -44,7 +51,3 @@ int prepare(core_data_type *in_pol1,
 	    core_data_type *out,
 	    core_data_type *average_pol1,
 	    core_data_type *average_pol2);
-
-#define MEM_ALIGNMENT 4096
-#define RAND_RANGE 4096
-  

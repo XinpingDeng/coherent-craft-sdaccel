@@ -57,17 +57,22 @@ int main(int argc, char* argv[])
   cl_float elapsed_time;
   struct timespec start_host;
   struct timespec stop_host;
-    
+  
   /* Prepare input and output */
   for(i = 0; i < ndata2; i++){
     in_pol1[i] = i;
     in_pol2[i] = i + 99;
+    //in_pol1[i] = (float)(rand() % RAND_RANGE);
+    //in_pol2[i] = (float)(rand() % RAND_RANGE);
   }
   
   for(i = 0; i < ndata1; i++){
     cal_pol1[i] = i;
     cal_pol2[i] = i + 4;
     sky[i] = i + 44;
+    //cal_pol1[i] = (float)(rand() % RAND_RANGE);
+    //cal_pol2[i] = (float)(rand() % RAND_RANGE);
+    //sky[i] = (float)(rand() % RAND_RANGE);
   }
   memset(sw_average_pol1, 0x00, ndata1 * sizeof(core_data_type)); // Get memory reset for the average
   memset(sw_average_pol2, 0x00, ndata1 * sizeof(core_data_type)); // Get memory reset for the average
@@ -283,16 +288,26 @@ int main(int argc, char* argv[])
   fprintf(stdout, "Elapsed time of kernel is %E seconds \n", elapsed_time);
 
   /*
+  double res = 1.0E-2;
   for(i=0;i<ndata1;i++){
+    //if(fabs((sw_average_pol1[i]-hw_average_pol1[i])/sw_average_pol1[i])>res)
     if(sw_average_pol1[i]!=hw_average_pol1[i])
-      std::cout << "Mismatch on average_pol1: " <<i << '\t' << sw_average_pol1[i]<< '\t'<< hw_average_pol1[i] << '\n';
+      //std::cout << "Mismatch on average_pol1: " <<i << '\t' << sw_average_pol1[i]<< '\t'<< hw_average_pol1[i] << '\n';
+      std::cout << "Mismatch on average_pol1: " <<i << '\t' << in_pol1[i]<< '\t'<< in_pol1[i+ndata1]<<'\t' << (in_pol1[i] + in_pol1[i+ndata1]) <<'\t' << sw_average_pol1[i]<< '\t'<< hw_average_pol1[i] <<'\n';
+  }
+  
+  for(i=0;i<ndata1;i++){
+    //if(fabs((sw_average_pol2[i]-hw_average_pol2[i])/sw_average_pol2[i])>res)
     if(sw_average_pol2[i]!=hw_average_pol2[i])
-      std::cout << "Mismatch on average_pol2: " <<i << '\t' << sw_average_pol2[i]<< '\t'<< hw_average_pol2[i] << '\n';
+      //std::cout << "Mismatch on average_pol2: " <<i << '\t' << sw_average_pol2[i]<< '\t'<< hw_average_pol2[i] << '\n';
+      std::cout << "Mismatch on average_pol1: " <<i << '\t' << in_pol2[i]<< '\t'<< in_pol2[i+ndata1]<<'\t'<< in_pol2[i+2*ndata1]<<'\t' << (in_pol2[i] + in_pol2[i+ndata1]+in_pol2[i+2*ndata1]) <<'\t' << sw_average_pol2[i]<< '\t'<< hw_average_pol2[i] <<'\n';
   }
   
   for(i=0;i<ndata2;i++){
-    if(sw_out[i]!=hw_out[i]){
-      std::cout << "Mismatch on out: " <<i << '\t'<< sw_out[i]<< '\t'<< hw_out[i] << '\n';
+    if(fabs((sw_out[i]-hw_out[i])/sw_out[i])>res){
+    //if(sw_out[i]!=hw_out[i]){
+      //std::cout << "Mismatch on out: " <<i << '\t'<< sw_out[i]<< '\t'<< hw_out[i] << '\n';
+      std::cout << "Mismatch on out: " <<i << '\t'<< sw_out[i]<< '\t'<< hw_out[i] << '\t' << ((sw_out[i]-hw_out[i])/sw_out[i])<< '\n';
     }
   }
   */
