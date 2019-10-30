@@ -1,6 +1,6 @@
 /*
 ******************************************************************************
-** SDACCEL UTIL CODE HEADER FILE
+** SDACCEL UTIL HEADER FILE
 ******************************************************************************
 */
 
@@ -14,14 +14,13 @@
 
 #include <fcntl.h>
 #include <stdio.h>
+#include <iostream>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdbool.h>
 #include <CL/opencl.h>
 #include <CL/cl_ext.h>
-
-#include <iostream>
 
 cl_uint load_file_to_memory(const char *filename, char **result);
 cl_device_id get_device_id(const char* target_device_name);

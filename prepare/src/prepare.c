@@ -1,72 +1,29 @@
 /*
 ******************************************************************************
-** PREPARE CODE FILE
+** C TEST BENCH FOR PREPARE KERNEL
 ******************************************************************************
 */
 
-#include "prepare.h"
 #include "util_sdaccel.h"
+#include "prepare.h"
 
-int prepare(
-	    core_data_type *in_pol1,
-	    core_data_type *in_pol2,
-	    core_data_type *cal_pol1,
-	    core_data_type *cal_pol2,
-	    core_data_type *sky,
-	    core_data_type *out,
-	    core_data_type *average_pol1,
-	    core_data_type *average_pol2
-	    ){
+int prepare(complex_data_type *in, complex_data_type *cal, complex_data_type *sky, complex_data_type *out, complex_data_type *average)
+{
   int i;
   int j;
   int loc;
-  
-  compute_data_type in_pol1_tmp;
-  compute_data_type in_pol2_tmp;
-  compute_data_type cal_pol1_tmp;
-  compute_data_type cal_pol2_tmp;
-  compute_data_type sky_tmp;
-  compute_data_type out_tmp;
-  compute_data_type average_pol1_tmp;
-  compute_data_type average_pol2_tmp;
-  
-  for(i = 0; i < NSAMP_PER_TIME; i++){
-    sky_tmp.real(sky[2*i]);
-    sky_tmp.imag(sky[2*i+1]);
 
-    cal_pol1_tmp.real(cal_pol1[2*i]);
-    cal_pol1_tmp.imag(cal_pol1[2*i+1]);
-    cal_pol2_tmp.real(cal_pol2[2*i]);
-    cal_pol2_tmp.imag(cal_pol2[2*i+1]);
-
-    average_pol1_tmp.real(0);
-    average_pol1_tmp.imag(0);
-    average_pol2_tmp.real(0);
-    average_pol2_tmp.imag(0);
-      
+  for(i = 0; i < NSAMP_PER_TIME; i++){      
     for(j = 0; j < NTIME_PER_CU; j++){
-      loc = j * NSAMP_PER_TIME + i;
-      in_pol1_tmp.real(in_pol1[2*loc]);
-      in_pol1_tmp.imag(in_pol1[2*loc+1]);
-	       
-      in_pol2_tmp.real(in_pol2[2*loc]);
-      in_pol2_tmp.imag(in_pol2[2*loc+1]);
-
-      average_pol1_tmp += in_pol1_tmp;
-      average_pol2_tmp += in_pol2_tmp;
+      loc = j*NSAMP_PER_TIME + i;
+            
+      average[2*i]   += in[2*loc];
+      average[2*i+1] += in[2*loc+1];
 	
-      out_tmp = in_pol1_tmp * cal_pol1_tmp +
-	in_pol2_tmp * cal_pol2_tmp -
-	sky_tmp;
-	
-      out[2*loc]   = out_tmp.real();
-      out[2*loc+1] = out_tmp.imag();
-    }
-      
-    average_pol1[2*i]   = average_pol1_tmp.real();
-    average_pol1[2*i+1] = average_pol1_tmp.imag();
-    average_pol2[2*i]   = average_pol2_tmp.real();
-    average_pol2[2*i+1] = average_pol2_tmp.imag();
+      out[loc] = in[loc*2] * cal[2*i] +
+	in[loc*2+1] * cal[2*i+1] -
+	sky[i];
+      }
   }
   
   return EXIT_SUCCESS;
