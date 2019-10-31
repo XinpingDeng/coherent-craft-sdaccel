@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <complex>
+//#include "ap_utils.h"
 
 #define NDATA_PER_POL 2
 #define BASE_DATA_WIDTH 32
@@ -24,8 +25,8 @@
 #define NDATA_PER_BURST_1POL (NDATA_PER_POL*NSAMP_PER_BURST)
 #define NDATA_PER_BURST_2POL (2*NDATA_PER_BURST_1POL)
 
-//#define NANT 4
-//#define NCHAN 256
+//#define NANT 2
+//#define NCHAN 16
 //#define NTIME_PER_CU 2    // configurable number, depends the available memory
 
 #define NANT 30
@@ -39,7 +40,8 @@
 typedef float base_data_type;
 typedef std::complex<base_data_type> complex_data_type;
 
-#define MEM_ALIGNMENT (sizeof(complex_data_type))//4096
+//#define MEM_ALIGNMENT (sizeof(complex_data_type))//4096
+#define MEM_ALIGNMENT 4096
 #define RAND_RANGE 4096
 
 typedef struct burst_data_1pol_type {

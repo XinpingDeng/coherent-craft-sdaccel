@@ -35,20 +35,20 @@ int main(int argc, char* argv[])
   complex_data_type *source_sw_average = NULL;
   complex_data_type *source_hw_average = NULL;
 
-  //source_in     = (complex_data_type *)aligned_alloc(MEM_ALIGNMENT, npol_in*sizeof(complex_data_type));
-  //source_sw_out = (complex_data_type *)aligned_alloc(MEM_ALIGNMENT, npol_out*sizeof(complex_data_type));
-  //source_hw_out = (complex_data_type *)aligned_alloc(MEM_ALIGNMENT, npol_out*sizeof(complex_data_type));
-  //source_cal    = (complex_data_type *)aligned_alloc(MEM_ALIGNMENT, npol_cal*sizeof(complex_data_type));
-  //source_sky    = (complex_data_type *)aligned_alloc(MEM_ALIGNMENT, npol_sky*sizeof(complex_data_type));
-  //source_sw_average = (complex_data_type *)aligned_alloc(MEM_ALIGNMENT, npol_average*sizeof(complex_data_type));
-  //source_hw_average = (complex_data_type *)aligned_alloc(MEM_ALIGNMENT, npol_average*sizeof(complex_data_type));
-  source_in     = (complex_data_type *)aligned_alloc(4096, npol_in*sizeof(complex_data_type));
-  source_sw_out = (complex_data_type *)aligned_alloc(4096, npol_out*sizeof(complex_data_type));
-  source_hw_out = (complex_data_type *)aligned_alloc(4096, npol_out*sizeof(complex_data_type));
-  source_cal    = (complex_data_type *)aligned_alloc(4096, npol_cal*sizeof(complex_data_type));
-  source_sky    = (complex_data_type *)aligned_alloc(4096, npol_sky*sizeof(complex_data_type));
-  source_sw_average = (complex_data_type *)aligned_alloc(4096, npol_average*sizeof(complex_data_type));
-  source_hw_average = (complex_data_type *)aligned_alloc(4096, npol_average*sizeof(complex_data_type));
+  source_in     = (complex_data_type *)aligned_alloc(MEM_ALIGNMENT, npol_in*sizeof(complex_data_type));
+  source_sw_out = (complex_data_type *)aligned_alloc(MEM_ALIGNMENT, npol_out*sizeof(complex_data_type));
+  source_hw_out = (complex_data_type *)aligned_alloc(MEM_ALIGNMENT, npol_out*sizeof(complex_data_type));
+  source_cal    = (complex_data_type *)aligned_alloc(MEM_ALIGNMENT, npol_cal*sizeof(complex_data_type));
+  source_sky    = (complex_data_type *)aligned_alloc(MEM_ALIGNMENT, npol_sky*sizeof(complex_data_type));
+  source_sw_average = (complex_data_type *)aligned_alloc(MEM_ALIGNMENT, npol_average*sizeof(complex_data_type));
+  source_hw_average = (complex_data_type *)aligned_alloc(MEM_ALIGNMENT, npol_average*sizeof(complex_data_type));
+  //source_in     = (complex_data_type *)aligned_alloc(4096, npol_in*sizeof(complex_data_type));
+  //source_sw_out = (complex_data_type *)aligned_alloc(4096, npol_out*sizeof(complex_data_type));
+  //source_hw_out = (complex_data_type *)aligned_alloc(4096, npol_out*sizeof(complex_data_type));
+  //source_cal    = (complex_data_type *)aligned_alloc(4096, npol_cal*sizeof(complex_data_type));
+  //source_sky    = (complex_data_type *)aligned_alloc(4096, npol_sky*sizeof(complex_data_type));
+  //source_sw_average = (complex_data_type *)aligned_alloc(4096, npol_average*sizeof(complex_data_type));
+  //source_hw_average = (complex_data_type *)aligned_alloc(4096, npol_average*sizeof(complex_data_type));
 
   /*
   printf("INFO: %f MB memory used on host in total\n",

@@ -20,6 +20,7 @@ extern "C" {
 #pragma HLS INTERFACE m_axi port=sky offset=slave bundle=gmem2 //max_read_burst_length=16
 #pragma HLS INTERFACE m_axi port=out offset=slave bundle=gmem3 //max_write_burst_length=16
 #pragma HLS INTERFACE m_axi port=average offset=slave bundle=gmem4 //max_write_burst_length=16
+
 #pragma HLS INTERFACE s_axilite port=in  bundle=control
 #pragma HLS INTERFACE s_axilite port=cal  bundle=control
 #pragma HLS INTERFACE s_axilite port=sky bundle=control
