@@ -1,6 +1,6 @@
 /*
 ******************************************************************************
-** HOST CODE
+** MAIN FUNCTION
 ******************************************************************************
 */
 
@@ -10,81 +10,47 @@
 int main(int argc, char* argv[])
 {
   /* Prepare the data arraies */
-  cl_uint nsamp1;
-  cl_uint npol_in;
-  cl_uint npol_out;
-  cl_uint nsamp2;
-  cl_uint npol_average;
-  cl_uint npol_sky;
-  cl_uint npol_cal;
 
-  nsamp1       = NSAMP_PER_TIME;
-  npol_average = nsamp1*2;
-  npol_cal     = nsamp1*2;
-  npol_sky     = nsamp1;
+  cl_uint ndata1;
+  cl_uint ndata2;
   
-  nsamp2   = NTIME_PER_CU*nsamp1;
-  npol_in  = nsamp2*2;
-  npol_out = nsamp2;
+  ndata1 = 2 * NSAMP_PER_TIME;
+  ndata2 = 2 * NTIME_PER_CU * NSAMP_PER_TIME;
+  
+  core_data_type *in_pol1 = NULL;
+  core_data_type *in_pol2 = NULL;
+  core_data_type *sw_out = NULL;
+  core_data_type *hw_out = NULL;
+  core_data_type *cal_pol1 = NULL;
+  core_data_type *cal_pol2 = NULL;
+  core_data_type *sky = NULL;
+  core_data_type *sw_average_pol1 = NULL;
+  core_data_type *sw_average_pol2 = NULL;
+  core_data_type *hw_average_pol1 = NULL;
+  core_data_type *hw_average_pol2 = NULL;
 
-  complex_data_type *source_in = NULL;
-  complex_data_type *source_sw_out = NULL;
-  complex_data_type *source_hw_out = NULL; 
-  complex_data_type *source_cal = NULL;
-  complex_data_type *source_sky = NULL;
-  complex_data_type *source_sw_average = NULL;
-  complex_data_type *source_hw_average = NULL;
-
-  source_in     = (complex_data_type *)aligned_alloc(MEM_ALIGNMENT, npol_in*sizeof(complex_data_type));
-  source_sw_out = (complex_data_type *)aligned_alloc(MEM_ALIGNMENT, npol_out*sizeof(complex_data_type));
-  source_hw_out = (complex_data_type *)aligned_alloc(MEM_ALIGNMENT, npol_out*sizeof(complex_data_type));
-  source_cal    = (complex_data_type *)aligned_alloc(MEM_ALIGNMENT, npol_cal*sizeof(complex_data_type));
-  source_sky    = (complex_data_type *)aligned_alloc(MEM_ALIGNMENT, npol_sky*sizeof(complex_data_type));
-  source_sw_average = (complex_data_type *)aligned_alloc(MEM_ALIGNMENT, npol_average*sizeof(complex_data_type));
-  source_hw_average = (complex_data_type *)aligned_alloc(MEM_ALIGNMENT, npol_average*sizeof(complex_data_type));
-  //source_in     = (complex_data_type *)aligned_alloc(4096, npol_in*sizeof(complex_data_type));
-  //source_sw_out = (complex_data_type *)aligned_alloc(4096, npol_out*sizeof(complex_data_type));
-  //source_hw_out = (complex_data_type *)aligned_alloc(4096, npol_out*sizeof(complex_data_type));
-  //source_cal    = (complex_data_type *)aligned_alloc(4096, npol_cal*sizeof(complex_data_type));
-  //source_sky    = (complex_data_type *)aligned_alloc(4096, npol_sky*sizeof(complex_data_type));
-  //source_sw_average = (complex_data_type *)aligned_alloc(4096, npol_average*sizeof(complex_data_type));
-  //source_hw_average = (complex_data_type *)aligned_alloc(4096, npol_average*sizeof(complex_data_type));
-
-  /*
-  printf("INFO: %f MB memory used on host in total\n",
-	 (npol_in + 2*npol_out + npol_cal + npol_sky + 2*npol_average) *
-	 sizeof(complex_data_type)/(1024.*1024.));
-  printf("INFO: %f MB memory used on device in total\n",
-	 (npol_in + npol_out + npol_cal + npol_sky + npol_average) *
-	 sizeof(complex_data_type)/(1024.*1024.));
-  printf("INFO: %f MB memory used on device for raw input\n",
-	 npol_in*sizeof(complex_data_type)/(1024.*1024.));  
-  printf("INFO: %f MB memory used on device for raw output\n",
-	 npol_out*sizeof(complex_data_type)/(1024.*1024.));  
-  printf("INFO: %f MB memory used on device for average output\n",
-	 npol_average*sizeof(complex_data_type)/(1024.*1024.));  
-  printf("INFO: %f MB memory used on device for calibration input\n",
-	 npol_cal*sizeof(complex_data_type)/(1024.*1024.));
-  printf("INFO: %f MB memory used on device for sky model\n",
-	 npol_sky*sizeof(complex_data_type)/(1024.*1024.));
-  */
-  printf("INFO: %f KB memory used on host in total\n",
-	 (npol_in + 2*npol_out + npol_cal + npol_sky + 2*npol_average) *
-	 sizeof(complex_data_type)/1024.);
-  printf("INFO: %f KB memory used on device in total\n",
-	 (npol_in + npol_out + npol_cal + npol_sky + npol_average) *
-	 sizeof(complex_data_type)/1024.);
-  printf("INFO: %f KB memory used on device for raw input\n",
-	 npol_in*sizeof(complex_data_type)/1024.);  
-  printf("INFO: %f KB memory used on device for calibration input\n",
-	 npol_cal*sizeof(complex_data_type)/1024.);
-  printf("INFO: %f KB memory used on device for sky model\n",
-	 npol_sky*sizeof(complex_data_type)/1024.);
-  printf("INFO: %f KB memory used on device for average output\n",
-	 npol_average*sizeof(complex_data_type)/1024.);  
-  printf("INFO: %f KB memory used on device for raw output\n",
-	 npol_out*sizeof(complex_data_type)/1024.);  
-
+  in_pol1  = (core_data_type *)aligned_alloc(MEM_ALIGNMENT, ndata2*sizeof(core_data_type));
+  in_pol2  = (core_data_type *)aligned_alloc(MEM_ALIGNMENT, ndata2*sizeof(core_data_type));
+  sw_out   = (core_data_type *)aligned_alloc(MEM_ALIGNMENT, ndata2*sizeof(core_data_type));
+  hw_out   = (core_data_type *)aligned_alloc(MEM_ALIGNMENT, ndata2*sizeof(core_data_type));
+  
+  cal_pol1 = (core_data_type *)aligned_alloc(MEM_ALIGNMENT, ndata1*sizeof(core_data_type));
+  cal_pol2 = (core_data_type *)aligned_alloc(MEM_ALIGNMENT, ndata1*sizeof(core_data_type));
+  sky      = (core_data_type *)aligned_alloc(MEM_ALIGNMENT, ndata1*sizeof(core_data_type));
+  sw_average_pol1 = (core_data_type *)aligned_alloc(MEM_ALIGNMENT, ndata1*sizeof(core_data_type));
+  sw_average_pol2 = (core_data_type *)aligned_alloc(MEM_ALIGNMENT, ndata1*sizeof(core_data_type));
+  hw_average_pol1 = (core_data_type *)aligned_alloc(MEM_ALIGNMENT, ndata1*sizeof(core_data_type));
+  hw_average_pol2 = (core_data_type *)aligned_alloc(MEM_ALIGNMENT, ndata1*sizeof(core_data_type));
+  
+  fprintf(stdout, "INFO: %f MB memory used on host in total\n",
+	  (4*ndata2 + 7*ndata1)*sizeof(core_data_type)/(1024.*1024.));
+  fprintf(stdout, "INFO: %f MB memory used on device in total\n",
+	  (3*ndata2 + 5*ndata1)*sizeof(core_data_type)/(1024.*1024.));
+  fprintf(stdout, "INFO: %f MB memory used on device for raw input\n",
+	  2*ndata2*sizeof(core_data_type)/(1024.*1024.));  
+  fprintf(stdout, "INFO: %f MB memory used on device for raw output\n",
+	  ndata2*sizeof(core_data_type)/(1024.*1024.));  
+  
   /* Do the calculation */
   srand(time(NULL));
   cl_uint i;
@@ -92,33 +58,37 @@ int main(int argc, char* argv[])
   struct timespec start_host;
   struct timespec stop_host;
     
-  /* Prepare the sky model and calibration data */
-  for(i=0; i<npol_sky; i++) {
-    source_sky[i].real((float)(rand() % RAND_RANGE));
-    source_sky[i].imag((float)(rand() % RAND_RANGE));
-  }
-
-  for(i=0; i<npol_cal; i++){
-    source_cal[i].real((float)(rand() % RAND_RANGE));
-    source_cal[i].imag((float)(rand() % RAND_RANGE));
-  }
-
-  /* Prepare the input raw data */
-  for(i=0; i<npol_in; i++){
-    source_in[i].real((float)(rand() % RAND_RANGE));
-    source_in[i].imag((float)(rand() % RAND_RANGE));
+  /* Prepare input and output */
+  for(i = 0; i < ndata2; i++){
+    in_pol1[i] = i;
+    in_pol2[i] = i + 99;
   }
   
+  for(i = 0; i < ndata1; i++){
+    cal_pol1[i] = i;
+    cal_pol2[i] = i + 4;
+    sky[i] = i + 44;
+  }
+  memset(sw_average_pol1, 0x00, ndata1 * sizeof(core_data_type)); // Get memory reset for the average
+  memset(sw_average_pol2, 0x00, ndata1 * sizeof(core_data_type)); // Get memory reset for the average
+  memset(hw_average_pol1, 0x00, ndata1 * sizeof(core_data_type)); // Get memory reset for the average
+  memset(hw_average_pol2, 0x00, ndata1 * sizeof(core_data_type)); // Get memory reset for the average
+  
   /* Calculate on host */
-  memset(source_sw_average, 0x00, npol_average*sizeof(complex_data_type)); // Get memory reset for the average
-  //memset(source_hw_average, 0x00, npol_average*sizeof(complex_data_type)); // Get memory reset for the average
-  memset(source_sw_out, 0x00, npol_out*sizeof(complex_data_type)); // Get memory reset for the out
-  //memset(source_hw_out, 0x00, npol_out*sizeof(complex_data_type)); // Get memory reset for the out
   clock_gettime(CLOCK_REALTIME, &start_host);
-  prepare(source_in, source_cal, source_sky, source_sw_out, source_sw_average);
+  prepare(in_pol1,
+	  in_pol2,
+	  cal_pol1,
+	  cal_pol2,
+	  sky,
+	  sw_out,
+	  sw_average_pol1,
+	  sw_average_pol2);
+  
   clock_gettime(CLOCK_REALTIME, &stop_host);
   elapsed_time = (stop_host.tv_sec - start_host.tv_sec) + (stop_host.tv_nsec - start_host.tv_nsec)/1.0E9L;
   printf("INFO: elapsed_time of one loop is %E seconds\n", elapsed_time);
+  
   
   /* Do the calculation on card */
   if (argc != 3) {
@@ -132,13 +102,16 @@ int main(int argc, char* argv[])
   cl_command_queue commands;         
   cl_program program;                
   cl_kernel kernel_prepare;       
- 
-  cl_mem buffer_in;                 
-  cl_mem buffer_cal;
+  
+  cl_mem buffer_in_pol1;
+  cl_mem buffer_in_pol2;                 
+  cl_mem buffer_cal_pol1;
+  cl_mem buffer_cal_pol2;
   cl_mem buffer_sky;
   cl_mem buffer_out;
-  cl_mem buffer_average;
-  cl_mem pt[5];
+  cl_mem buffer_average_pol1;
+  cl_mem buffer_average_pol2;
+  cl_mem pt[8];
   cl_int err;
   
   device_id = get_device_id(target_device_name);
@@ -148,7 +121,6 @@ int main(int argc, char* argv[])
     printf("Test failed\n");
     return EXIT_FAILURE;
   }
-  
   commands = clCreateCommandQueue(context, device_id, CL_QUEUE_PROFILING_ENABLE, &err);
   if (!commands) {
     printf("Error: Failed to create a command commands!\n");
@@ -197,55 +169,101 @@ int main(int argc, char* argv[])
     printf("Test failed\n");
     return EXIT_FAILURE;
   }
-  buffer_in = clCreateBuffer(context,  CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,  sizeof(complex_data_type)*npol_in, source_in, &err);
+  buffer_in_pol1 = clCreateBuffer(context,  CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,  sizeof(core_data_type)*ndata2, in_pol1, &err);
   if (err != CL_SUCCESS) {
-    std::cout << "Return code for clCreateBuffer - in1" << err << std::endl;
+    std::cout << "Return code for clCreateBuffer - in_pol1" << err << std::endl;
   }
-  buffer_sky = clCreateBuffer(context,  CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,  sizeof(complex_data_type)*npol_sky, source_sky, &err);
+  buffer_in_pol2 = clCreateBuffer(context,  CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,  sizeof(core_data_type)*ndata2, in_pol2, &err);
   if (err != CL_SUCCESS) {
-    std::cout << "Return code for clCreateBuffer - in1" << err << std::endl;
-  }
-  buffer_cal = clCreateBuffer(context,  CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,  sizeof(complex_data_type)*npol_cal, source_cal, &err);
-  if (err != CL_SUCCESS) {
-    std::cout << "Return code for clCreateBuffer - in1" << err << std::endl;
-  }
-
-  buffer_out = clCreateBuffer(context,  CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR,  sizeof(complex_data_type)*npol_out, source_hw_out, &err);
-  if (err != CL_SUCCESS) {
-    std::cout << "Return code for clCreateBuffer - in1" << err << std::endl;
+    std::cout << "Return code for clCreateBuffer - in_pol2" << err << std::endl;
   }  
-  buffer_average = clCreateBuffer(context,  CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR,  sizeof(complex_data_type)*npol_average, source_hw_average, &err);
+  buffer_sky = clCreateBuffer(context,  CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,  sizeof(core_data_type)*ndata1, sky, &err);
   if (err != CL_SUCCESS) {
-    std::cout << "Return code for clCreateBuffer - in1" << err << std::endl;
+    std::cout << "Return code for clCreateBuffer - sky" << err << std::endl;
+  }
+  buffer_cal_pol1 = clCreateBuffer(context,  CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,  sizeof(core_data_type)*ndata1, cal_pol1, &err);
+  if (err != CL_SUCCESS) {
+    std::cout << "Return code for clCreateBuffer - cal_pol1" << err << std::endl;
+  }
+  buffer_cal_pol2 = clCreateBuffer(context,  CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,  sizeof(core_data_type)*ndata1, cal_pol2, &err);
+  if (err != CL_SUCCESS) {
+    std::cout << "Return code for clCreateBuffer - cal_pol2" << err << std::endl;
+  }
+  buffer_out = clCreateBuffer(context,  CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR,  sizeof(core_data_type)*ndata2, hw_out, &err);
+  if (err != CL_SUCCESS) {
+    std::cout << "Return code for clCreateBuffer - out" << err << std::endl;
+  }  
+  //buffer_average_pol1 = clCreateBuffer(context,  CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,  sizeof(core_data_type)*ndata1, hw_average_pol1, &err);
+  //if (err != CL_SUCCESS) {
+  //  std::cout << "Return code for clCreateBuffer - average_pol1" << err << std::endl;
+  //}  
+  //buffer_average_pol2 = clCreateBuffer(context,  CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,  sizeof(core_data_type)*ndata1, hw_average_pol2, &err);
+  //if (err != CL_SUCCESS) {
+  //  std::cout << "Return code for clCreateBuffer - average_pol2" << err << std::endl;
+  //}
+  buffer_average_pol1 = clCreateBuffer(context,  CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR,  sizeof(core_data_type)*ndata1, hw_average_pol1, &err);
+  if (err != CL_SUCCESS) {
+    std::cout << "Return code for clCreateBuffer - average_pol1" << err << std::endl;
+  }  
+  buffer_average_pol2 = clCreateBuffer(context,  CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR,  sizeof(core_data_type)*ndata1, hw_average_pol2, &err);
+  if (err != CL_SUCCESS) {
+    std::cout << "Return code for clCreateBuffer - average_pol2" << err << std::endl;
   }
   
-  if (!(buffer_in&&buffer_out&&buffer_sky&&buffer_cal&&buffer_average)) {
+  if (!(buffer_in_pol1&&
+	buffer_in_pol2&&
+	buffer_out&&
+	buffer_sky&&
+	buffer_cal_pol1&&
+	buffer_cal_pol2&&
+	buffer_average_pol1&&
+	buffer_average_pol2
+	)) {
     printf("Error: Failed to allocate device memory!\n");
     printf("Test failed\n");
     return EXIT_FAILURE;
   }
 
-  pt[0] = buffer_in;
-  pt[1] = buffer_cal;
-  pt[2] = buffer_sky;
-  pt[3] = buffer_out;
-  pt[4] = buffer_average;
+  pt[0] = buffer_in_pol1;
+  pt[1] = buffer_in_pol2;
+  pt[2] = buffer_cal_pol1;
+  pt[3] = buffer_cal_pol2;
+  pt[4] = buffer_sky;
+  pt[5] = buffer_out;
+  pt[6] = buffer_average_pol1;
+  pt[7] = buffer_average_pol2;
 
-  struct timespec start_device;
-  struct timespec stop_device;
-
+  // To use multiple banks, this has to be before any enqueue options (e.g., clEnqueueMigrateMemObjects)
   err = 0;
-  err |= clSetKernelArg(kernel_prepare, 0, sizeof(cl_mem), &buffer_in); 
-  err |= clSetKernelArg(kernel_prepare, 1, sizeof(cl_mem), &buffer_cal); 
-  err |= clSetKernelArg(kernel_prepare, 2, sizeof(cl_mem), &buffer_sky);
-  err |= clSetKernelArg(kernel_prepare, 3, sizeof(cl_mem), &buffer_out); 
-  err |= clSetKernelArg(kernel_prepare, 4, sizeof(cl_mem), &buffer_average);
+  err |= clSetKernelArg(kernel_prepare, 0, sizeof(cl_mem), &buffer_in_pol1);
+  err |= clSetKernelArg(kernel_prepare, 1, sizeof(cl_mem), &buffer_in_pol2); 
+  err |= clSetKernelArg(kernel_prepare, 2, sizeof(cl_mem), &buffer_cal_pol1);
+  err |= clSetKernelArg(kernel_prepare, 3, sizeof(cl_mem), &buffer_cal_pol2); 
+  err |= clSetKernelArg(kernel_prepare, 4, sizeof(cl_mem), &buffer_sky);
+  err |= clSetKernelArg(kernel_prepare, 5, sizeof(cl_mem), &buffer_out); 
+  err |= clSetKernelArg(kernel_prepare, 6, sizeof(cl_mem), &buffer_average_pol1);
+  err |= clSetKernelArg(kernel_prepare, 7, sizeof(cl_mem), &buffer_average_pol2);
+  
   if (err != CL_SUCCESS) {
     printf("Error: Failed to set kernel_prepare arguments! %d\n", err);
     printf("Test failed\n");
  
   }
   
+  err = clEnqueueMigrateMemObjects(commands,(cl_uint)5,pt, 0 ,0,NULL, NULL);
+  if (err != CL_SUCCESS) {
+    printf("Error: Failed to set kernel_prepare arguments! %d\n", err);
+    printf("Test failed\n");
+  }
+  err = clFinish(commands);
+  if (err != CL_SUCCESS) {
+    printf("Error: Failed to finish the commands: %d!\n", err);
+    printf("Test failed\n");
+    return EXIT_FAILURE;
+  }
+
+  struct timespec start_device;
+  struct timespec stop_device;
   clock_gettime(CLOCK_REALTIME, &start_device);
   err = clEnqueueTask(commands, kernel_prepare, 0, NULL, NULL);
   if (err) {
@@ -253,16 +271,18 @@ int main(int argc, char* argv[])
     printf("Test failed\n");
     return EXIT_FAILURE;
   }
-  
-  err = clEnqueueMigrateMemObjects(commands,(cl_uint)3,pt, 0 ,0,NULL, NULL);
+  err = clFinish(commands);
   if (err != CL_SUCCESS) {
-    printf("Error: Failed to set kernel_prepare arguments! %d\n", err);
+    printf("Error: Failed to finish the commands: %d!\n", err);
     printf("Test failed\n");
-  }
-  
+    return EXIT_FAILURE;
+  }  
+  clock_gettime(CLOCK_REALTIME, &stop_device);
+  elapsed_time = (stop_device.tv_sec - start_device.tv_sec) + (stop_device.tv_nsec - start_device.tv_nsec)/1.0E9L;
+  fprintf(stdout, "Elapsed time of kernel is %E seconds \n", elapsed_time);
+
   err = 0;
-  err |= clEnqueueMigrateMemObjects(commands,(cl_uint)2,&pt[3], CL_MIGRATE_MEM_OBJECT_HOST,0,NULL, NULL);
-  
+  err |= clEnqueueMigrateMemObjects(commands,(cl_uint)3,&pt[5], CL_MIGRATE_MEM_OBJECT_HOST,0,NULL, NULL);  
   if (err != CL_SUCCESS) {
     printf("Error: Failed to write to source array: %d!\n", err);
     printf("Test failed\n");
@@ -270,37 +290,56 @@ int main(int argc, char* argv[])
   }
 
   err = clFinish(commands);
-  clock_gettime(CLOCK_REALTIME, &stop_device);
-  elapsed_time = (stop_device.tv_sec - start_device.tv_sec) + (stop_device.tv_nsec - start_device.tv_nsec)/1.0E9L;
-  fprintf(stdout, "Elapsed time of kernel is %E seconds \n", elapsed_time);
-
-  float res = 1.0E-3;
-  for(i=0;i<npol_average;i++){
-    if(fabs((source_sw_average[i]-source_hw_average[i])/source_sw_average[i])>res){
-      std::cout << "Mismatch on average: " <<i << '\t' << source_sw_average[i]<< '\t'<< source_hw_average[i] << '\n';
-    }
+  if (err != CL_SUCCESS) {
+    printf("Error: Failed to finish the commands: %d!\n", err);
+    printf("Test failed\n");
+    return EXIT_FAILURE;
   }
 
-  for(i=0;i<npol_out;i++){
-    if(fabs((source_sw_out[i]-source_hw_out[i])/source_sw_out[i])>res){
-      std::cout << "Mismatch on out: " <<i << '\t'<< source_sw_out[i]<< '\t'<< source_hw_out[i] << '\n';
-    }
-  }
-    
-  /* Free memory */
-  clReleaseMemObject(buffer_in);
-  clReleaseMemObject(buffer_sky);
-  clReleaseMemObject(buffer_cal);
-  clReleaseMemObject(buffer_out);
-  clReleaseMemObject(buffer_average);
+  /*
+  double res = 1.0E-2;
   
-  free(source_in);
-  free(source_sw_out);
-  free(source_hw_out);
-  free(source_cal);
-  free(source_sky);
-  free(source_sw_average);
-  free(source_hw_average);
+  for(i=0;i<ndata1;i++){
+    if(fabs((sw_average_pol1[i]-hw_average_pol1[i])/sw_average_pol1[i])>res)
+      //if(sw_average_pol1[i]!=hw_average_pol1[i])
+      std::cout << "Mismatch on average_pol1: " <<i << '\t' << sw_average_pol1[i]<< '\t'<< hw_average_pol1[i] << '\n';
+  }
+  
+  for(i=0;i<ndata1;i++){
+    if(fabs((sw_average_pol2[i]-hw_average_pol2[i])/sw_average_pol2[i])>res)
+      //if(sw_average_pol2[i]!=hw_average_pol2[i])
+      std::cout << "Mismatch on average_pol2: " <<i << '\t' << sw_average_pol2[i]<< '\t'<< hw_average_pol2[i] << '\n';
+  }
+    for(i=0;i<ndata2;i++){
+    if(fabs((sw_out[i]-hw_out[i])/sw_out[i])>res){
+    //if(sw_out[i]!=hw_out[i]){
+    //std::cout << "Mismatch on out: " <<i << '\t'<< sw_out[i]<< '\t'<< hw_out[i] << '\n';
+    std::cout << "Mismatch on out: " <<i << '\t'<< sw_out[i]<< '\t'<< hw_out[i] << '\t' << ((sw_out[i]-hw_out[i])/sw_out[i])<< '\n';
+    }
+    }
+  */
+  
+  /* Free memory */
+  clReleaseMemObject(buffer_in_pol1);
+  clReleaseMemObject(buffer_in_pol2);
+  clReleaseMemObject(buffer_cal_pol1);
+  clReleaseMemObject(buffer_cal_pol2);
+  clReleaseMemObject(buffer_sky);
+  clReleaseMemObject(buffer_out);
+  clReleaseMemObject(buffer_average_pol1);
+  clReleaseMemObject(buffer_average_pol2);
+  
+  free(in_pol1);
+  free(in_pol2);
+  free(sw_out);
+  free(hw_out);
+  free(cal_pol1);
+  free(cal_pol2);
+  free(sky);
+  free(sw_average_pol1);
+  free(sw_average_pol2);
+  free(hw_average_pol1);
+  free(hw_average_pol2);
   
   clReleaseProgram(program);
   clReleaseKernel(kernel_prepare);
