@@ -11,7 +11,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdbool.h>
-#include <hls_stream.h>
 #include <complex>
 
 #define NDATA_PER_SAMP 2      // We are using complex numbers
@@ -22,8 +21,8 @@
 #define NSAMP_PER_BURST (BURST_DATA_WIDTH/COMPUTE_DATA_WIDTH) 
 #define NDATA_PER_BURST (NDATA_PER_SAMP*NSAMP_PER_BURST)
 
-//#define NANT 2
-//#define NCHAN 288
+//#define NANT 4
+//#define NCHAN 64
 //#define NTIME_PER_CU 2    // For each compute unit
 
 #define NANT 30
@@ -35,7 +34,7 @@
 #define NBURST_PER_TIME (NSAMP_PER_TIME/NSAMP_PER_BURST)
 
 typedef float core_data_type; // The size of this should be CORE_DATA_WIDTH
-
+  
 typedef struct burst_data_type{
   core_data_type data[NDATA_PER_BURST];
 }burst_data_type; // The size of this should be BURST_DATA_WIDTH
