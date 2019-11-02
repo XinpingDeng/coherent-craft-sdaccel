@@ -27,7 +27,7 @@
 
 #define NANT 30
 #define NCHAN 288        // possible numbers: 288, 288, 672
-#define NTIME_PER_CU 64    // configurable number, depends the available memory
+#define NTIME_PER_CU 256    // configurable number, depends the available memory
 
 #define NBASELINE (NANT*(NANT-1)/2)
 #define NSAMP_PER_TIME (NCHAN*NBASELINE)
