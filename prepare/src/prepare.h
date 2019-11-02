@@ -22,13 +22,13 @@
 #define NSAMP_PER_BURST (BURST_DATA_WIDTH/COMPUTE_DATA_WIDTH) 
 #define NDATA_PER_BURST (NDATA_PER_SAMP*NSAMP_PER_BURST)
 
-#define NANT 2
-#define NCHAN 16
-#define NTIME_PER_CU 2    // For each compute unit
+//#define NANT 2
+//#define NCHAN 288
+//#define NTIME_PER_CU 2    // For each compute unit
 
-//#define NANT 30
-//#define NCHAN 288        // possible numbers: 288, 288, 672
-//#define NTIME_PER_CU 64    // configurable number, depends the available memory
+#define NANT 30
+#define NCHAN 288        // possible numbers: 288, 288, 672
+#define NTIME_PER_CU 64    // configurable number, depends the available memory
 
 #define NBASELINE (NANT*(NANT-1)/2)
 #define NSAMP_PER_TIME (NCHAN*NBASELINE)
@@ -41,7 +41,6 @@ typedef struct burst_data_type{
 }burst_data_type; // The size of this should be BURST_DATA_WIDTH
   
 typedef std::complex<core_data_type> compute_data_type; // The size of it should be COMPUTE_DATA_WIDTH
-typedef hls::stream<burst_data_type> fifo_data_type;
 
 int prepare(core_data_type *in_pol1,
 	    core_data_type *in_pol2,

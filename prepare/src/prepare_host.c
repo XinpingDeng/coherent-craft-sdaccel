@@ -193,14 +193,6 @@ int main(int argc, char* argv[])
   if (err != CL_SUCCESS) {
     std::cout << "Return code for clCreateBuffer - out" << err << std::endl;
   }  
-  //buffer_average_pol1 = clCreateBuffer(context,  CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,  sizeof(core_data_type)*ndata1, hw_average_pol1, &err);
-  //if (err != CL_SUCCESS) {
-  //  std::cout << "Return code for clCreateBuffer - average_pol1" << err << std::endl;
-  //}  
-  //buffer_average_pol2 = clCreateBuffer(context,  CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,  sizeof(core_data_type)*ndata1, hw_average_pol2, &err);
-  //if (err != CL_SUCCESS) {
-  //  std::cout << "Return code for clCreateBuffer - average_pol2" << err << std::endl;
-  //}
   buffer_average_pol1 = clCreateBuffer(context,  CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR,  sizeof(core_data_type)*ndata1, hw_average_pol1, &err);
   if (err != CL_SUCCESS) {
     std::cout << "Return code for clCreateBuffer - average_pol1" << err << std::endl;
@@ -295,10 +287,8 @@ int main(int argc, char* argv[])
     printf("Test failed\n");
     return EXIT_FAILURE;
   }
-
-  /*
-  double res = 1.0E-2;
   
+  double res = 1.0E-2;  
   for(i=0;i<ndata1;i++){
     if(fabs((sw_average_pol1[i]-hw_average_pol1[i])/sw_average_pol1[i])>res)
       //if(sw_average_pol1[i]!=hw_average_pol1[i])
@@ -310,14 +300,13 @@ int main(int argc, char* argv[])
       //if(sw_average_pol2[i]!=hw_average_pol2[i])
       std::cout << "Mismatch on average_pol2: " <<i << '\t' << sw_average_pol2[i]<< '\t'<< hw_average_pol2[i] << '\n';
   }
-    for(i=0;i<ndata2;i++){
+  for(i=0;i<ndata2;i++){
     if(fabs((sw_out[i]-hw_out[i])/sw_out[i])>res){
-    //if(sw_out[i]!=hw_out[i]){
-    //std::cout << "Mismatch on out: " <<i << '\t'<< sw_out[i]<< '\t'<< hw_out[i] << '\n';
-    std::cout << "Mismatch on out: " <<i << '\t'<< sw_out[i]<< '\t'<< hw_out[i] << '\t' << ((sw_out[i]-hw_out[i])/sw_out[i])<< '\n';
+      //if(sw_out[i]!=hw_out[i]){
+      //std::cout << "Mismatch on out: " <<i << '\t'<< sw_out[i]<< '\t'<< hw_out[i] << '\n';
+      std::cout << "Mismatch on out: " <<i << '\t'<< sw_out[i]<< '\t'<< hw_out[i] << '\t' << ((sw_out[i]-hw_out[i])/sw_out[i])<< '\n';
     }
-    }
-  */
+  }
   
   /* Free memory */
   clReleaseMemObject(buffer_in_pol1);
