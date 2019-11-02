@@ -272,7 +272,6 @@ int main(int argc, char* argv[])
 
   err = clFinish(commands);
   
-  /*
   for(i=0;i<ndata1;i++){
     if(sw_average_pol1[i]!=hw_average_pol1[i])
       std::cout << "Mismatch on average_pol1: " <<i << '\t' << sw_average_pol1[i]<< '\t'<< hw_average_pol1[i] << '\n';
@@ -285,7 +284,7 @@ int main(int argc, char* argv[])
       std::cout << "Mismatch on out: " <<i << '\t'<< sw_out[i]<< '\t'<< hw_out[i] << '\n';
     }
   }
-  */
+
   /* Free memory */
   clReleaseMemObject(buffer_in_pol1);
   clReleaseMemObject(buffer_in_pol2);
