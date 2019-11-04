@@ -78,7 +78,7 @@ extern "C" {
       LOOP_CAL_AVERAGE_OUT_M:
 	for(m = 0; m < NBURST_PER_TIME_PER_BASELINE; m++)
 	  {
-#pragma HLS PIPELINE
+#pragma HLS PIPELINE //rewind
 	    loc = j*NBASELINE*NBURST_PER_TIME_PER_BASELINE + i*NBURST_PER_TIME_PER_BASELINE + m;	  
 	    in_pol1_burst = in_pol1[loc];
 	    in_pol2_burst = in_pol2[loc];
