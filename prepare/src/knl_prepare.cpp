@@ -55,30 +55,31 @@ extern "C" {
     int m;
     int n;
     int loc;
-    
-  LOOP_BURST_IN_CAL_SKY_RESET_AVERAGE:
-    for(i = 0; i < NBURST_PER_TIME_PER_BASELINE; i++){
-#pragma HLS PIPELINE 
-      cal_pol1_burst[i] = cal_pol1[i];
-      cal_pol2_burst[i] = cal_pol2[i];
-      sky_burst[i]      = sky[i];
-      
-    LOOP_RESET_AVERAGE1:
-      for(j = 0; j < NDATA_PER_BURST; j++){
-#pragma HLS UNROLL
-	average_pol1_burst[i].data[j]   = 0;
-	average_pol2_burst[i].data[j]   = 0;
-      }	  
-    }
-    
+
   LOOP_NBASELINE:
     for(i = 0; i < NBASELINE; i++){
+    LOOP_BURST_CAL_SKY_RESET_AVERAGE:
+      for(j = 0; j < NBURST_PER_TIME_PER_BASELINE; j++){
+#pragma HLS PIPELINE 
+	loc = i*NBURST_PER_TIME_PER_BASELINE + j;
+	cal_pol1_burst[j] = cal_pol1[loc];
+	cal_pol2_burst[j] = cal_pol2[loc];
+	sky_burst[j]      = sky[loc];
+	
+      LOOP_RESET_AVERAGE:
+	for(m = 0; m < NDATA_PER_BURST; m++){
+#pragma HLS UNROLL
+	  average_pol1_burst[j].data[m] = 0;
+	  average_pol2_burst[j].data[m] = 0;
+	}
+      }
+      
     LOOP_NTIME_PER_CU:
       for(j = 0; j < NTIME_PER_CU; j++){	
       LOOP_CAL_AVERAGE_OUT_M:
 	for(m = 0; m < NBURST_PER_TIME_PER_BASELINE; m++)
 	  {
-#pragma HLS PIPELINE //rewind
+#pragma HLS PIPELINE
 	    loc = j*NBASELINE*NBURST_PER_TIME_PER_BASELINE + i*NBURST_PER_TIME_PER_BASELINE + m;	  
 	    in_pol1_burst = in_pol1[loc];
 	    in_pol2_burst = in_pol2[loc];
@@ -102,24 +103,12 @@ extern "C" {
 	  }
       }
       
-    LOOP_BURST_OUT_AVERAGE:
+    LOOP_BURST_AVERAGE:
       for(j = 0; j < NBURST_PER_TIME_PER_BASELINE; j++){
 #pragma HLS PIPELINE 
 	loc = i*NBURST_PER_TIME_PER_BASELINE + j;
 	average_pol1[loc] = average_pol1_burst[j];
 	average_pol2[loc] = average_pol2_burst[j];
-	
-	loc = ((i + 1)*NBURST_PER_TIME_PER_BASELINE + j)%NBURST_PER_TIME;
-	cal_pol1_burst[j] = cal_pol1[loc];
-	cal_pol2_burst[j] = cal_pol2[loc];
-	sky_burst[j]      = sky[loc];
-	
-      LOOP_RESET_AVERAGE2:
-	for(m = 0; m < NDATA_PER_BURST; m++){
-#pragma HLS UNROLL
-	  average_pol1_burst[j].data[m]   = 0;
-	  average_pol2_burst[j].data[m]   = 0;
-	}
       }      
     }
   }
