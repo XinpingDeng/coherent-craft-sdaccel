@@ -13,9 +13,10 @@
 #include <stdbool.h>
 #include <hls_stream.h>
 #include <complex>
+#include <ap_fixed.h>
 
 #define NDATA_PER_SAMP 2      // We are using complex numbers
-#define CORE_DATA_WIDTH 32    // We are using float complex numbers
+#define CORE_DATA_WIDTH 16    // We are using float complex numbers
 #define BURST_DATA_WIDTH 512  // Memory width of xilinx, hard limit
 
 #define COMPUTE_DATA_WIDTH (NDATA_PER_SAMP*CORE_DATA_WIDTH)   // complex float
@@ -35,7 +36,8 @@
 #define NBURST_PER_TIME (NSAMP_PER_TIME/NSAMP_PER_BURST)
 #define NBURST_PER_TIME_PER_BASELINE (NCHAN/NSAMP_PER_BURST)
 
-typedef float core_data_type; // The size of this should be CORE_DATA_WIDTH
+//typedef float core_data_type; // The size of this should be CORE_DATA_WIDTH
+typedef ap_fixed<CORE_DATA_WIDTH, CORE_DATA_WIDTH/2> core_data_type; // The size of this should be CORE_DATA_WIDTH
 
 typedef struct burst_data_type{
   core_data_type data[NDATA_PER_BURST];
