@@ -116,7 +116,7 @@ extern "C" {
 	
 	//loc = ((i + 1)*MAX_BURST_LENGTH + j)%NBURST_PER_TIME;
 	
-	if(i<(NBURST_PER_TIME-1)){
+	if(i<(NTRAN_PER_TIME-1)){
 	  loc += MAX_BURST_LENGTH;
 	  cal_pol1_burst[j] = cal_pol1[loc];
 	  cal_pol2_burst[j] = cal_pol2[loc];
