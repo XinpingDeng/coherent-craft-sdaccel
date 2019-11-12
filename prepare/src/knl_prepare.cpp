@@ -58,17 +58,18 @@ extern "C" {
     int itran;
     
   LOOP_BURST_CAL_SKY_RESET_AVERAGE1:
-    for(i = 0; i < MAX_BURST_LENGTH; i++){
-#pragma HLS PIPELINE 
-      cal_pol1_burst[i] = cal_pol1[i];
-      cal_pol2_burst[i] = cal_pol2[i];
-      sky_burst[i]      = sky[i];
+    for(m = 0; m < MAX_BURST_LENGTH; m++){
+#pragma HLS PIPELINE
+      loc = m;
+      cal_pol1_burst[m] = cal_pol1[loc];
+      cal_pol2_burst[m] = cal_pol2[loc];
+      sky_burst[m]      = sky[loc];
       
     LOOP_RESET_AVERAGE1:
-      for(j = 0; j < NDATA_PER_BURST; j++){
+      for(n = 0; n < NDATA_PER_BURST; n++){
 #pragma HLS UNROLL
-	average_pol1_burst[i].data[j] = 0;
-	average_pol2_burst[i].data[j] = 0;
+	average_pol1_burst[m].data[n] = 0;
+	average_pol2_burst[m].data[n] = 0;
       }	  
     }
     
@@ -103,22 +104,22 @@ extern "C" {
       }
       
     LOOP_BURST_AVERAGE1:
-      for(j = 0; j < MAX_BURST_LENGTH; j++){
+      for(m = 0; m < MAX_BURST_LENGTH; m++){
 #pragma HLS PIPELINE 
-	loc = i*MAX_BURST_LENGTH + j;
-	average_pol1[loc] = average_pol1_burst[j];
-	average_pol2[loc] = average_pol2_burst[j];
+	loc = i*MAX_BURST_LENGTH + m;
+	average_pol1[loc] = average_pol1_burst[m];
+	average_pol2[loc] = average_pol2_burst[m];
       	
 	loc += MAX_BURST_LENGTH;
-	cal_pol1_burst[j] = cal_pol1[loc];
-	cal_pol2_burst[j] = cal_pol2[loc];
-	sky_burst[j]      = sky[loc];
+	cal_pol1_burst[m] = cal_pol1[loc];
+	cal_pol2_burst[m] = cal_pol2[loc];
+	sky_burst[m]      = sky[loc];
 	
       LOOP_RESET_AVERAGE2:
-	for(m = 0; m < NDATA_PER_BURST; m++){
+	for(n = 0; n < NDATA_PER_BURST; n++){
 #pragma HLS UNROLL
-	  average_pol1_burst[j].data[m] = 0;
-	  average_pol2_burst[j].data[m] = 0;
+	  average_pol1_burst[m].data[n] = 0;
+	  average_pol2_burst[m].data[n] = 0;
 	}
       }      
     }
@@ -154,25 +155,25 @@ extern "C" {
     }
     
   LOOP_BURST_AVERAGE2:
-    for(j = 0; j < MAX_BURST_LENGTH; j++){
+    for(m = 0; m < MAX_BURST_LENGTH; m++){
 #pragma HLS PIPELINE 
-      loc = itran*MAX_BURST_LENGTH + j;
-      average_pol1[loc] = average_pol1_burst[j];
-      average_pol2[loc] = average_pol2_burst[j];
+      loc = itran*MAX_BURST_LENGTH + m;
+      average_pol1[loc] = average_pol1_burst[m];
+      average_pol2[loc] = average_pol2_burst[m];
     }
     
   LOOP_BURST_CAL_SKY_RESET_AVERAGE2:
-    for(j = 0; j < NBURST_PER_TIME_REMIND; j++){    
-      loc = (itran+1)*MAX_BURST_LENGTH+j;
-      cal_pol1_burst[j] = cal_pol1[loc];
-      cal_pol2_burst[j] = cal_pol2[loc];
-      sky_burst[j]      = sky[loc];
+    for(m = 0; m < NBURST_PER_TIME_REMIND; m++){    
+      loc = (itran+1)*MAX_BURST_LENGTH+m;
+      cal_pol1_burst[m] = cal_pol1[loc];
+      cal_pol2_burst[m] = cal_pol2[loc];
+      sky_burst[m]      = sky[loc];
       
     LOOP_RESET_AVERAGE3:
-      for(m = 0; m < NDATA_PER_BURST; m++){
+      for(n = 0; n < NDATA_PER_BURST; n++){
 #pragma HLS UNROLL
-	average_pol1_burst[j].data[m] = 0;
-	average_pol2_burst[j].data[m] = 0;
+	average_pol1_burst[m].data[n] = 0;
+	average_pol2_burst[m].data[n] = 0;
       }
     }
     
@@ -207,11 +208,11 @@ extern "C" {
     }
     
   LOOP_BURST_AVERAGE3:
-    for(j = 0; j < NBURST_PER_TIME_REMIND; j++){
+    for(m = 0; m < NBURST_PER_TIME_REMIND; m++){
 #pragma HLS PIPELINE 
-      loc = itran*MAX_BURST_LENGTH + j;
-      average_pol1[loc] = average_pol1_burst[j];
-      average_pol2[loc] = average_pol2_burst[j];
+      loc = itran*MAX_BURST_LENGTH + m;
+      average_pol1[loc] = average_pol1_burst[m];
+      average_pol2[loc] = average_pol2_burst[m];
     }    
     ///////////////////////////////////////////////
   }
