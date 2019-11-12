@@ -60,19 +60,15 @@ int main(int argc, char* argv[])
     
   /* Prepare input and output */
   for(i = 0; i < ndata2; i++){
-    in_pol1[i] = i;
-    in_pol2[i] = i + 99;
+    in_pol1[i] = (core_data_type)(rand()%DATA_RANGE);
+    in_pol2[i] = (core_data_type)(rand()%DATA_RANGE);
   }
   
   for(i = 0; i < ndata1; i++){
-    cal_pol1[i] = i;
-    cal_pol2[i] = i + 4;
-    sky[i] = i + 44;
+    cal_pol1[i] = (core_data_type)(rand()%DATA_RANGE);
+    cal_pol2[i] = (core_data_type)(rand()%DATA_RANGE);
+    sky[i] = (core_data_type)(rand()%DATA_RANGE);
   }
-  memset(sw_average_pol1, 0x00, ndata1 * sizeof(core_data_type)); // Get memory reset for the average
-  memset(sw_average_pol2, 0x00, ndata1 * sizeof(core_data_type)); // Get memory reset for the average
-  memset(hw_average_pol1, 0x00, ndata1 * sizeof(core_data_type)); // Get memory reset for the average
-  memset(hw_average_pol2, 0x00, ndata1 * sizeof(core_data_type)); // Get memory reset for the average
   
   /* Calculate on host */
   clock_gettime(CLOCK_REALTIME, &start_host);
