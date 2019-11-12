@@ -13,6 +13,7 @@ int main(int argc, char* argv[])
 
   cl_uint ndata1;
   cl_uint ndata2;
+  cl_uint ndata3;
   
   ndata1 = 2 * NSAMP_PER_TIME;
   ndata2 = 2 * NTIME_PER_CU * NSAMP_PER_TIME;
@@ -80,7 +81,7 @@ int main(int argc, char* argv[])
 	  sw_out,
 	  sw_average_pol1,
 	  sw_average_pol2);
-  
+  fprintf(stdout, "\nDONE HOST EXECUTION\n\n");
   clock_gettime(CLOCK_REALTIME, &stop_host);
   elapsed_time = (stop_host.tv_sec - start_host.tv_sec) + (stop_host.tv_nsec - start_host.tv_nsec)/1.0E9L;
   printf("INFO: elapsed_time of one loop is %E seconds\n", elapsed_time);
@@ -238,7 +239,8 @@ int main(int argc, char* argv[])
     printf("Test failed\n");
  
   }
-  
+
+  fprintf(stdout, "\nDONE SETUP KERNEL\n\n");
   err = clEnqueueMigrateMemObjects(commands,(cl_uint)5,pt, 0 ,0,NULL, NULL);
   if (err != CL_SUCCESS) {
     printf("Error: Failed to set kernel_prepare arguments! %d\n", err);
@@ -250,7 +252,8 @@ int main(int argc, char* argv[])
     printf("Test failed\n");
     return EXIT_FAILURE;
   }
-
+  fprintf(stdout, "\nDONE MEMCPY FROM HOST TO KERNEL\n\n");
+  
   struct timespec start_device;
   struct timespec stop_device;
   clock_gettime(CLOCK_REALTIME, &start_device);
@@ -265,7 +268,8 @@ int main(int argc, char* argv[])
     printf("Error: Failed to finish the commands: %d!\n", err);
     printf("Test failed\n");
     return EXIT_FAILURE;
-  }  
+  }
+  fprintf(stdout, "\nDONE KERNEL EXECUTION\n\n");
   clock_gettime(CLOCK_REALTIME, &stop_device);
   elapsed_time = (stop_device.tv_sec - start_device.tv_sec) + (stop_device.tv_nsec - start_device.tv_nsec)/1.0E9L;
   fprintf(stdout, "Elapsed time of kernel is %E seconds \n", elapsed_time);
@@ -284,26 +288,37 @@ int main(int argc, char* argv[])
     printf("Test failed\n");
     return EXIT_FAILURE;
   }
+  fprintf(stdout, "\nDONE MEMCPY FROM KERNEL TO HOST\n\n");
   
-  double res = 1.0E-2;  
+  double res = 1.0E-2;
+  ndata3 = 0;
   for(i=0;i<ndata1;i++){
-    if(fabs((sw_average_pol1[i]-hw_average_pol1[i])/sw_average_pol1[i])>res)
-      //if(sw_average_pol1[i]!=hw_average_pol1[i])
+    if(fabs((sw_average_pol1[i]-hw_average_pol1[i])/sw_average_pol1[i])>res){
       std::cout << "Mismatch on average_pol1: " <<i << '\t' << sw_average_pol1[i]<< '\t'<< hw_average_pol1[i] << '\n';
-  }
-  
-  for(i=0;i<ndata1;i++){
-    if(fabs((sw_average_pol2[i]-hw_average_pol2[i])/sw_average_pol2[i])>res)
-      //if(sw_average_pol2[i]!=hw_average_pol2[i])
-      std::cout << "Mismatch on average_pol2: " <<i << '\t' << sw_average_pol2[i]<< '\t'<< hw_average_pol2[i] << '\n';
-  }
-  for(i=0;i<ndata2;i++){
-    if(fabs((sw_out[i]-hw_out[i])/sw_out[i])>res){
-      //if(sw_out[i]!=hw_out[i]){
-      //std::cout << "Mismatch on out: " <<i << '\t'<< sw_out[i]<< '\t'<< hw_out[i] << '\n';
-      std::cout << "Mismatch on out: " <<i << '\t'<< sw_out[i]<< '\t'<< hw_out[i] << '\t' << ((sw_out[i]-hw_out[i])/sw_out[i])<< '\n';
+      ndata3++;
     }
   }
+  fprintf(stdout, "\n%.0f %% of AVERAGE_POL1 is outside %.0f %% range\n\n", (float)ndata3/ndata1, 100*res);
+
+  ndata3 = 0;
+  for(i=0;i<ndata1;i++){
+    if(fabs((sw_average_pol2[i]-hw_average_pol2[i])/sw_average_pol2[i])>res){
+      std::cout << "Mismatch on average_pol2: " <<i << '\t' << sw_average_pol2[i]<< '\t'<< hw_average_pol2[i] << '\n';
+      ndata3++;
+    }
+  }
+  fprintf(stdout, "\n%.0f %% of AVERAGE_POL2 is outside %.0f %% range\n\n", (float)ndata3/ndata1, 100*res);
+  
+  for(i=0;i<ndata2;i++){
+    ndata3 = 0;
+    if(fabs((sw_out[i]-hw_out[i])/sw_out[i])>res){
+      std::cout << "Mismatch on out: " <<i << '\t'<< sw_out[i]<< '\t'<< hw_out[i] << '\t' << ((sw_out[i]-hw_out[i])/sw_out[i])<< '\n';
+      ndata3++;
+    }
+  }
+  fprintf(stdout, "\n%.0f %% of OUT is outside %.0f %% range\n\n", (float)ndata3/ndata2, 100*res);
+
+  std::cout << "Mismatch on out: " <<i << '\t'<< sw_out[i]<< '\t'<< hw_out[i] << '\t' << ((sw_out[i]-hw_out[i])/sw_out[i])<< '\n';
   
   /* Free memory */
   clReleaseMemObject(buffer_in_pol1);
@@ -331,6 +346,7 @@ int main(int argc, char* argv[])
   clReleaseKernel(kernel_prepare);
   clReleaseCommandQueue(commands);
   clReleaseContext(context);
-  
+
+  fprintf(stdout, "\nDONE ALL\n\n");
   return EXIT_SUCCESS;
 }
