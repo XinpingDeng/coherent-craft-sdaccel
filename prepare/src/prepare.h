@@ -16,7 +16,7 @@
 #include <ap_fixed.h>
 #include <ap_int.h>
 
-#define FULL_TEST           1
+#define FULL_TEST           0
 #define FLOAT_DATA_TYPE     1
 //#define CORE_DATA_WIDTH     32     // We use float 32-bits complex numbers
 #define CORE_DATA_WIDTH     16     // We use ap_fixed 16-bits complex numbers

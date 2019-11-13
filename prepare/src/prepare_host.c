@@ -232,8 +232,7 @@ int main(int argc, char* argv[])
   err |= clSetKernelArg(kernel_prepare, 4, sizeof(cl_mem), &buffer_sky);
   err |= clSetKernelArg(kernel_prepare, 5, sizeof(cl_mem), &buffer_out); 
   err |= clSetKernelArg(kernel_prepare, 6, sizeof(cl_mem), &buffer_average_pol1);
-  err |= clSetKernelArg(kernel_prepare, 7, sizeof(cl_mem), &buffer_average_pol2);
-  
+  err |= clSetKernelArg(kernel_prepare, 7, sizeof(cl_mem), &buffer_average_pol2);  
   if (err != CL_SUCCESS) {
     printf("Error: Failed to set kernel_prepare arguments! %d\n", err);
     printf("Test failed\n");
