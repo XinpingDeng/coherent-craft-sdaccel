@@ -74,7 +74,7 @@ int main(int argc, char* argv[]){
   struct timespec host_start;
   struct timespec host_finish;
   clock_gettime(CLOCK_REALTIME, &host_start);
-  grid(in_pol1, in_pol2, cal_pol1, cal_pol2, sky, sw_out, sw_average_pol1, sw_average_pol2);
+  prepare(in_pol1, in_pol2, cal_pol1, cal_pol2, sky, sw_out, sw_average_pol1, sw_average_pol2);
   fprintf(stdout, "INFO: DONE HOST EXECUTION\n");
   clock_gettime(CLOCK_REALTIME, &host_finish);
   elapsed_time = (host_finish.tv_sec - host_start.tv_sec) + (host_finish.tv_nsec - host_start.tv_nsec)/1.0E9L;

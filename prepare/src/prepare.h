@@ -11,12 +11,10 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdbool.h>
-#include <hls_stream.h>
 #include <complex>
 #include <ap_fixed.h>
-#include <ap_int.h>
 
-#define FULL_TEST           0
+#define FULL_TEST           1
 #define FLOAT_DATA_TYPE     1
 //#define CORE_DATA_WIDTH     32     // We use float 32-bits complex numbers
 #define CORE_DATA_WIDTH     16     // We use ap_fixed 16-bits complex numbers
@@ -55,6 +53,9 @@ typedef ap_int<CORE_DATA_WIDTH> core_data_type; // The size of this should be CO
 #define NBASELINE           15
 #endif
 
+#define MAX_PALTFORMS       16
+#define MAX_DEVICES         16
+#define PARAM_VALUE_SIZE    1024
 #define BURST_DATA_WIDTH    512   // Memory width of xilinx, hardware limit
 #define MAX_BURST_DATA_SIZE 32768 // Max data size in bits per transaction 4KB, hardware limit
 #define MAX_BURST_LENGTH    64    // (MAX_BURST_DATA_SIZE/BURST_DATA_WIDTH)
