@@ -7,16 +7,16 @@
 #include "prepare.h"
 #include "util_sdaccel.h"
 
-int prepare(
-	    core_data_type *in_pol1,
-	    core_data_type *in_pol2,
-	    core_data_type *cal_pol1,
-	    core_data_type *cal_pol2,
-	    core_data_type *sky,
-	    core_data_type *out,
-	    core_data_type *average_pol1,
-	    core_data_type *average_pol2
-	    ){
+int grid(
+	 core_data_type *in_pol1,
+	 core_data_type *in_pol2,
+	 core_data_type *cal_pol1,
+	 core_data_type *cal_pol2,
+	 core_data_type *sky,
+	 core_data_type *out,
+	 core_data_type *average_pol1,
+	 core_data_type *average_pol2
+	 ){
   int i;
   int j;
   int loc;

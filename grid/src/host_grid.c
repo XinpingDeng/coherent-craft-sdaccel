@@ -19,7 +19,6 @@ int main(int argc, char* argv[]){
   // Prepare host buffers
   cl_uint ndata1;
   cl_uint ndata2;
-  cl_uint ndata3;
   
   ndata1 = 2 * NSAMP_PER_TIME;
   ndata2 = 2 * NTIME_PER_CU * NSAMP_PER_TIME;
@@ -75,14 +74,7 @@ int main(int argc, char* argv[]){
   struct timespec host_start;
   struct timespec host_finish;
   clock_gettime(CLOCK_REALTIME, &host_start);
-  grid(in_pol1,
-       in_pol2,
-       cal_pol1,
-       cal_pol2,
-       sky,
-       sw_out,
-       sw_average_pol1,
-       sw_average_pol2);
+  grid(in_pol1, in_pol2, cal_pol1, cal_pol2, sky, sw_out, sw_average_pol1, sw_average_pol2);
   fprintf(stdout, "INFO: DONE HOST EXECUTION\n");
   clock_gettime(CLOCK_REALTIME, &host_finish);
   elapsed_time = (host_finish.tv_sec - host_start.tv_sec) + (host_finish.tv_nsec - host_start.tv_nsec)/1.0E9L;
@@ -95,26 +87,9 @@ int main(int argc, char* argv[]){
   cl_platform_id platform_id;
   cl_platform_id platform_ids[MAX_PALTFORMS];
   char platform_name[PARAM_VALUE_SIZE];  
-  err = clGetPlatformIDs(MAX_PALTFORMS, platform_ids, &platforms);
-  if(err != CL_SUCCESS){
-    fprintf(stderr, "ERROR: Failed to get platform IDs and the error code is %i!\n", err);
-    fprintf(stderr, "ERROR: Please look into the file \"%s\" above line [%d]!\n", __FILE__, __LINE__);
-    fprintf(stderr, "ERROR: Test failed ...!\n");
-    return EXIT_FAILURE;
-  }
+  OCL_CHECK(err, err = clGetPlatformIDs(MAX_PALTFORMS, platform_ids, &platforms));
   for(i = 0; i < platforms; i++){
-    err = clGetPlatformInfo(platform_ids[i],
-			    CL_PLATFORM_VENDOR,
-			    PARAM_VALUE_SIZE,
-			    (void *)platform_name,
-			    NULL);
-    
-    if(err != CL_SUCCESS){
-      fprintf(stderr, "ERROR: Failed to get platform info and the error code is %i!\n", err);
-      fprintf(stderr, "ERROR: Please look into the file \"%s\" above line [%d]!\n", __FILE__, __LINE__);
-      fprintf(stderr, "ERROR: Test failed ...!\n");
-      return EXIT_FAILURE;
-    }    
+    OCL_CHECK(err, err = clGetPlatformInfo(platform_ids[i], CL_PLATFORM_VENDOR, PARAM_VALUE_SIZE, (void *)platform_name, NULL));
     if(strcmp(platform_name, "Xilinx") == 0){
       platform_id = platform_ids[i];
       get_platform_id = 1;
@@ -134,22 +109,9 @@ int main(int argc, char* argv[]){
   cl_device_id device_id;
   cl_device_id device_ids[MAX_DEVICES];
   char device_name[PARAM_VALUE_SIZE];
-  err = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_ACCELERATOR, MAX_DEVICES, device_ids, &devices);
-  if(err != CL_SUCCESS){
-    fprintf(stderr, "ERROR: Failed to get device IDs and the error code is %i!\n", err);
-    fprintf(stderr, "ERROR: Please look into the file \"%s\" above line [%d]!\n", __FILE__, __LINE__);
-    fprintf(stderr, "ERROR: Test failed ...!\n");
-    return EXIT_FAILURE;
-  }
+  OCL_CHECK(err, err = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_ACCELERATOR, MAX_DEVICES, device_ids, &devices));
   for(i = 0; i < devices; i++){
-    err = clGetDeviceInfo(device_ids[i], CL_DEVICE_NAME, PARAM_VALUE_SIZE, device_name, 0);
-    if(err != CL_SUCCESS){
-      fprintf(stderr, "ERROR: Failed to get device info and the error code is %i!\n", err);
-      fprintf(stderr, "ERROR: Please look into the file \"%s\" above line [%d]!\n", __FILE__, __LINE__);
-      fprintf(stderr, "ERROR: Test failed ...!\n");
-      return EXIT_FAILURE;
-    }
-    
+    OCL_CHECK(err, err = clGetDeviceInfo(device_ids[i], CL_DEVICE_NAME, PARAM_VALUE_SIZE, device_name, 0));    
     if(strstr(device_name, "u280")){
       device_id = device_ids[i];
       get_device_id = 1;
@@ -165,24 +127,12 @@ int main(int argc, char* argv[]){
   fprintf(stdout, "INFO: We will use %s!\n", device_name);
 
   // Create context
-  cl_context context;                
-  context = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
-  if ((!context) || (err != CL_SUCCESS)) {
-    fprintf(stderr, "ERROR: Failed to create a compute context and the error code is %i!\n", err);
-    fprintf(stderr, "ERROR: Please look into the file \"%s\" above line [%d]!\n", __FILE__, __LINE__);
-    fprintf(stderr, "ERROR: Test failed ...!\n");
-    return EXIT_FAILURE;
-  }
-
+  cl_context context;
+  OCL_CHECK(err, context = clCreateContext(0, 1, &device_id, NULL, NULL, &err));
+  
   // Create command queue
-  cl_command_queue queue;         
-  queue = clCreateCommandQueue(context, device_id, CL_QUEUE_PROFILING_ENABLE, &err);
-  if ((!queue) || (err != CL_SUCCESS)) {
-    fprintf(stderr, "ERROR: Failed to create a command queue and the error code is %i!\n", err);
-    fprintf(stderr, "ERROR: Please look into the file \"%s\" above line [%d]!\n", __FILE__, __LINE__);
-    fprintf(stderr, "ERROR: Test failed ...!\n");
-    return EXIT_FAILURE;
-  }
+  cl_command_queue queue;
+  OCL_CHECK(err, queue = clCreateCommandQueue(context, device_id, CL_QUEUE_PROFILING_ENABLE, &err));
   
   // Read kernel binary into memory
   char *xclbin = argv[1];
@@ -199,40 +149,16 @@ int main(int argc, char* argv[]){
 
   // Create program binary with kernel binary
   cl_int status;
-  cl_program program;                
-  program = clCreateProgramWithBinary(context, 1, &device_id, &binary_size,
-				      (const unsigned char **) &binary, &status, &err);
-  free(binary);  
-  if ((!program) || (err!=CL_SUCCESS)) {
-    fprintf(stderr, "ERROR: Failed to create compute program from binary and the error code is %i!\n", err);
-    fprintf(stderr, "ERROR: Please look into the file \"%s\" above line [%d]!\n", __FILE__, __LINE__);
-    fprintf(stderr, "ERROR: Test failed ...!\n");
-    return EXIT_FAILURE;
-  }
-
+  cl_program program;
+  OCL_CHECK(err, program = clCreateProgramWithBinary(context, 1, &device_id, &binary_size, (const unsigned char **) &binary, &status, &err));
+  free(binary);
+  
   // Program the card with the program binary
-  err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
-  if (err != CL_SUCCESS) {
-    size_t len;
-    char buffer[PARAM_VALUE_SIZE];
-    fprintf(stderr, "ERROR: Failed to build program executable and the error code is %i!\n", err);
-    fprintf(stderr, "ERROR: Please look into the file \"%s\" above line [%d]!\n", __FILE__, __LINE__);
-    
-    clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
-    fprintf(stderr, "%s\n", buffer);
-    fprintf(stderr, "ERROR: Test failed ...!\n");
-    return EXIT_FAILURE;
-  }
+  OCL_CHECK(err, err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL));
 
   // Create the kernel
   cl_kernel kernel;
-  kernel = clCreateKernel(program, "knl_grid", &err);
-  if (!kernel || err != CL_SUCCESS) {
-    fprintf(stderr, "ERROR: Failed to create compute knl_grid and the error code is %i!\n", err);
-    fprintf(stderr, "ERROR: Please look into the file \"%s\" above line [%d]!\n", __FILE__, __LINE__);
-    fprintf(stderr, "ERROR: Test failed ...!\n");
-    return EXIT_FAILURE;
-  }
+  OCL_CHECK(err, kernel = clCreateKernel(program, "knl_grid", &err));
 
   // Prepare device buffer
   cl_mem buffer_in_pol1;
@@ -244,55 +170,15 @@ int main(int argc, char* argv[]){
   cl_mem buffer_average_pol1;
   cl_mem buffer_average_pol2;
   cl_mem pt[8];
-  
-  buffer_in_pol1 = clCreateBuffer(context,  CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,  sizeof(core_data_type)*ndata2, in_pol1, &err);
-  if (err != CL_SUCCESS) {
-    fprintf(stderr, "ERROR: Failed to create buffer_in_pol1 and the error code is %i!\n", err);
-    fprintf(stderr, "ERROR: Please look into the file \"%s\" above line [%d]!\n", __FILE__, __LINE__);
-    fprintf(stderr, "ERROR: Test failed ...!\n");
-  }
-  buffer_in_pol2 = clCreateBuffer(context,  CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,  sizeof(core_data_type)*ndata2, in_pol2, &err);
-  if (err != CL_SUCCESS) {
-    fprintf(stderr, "ERROR: Failed to create buffer_in_pol2 and the error code is %i!\n", err);
-    fprintf(stderr, "ERROR: Please look into the file \"%s\" above line [%d]!\n", __FILE__, __LINE__);
-    fprintf(stderr, "ERROR: Test failed ...!\n");
-  }  
-  buffer_sky = clCreateBuffer(context,  CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,  sizeof(core_data_type)*ndata1, sky, &err);
-  if (err != CL_SUCCESS) {
-    fprintf(stderr, "ERROR: Failed to create buffer_sky and the error code is %i!\n", err);
-    fprintf(stderr, "ERROR: Please look into the file \"%s\" above line [%d]!\n", __FILE__, __LINE__);
-    fprintf(stderr, "ERROR: Test failed ...!\n");
-  }
-  buffer_cal_pol1 = clCreateBuffer(context,  CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,  sizeof(core_data_type)*ndata1, cal_pol1, &err);
-  if (err != CL_SUCCESS) {
-    fprintf(stderr, "ERROR: Failed to create buffer_cal_pol1 and the error code is %i!\n", err);
-    fprintf(stderr, "ERROR: Please look into the file \"%s\" above line [%d]!\n", __FILE__, __LINE__);
-    fprintf(stderr, "ERROR: Test failed ...!\n");
-  }
-  buffer_cal_pol2 = clCreateBuffer(context,  CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,  sizeof(core_data_type)*ndata1, cal_pol2, &err);
-  if (err != CL_SUCCESS) {
-    fprintf(stderr, "ERROR: Failed to create buffer_cal_pol2 and the error code is %i!\n", err);
-    fprintf(stderr, "ERROR: Please look into the file \"%s\" above line [%d]!\n", __FILE__, __LINE__);
-    fprintf(stderr, "ERROR: Test failed ...!\n");
-  }
-  buffer_out = clCreateBuffer(context,  CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR,  sizeof(core_data_type)*ndata2, hw_out, &err);
-  if (err != CL_SUCCESS) {
-    fprintf(stderr, "ERROR: Failed to create buffer_out and the error code is %i!\n", err);
-    fprintf(stderr, "ERROR: Please look into the file \"%s\" above line [%d]!\n", __FILE__, __LINE__);
-    fprintf(stderr, "ERROR: Test failed ...!\n");
-  }  
-  buffer_average_pol1 = clCreateBuffer(context,  CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR,  sizeof(core_data_type)*ndata1, hw_average_pol1, &err);
-  if (err != CL_SUCCESS) {
-    fprintf(stderr, "ERROR: Failed to create buffer_average_pol1 and the error code is %i!\n", err);
-    fprintf(stderr, "ERROR: Please look into the file \"%s\" above line [%d]!\n", __FILE__, __LINE__);
-    fprintf(stderr, "ERROR: Test failed ...!\n");
-  }  
-  buffer_average_pol2 = clCreateBuffer(context,  CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR,  sizeof(core_data_type)*ndata1, hw_average_pol2, &err);
-  if (err != CL_SUCCESS) {
-    fprintf(stderr, "ERROR: Failed to create buffer_average_pol2 and the error code is %i!\n", err);
-    fprintf(stderr, "ERROR: Please look into the file \"%s\" above line [%d]!\n", __FILE__, __LINE__);
-    fprintf(stderr, "ERROR: Test failed ...!\n");
-  }
+
+  OCL_CHECK(err, buffer_in_pol1      = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(core_data_type)*ndata2, in_pol1, &err));
+  OCL_CHECK(err, buffer_in_pol2      = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(core_data_type)*ndata2, in_pol2, &err));
+  OCL_CHECK(err, buffer_sky          = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(core_data_type)*ndata1, sky, &err));
+  OCL_CHECK(err, buffer_cal_pol1     = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(core_data_type)*ndata1, cal_pol1, &err));
+  OCL_CHECK(err, buffer_cal_pol2     = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(core_data_type)*ndata1, cal_pol2, &err));
+  OCL_CHECK(err, buffer_out          = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR, sizeof(core_data_type)*ndata2, hw_out, &err));
+  OCL_CHECK(err, buffer_average_pol1 = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR, sizeof(core_data_type)*ndata1, hw_average_pol1, &err));
+  OCL_CHECK(err, buffer_average_pol2 = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR, sizeof(core_data_type)*ndata1, hw_average_pol2, &err));
   if (!(buffer_in_pol1&&
 	buffer_in_pol2&&
 	buffer_out&&
@@ -319,58 +205,28 @@ int main(int argc, char* argv[]){
   pt[6] = buffer_average_pol1;
   pt[7] = buffer_average_pol2;
 
-  err = 0;
-  err |= clSetKernelArg(kernel, 0, sizeof(cl_mem), &buffer_in_pol1);
-  err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &buffer_in_pol2); 
-  err |= clSetKernelArg(kernel, 2, sizeof(cl_mem), &buffer_cal_pol1);
-  err |= clSetKernelArg(kernel, 3, sizeof(cl_mem), &buffer_cal_pol2); 
-  err |= clSetKernelArg(kernel, 4, sizeof(cl_mem), &buffer_sky);
-  err |= clSetKernelArg(kernel, 5, sizeof(cl_mem), &buffer_out); 
-  err |= clSetKernelArg(kernel, 6, sizeof(cl_mem), &buffer_average_pol1);
-  err |= clSetKernelArg(kernel, 7, sizeof(cl_mem), &buffer_average_pol2);  
-  if (err != CL_SUCCESS) {
-    fprintf(stderr, "ERROR: Failed to set kernel arguments and the error code is %i\n", err);
-    fprintf(stderr, "ERROR: Please look into the file \"%s\" above line [%d]!\n", __FILE__, __LINE__);
-    fprintf(stderr, "ERROR: Test failed ...!\n");
- 
-  }
+  OCL_CHECK(err, err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &buffer_in_pol1));
+  OCL_CHECK(err, err = clSetKernelArg(kernel, 1, sizeof(cl_mem), &buffer_in_pol2)); 
+  OCL_CHECK(err, err = clSetKernelArg(kernel, 2, sizeof(cl_mem), &buffer_cal_pol1));
+  OCL_CHECK(err, err = clSetKernelArg(kernel, 3, sizeof(cl_mem), &buffer_cal_pol2)); 
+  OCL_CHECK(err, err = clSetKernelArg(kernel, 4, sizeof(cl_mem), &buffer_sky));
+  OCL_CHECK(err, err = clSetKernelArg(kernel, 5, sizeof(cl_mem), &buffer_out)); 
+  OCL_CHECK(err, err = clSetKernelArg(kernel, 6, sizeof(cl_mem), &buffer_average_pol1));
+  OCL_CHECK(err, err = clSetKernelArg(kernel, 7, sizeof(cl_mem), &buffer_average_pol2));  
   fprintf(stdout, "INFO: DONE SETUP KERNEL\n");
 
   // Migrate host memory to device
   cl_uint inputs = 5;
-  err = clEnqueueMigrateMemObjects(queue, inputs, pt, 0 ,0,NULL, NULL);
-  if (err != CL_SUCCESS) {
-    fprintf(stderr, "ERROR: Failed to set copy data from host to device and the error code is %i\n", err);
-    fprintf(stderr, "ERROR: Please look into the file \"%s\" above line [%d]!\n", __FILE__, __LINE__);
-    fprintf(stderr, "ERROR: Test failed ...!\n");
-  }
-  err = clFinish(queue);
-  if (err != CL_SUCCESS) {
-    fprintf(stderr, "ERROR: Failed to finish the queue and the error code is %i!\n", err);
-    fprintf(stderr, "ERROR: Please look into the file \"%s\" above line [%d]!\n", __FILE__, __LINE__);
-    fprintf(stderr, "ERROR: Test failed ...!\n");
-    return EXIT_FAILURE;
-  }
+  OCL_CHECK(err, err = clEnqueueMigrateMemObjects(queue, inputs, pt, 0 ,0,NULL, NULL));
+  OCL_CHECK(err, err = clFinish(queue));
   fprintf(stdout, "INFO: DONE MEMCPY FROM HOST TO KERNEL\n");
 
   // Execute the kernel
   struct timespec device_start;
   struct timespec device_finish;
   clock_gettime(CLOCK_REALTIME, &device_start);
-  err = clEnqueueTask(queue, kernel, 0, NULL, NULL);
-  if (err) {
-    fprintf(stderr, "ERROR: Failed to execute kernel and the error code is %i\n", err);
-    fprintf(stderr, "ERROR: Please look into the file \"%s\" above line [%d]!\n", __FILE__, __LINE__);
-    fprintf(stderr, "ERROR: Test failed ...!\n");
-    return EXIT_FAILURE;
-  }
-  err = clFinish(queue);
-  if (err != CL_SUCCESS) {
-    fprintf(stderr, "ERROR: Failed to finish the queue and the error code is %i!\n", err);
-    fprintf(stderr, "ERROR: Please look into the file \"%s\" above line [%d]!\n", __FILE__, __LINE__);
-    fprintf(stderr, "ERROR: Test failed ...!\n");
-    return EXIT_FAILURE;
-  }
+  OCL_CHECK(err, err = clEnqueueTask(queue, kernel, 0, NULL, NULL));
+  OCL_CHECK(err, err = clFinish(queue));
   fprintf(stdout, "INFO: DONE KERNEL EXECUTION\n");
   clock_gettime(CLOCK_REALTIME, &device_finish);
   elapsed_time = (device_finish.tv_sec - device_start.tv_sec) + (device_finish.tv_nsec - device_start.tv_nsec)/1.0E9L;
@@ -378,26 +234,14 @@ int main(int argc, char* argv[]){
 
   // Migrate data from device to host
   cl_uint outputs = 3;
-  err = clEnqueueMigrateMemObjects(queue, outputs, &pt[5], CL_MIGRATE_MEM_OBJECT_HOST, 0, NULL, NULL);  
-  if (err != CL_SUCCESS) {
-    fprintf(stderr, "ERROR: Failed to write to source array and the error code is %i!\n", err);
-    fprintf(stderr, "ERROR: Please look into the file \"%s\" above line [%d]!\n", __FILE__, __LINE__);
-    fprintf(stderr, "ERROR: Test failed ...!\n");
-    return EXIT_FAILURE;
-  }
-  err = clFinish(queue);
-  if (err != CL_SUCCESS) {
-    fprintf(stderr, "ERROR: Failed to finish the queue and the error code is %i!\n", err);
-    fprintf(stderr, "ERROR: Please look into the file \"%s\" above line [%d]!\n", __FILE__, __LINE__);
-    fprintf(stderr, "ERROR: Test failed ...!\n");
-    return EXIT_FAILURE;
-  }
+  OCL_CHECK(err, err = clEnqueueMigrateMemObjects(queue, outputs, &pt[5], CL_MIGRATE_MEM_OBJECT_HOST, 0, NULL, NULL));
+  OCL_CHECK(err, err = clFinish(queue));
   fprintf(stdout, "INFO: DONE MEMCPY FROM KERNEL TO HOST\n");
   
   // Check the result
   /*
+  cl_uint ndata3 = 0;
   core_data_type res = 1.0E-2;
-  ndata3 = 0;
   for(i=0;i<ndata1;i++){
     if(fabs(sw_average_pol1[i]-hw_average_pol1[i]) > fabs(sw_average_pol1[i]*res)){
       if(sw_average_pol1[i]!=0){

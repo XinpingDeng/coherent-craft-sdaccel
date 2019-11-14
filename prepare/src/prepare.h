@@ -11,10 +11,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdbool.h>
-#include <hls_stream.h>
 #include <complex>
 #include <ap_fixed.h>
-#include <ap_int.h>
+#include <math.h>
 
 #define FULL_TEST           1
 #define FLOAT_DATA_TYPE     1
@@ -36,7 +35,8 @@ typedef int core_data_type;
 #define COMPUTE_DATA_WIDTH  32     // (2*CORE_DATA_WIDTH), complex 
 #define NSAMP_PER_BURST     16     //(BURST_DATA_WIDTH/COMPUTE_DATA_WIDTH) 
 #define NDATA_PER_BURST     32     //(2*NSAMP_PER_BURST)
-#define DATA_RANGE          127
+//#define DATA_RANGE          127
+#define DATA_RANGE          16
 #if FLOAT_DATA_TYPE == 1
 #define INTEGER_WIDTH       8      // Integer width of data
 typedef ap_fixed<CORE_DATA_WIDTH, INTEGER_WIDTH> core_data_type; // The size of this should be CORE_DATA_WIDTH
@@ -55,6 +55,9 @@ typedef ap_int<CORE_DATA_WIDTH> core_data_type; // The size of this should be CO
 #define NBASELINE           15
 #endif
 
+#define MAX_PALTFORMS       16
+#define MAX_DEVICES         16
+#define PARAM_VALUE_SIZE    1024
 #define BURST_DATA_WIDTH    512   // Memory width of xilinx, hardware limit
 #define MAX_BURST_DATA_SIZE 32768 // Max data size in bits per transaction 4KB, hardware limit
 #define MAX_BURST_LENGTH    64    // (MAX_BURST_DATA_SIZE/BURST_DATA_WIDTH)
@@ -70,11 +73,11 @@ typedef struct burst_data_type{
   core_data_type data[NDATA_PER_BURST];
 }burst_data_type; // The size of this should be BURST_DATA_WIDTH
 
-int prepare(core_data_type *in_pol1,
-	    core_data_type *in_pol2,
-	    core_data_type *cal_pol1,
-	    core_data_type *cal_pol2,
-	    core_data_type *sky,
-	    core_data_type *out,
-	    core_data_type *average_pol1,
-	    core_data_type *average_pol2);
+int grid(core_data_type *in_pol1,
+	 core_data_type *in_pol2,
+	 core_data_type *cal_pol1,
+	 core_data_type *cal_pol2,
+	 core_data_type *sky,
+	 core_data_type *out,
+	 core_data_type *average_pol1,
+	 core_data_type *average_pol2);
