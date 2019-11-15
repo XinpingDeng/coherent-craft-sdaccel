@@ -88,15 +88,14 @@ int main(int argc, char* argv[]){
   }
   
   // Calculate on host
-  cl_float elapsed_time;
+  cl_float cpu_elapsed_time;
   struct timespec host_start;
   struct timespec host_finish;
   clock_gettime(CLOCK_REALTIME, &host_start);
   grid(in_pol1, in_pol2, cal_pol1, cal_pol2, sky, sw_out, sw_average_pol1, sw_average_pol2, nsamp_per_time, ntime_per_cu);
   fprintf(stdout, "INFO: DONE HOST EXECUTION\n");
   clock_gettime(CLOCK_REALTIME, &host_finish);
-  elapsed_time = (host_finish.tv_sec - host_start.tv_sec) + (host_finish.tv_nsec - host_start.tv_nsec)/1.0E9L;
-  fprintf(stdout, "INFO: elapsed_time of one loop is %E seconds\n", elapsed_time);
+  cpu_elapsed_time = (host_finish.tv_sec - host_start.tv_sec) + (host_finish.tv_nsec - host_start.tv_nsec)/1.0E9L;
   
   // Get platform ID and info
   cl_int err;
@@ -245,13 +244,13 @@ int main(int argc, char* argv[]){
   // Execute the kernel
   struct timespec device_start;
   struct timespec device_finish;
+  cl_float kernel_elapsed_time;
   clock_gettime(CLOCK_REALTIME, &device_start);
   OCL_CHECK(err, err = clEnqueueTask(queue, kernel, 0, NULL, NULL));
   OCL_CHECK(err, err = clFinish(queue));
   fprintf(stdout, "INFO: DONE KERNEL EXECUTION\n");
   clock_gettime(CLOCK_REALTIME, &device_finish);
-  elapsed_time = (device_finish.tv_sec - device_start.tv_sec) + (device_finish.tv_nsec - device_start.tv_nsec)/1.0E9L;
-  fprintf(stdout, "INFO: Elapsed time of kernel is %E seconds\n", elapsed_time);
+  kernel_elapsed_time = (device_finish.tv_sec - device_start.tv_sec) + (device_finish.tv_nsec - device_start.tv_nsec)/1.0E9L;
 
   // Migrate data from device to host
   cl_int outputs = 3;
@@ -302,6 +301,9 @@ int main(int argc, char* argv[]){
   fprintf(stdout, "INFO: %d from %d, %.0f%% of OUT is outside %.0f%% range\n", ndata3, ndata2, 100*ndata3/(float)ndata2, 100*(float)res);
   fprintf(stdout, "INFO: DONE RESULT CHECK\n");
 
+  fprintf(stdout, "INFO: Elapsed time of CPU code is %E seconds\n", cpu_elapsed_time);
+  fprintf(stdout, "INFO: Elapsed time of kernel is %E seconds\n", kernel_elapsed_time);
+  
   // Cleanup
   clReleaseMemObject(buffer_in_pol1);
   clReleaseMemObject(buffer_in_pol2);
