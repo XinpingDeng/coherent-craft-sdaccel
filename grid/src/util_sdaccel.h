@@ -20,12 +20,11 @@
 #include <stdbool.h>
 #include <CL/opencl.h>
 #include <CL/cl_ext.h>
-
+#include <stdbool.h>
 #include <iostream>
 
 cl_uint load_file_to_memory(const char *filename, char **result);
 cl_device_id get_device_id(const char* target_device_name);
-
 
 //OCL_CHECK doesn't work if call has templatized function call
 #define OCL_CHECK(error, call)						\
@@ -36,3 +35,6 @@ cl_device_id get_device_id(const char* target_device_name);
     exit(EXIT_FAILURE);							\
   }                                       
 
+bool is_sw_emulation();
+bool is_hw_emulation();
+bool is_xpr_device(const char *device_name);

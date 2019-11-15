@@ -10,7 +10,9 @@ extern "C" {
 		burst_data_type *sky,
 		burst_data_type *out,       
 		burst_data_type *average_pol1,
-		burst_data_type *average_pol2   
+		burst_data_type *average_pol2,
+		int nburst_per_time,
+		int ntime_per_cu
 		){
     // Setup the interface, max_*_burst_length defines the max burst length (UG902 for detail)
 #pragma HLS INTERFACE m_axi port = in_pol1      offset = slave bundle = gmem0 max_read_burst_length=64  
@@ -22,14 +24,17 @@ extern "C" {
 #pragma HLS INTERFACE m_axi port = average_pol1 offset = slave bundle = gmem6 max_write_burst_length=64 
 #pragma HLS INTERFACE m_axi port = average_pol2 offset = slave bundle = gmem7 max_write_burst_length=64 
 
-#pragma HLS INTERFACE s_axilite port = in_pol1      bundle = control
-#pragma HLS INTERFACE s_axilite port = in_pol2      bundle = control
-#pragma HLS INTERFACE s_axilite port = cal_pol1     bundle = control
-#pragma HLS INTERFACE s_axilite port = cal_pol2     bundle = control
-#pragma HLS INTERFACE s_axilite port = sky          bundle = control
-#pragma HLS INTERFACE s_axilite port = out          bundle = control
-#pragma HLS INTERFACE s_axilite port = average_pol1 bundle = control
-#pragma HLS INTERFACE s_axilite port = average_pol2 bundle = control
+#pragma HLS INTERFACE s_axilite port = in_pol1         bundle = control
+#pragma HLS INTERFACE s_axilite port = in_pol2         bundle = control
+#pragma HLS INTERFACE s_axilite port = cal_pol1        bundle = control
+#pragma HLS INTERFACE s_axilite port = cal_pol2        bundle = control
+#pragma HLS INTERFACE s_axilite port = sky             bundle = control
+#pragma HLS INTERFACE s_axilite port = out             bundle = control
+#pragma HLS INTERFACE s_axilite port = average_pol1    bundle = control
+#pragma HLS INTERFACE s_axilite port = average_pol2    bundle = control
+#pragma HLS INTERFACE s_axilite port = nburst_per_time bundle = control
+#pragma HLS INTERFACE s_axilite port = ntime_per_cu    bundle = control
+    
 #pragma HLS INTERFACE s_axilite port = return bundle = control
     
     // Has to use DATA_PACK to enable burst with struct
@@ -57,7 +62,12 @@ extern "C" {
     int n;
     int loc;
     int itran;
+    int ntran_per_time;
+    int nburst_per_time_remind;
 
+    ntran_per_time         = nburst_per_time/MAX_BURST_LENGTH;
+    nburst_per_time_remind = nburst_per_time%MAX_BURST_LENGTH;
+    
   LOOP_BURST_CAL_SKY_RESET_AVERAGE1:
     for(m = 0; m < MAX_BURST_LENGTH; m++){
 #pragma HLS PIPELINE
@@ -75,15 +85,15 @@ extern "C" {
     }
 
   LOOP_NTRAN_PER_TIME:
-    for(i = 0; i < NTRAN_PER_TIME - 1; i++){
+    for(i = 0; i < ntran_per_time - 1; i++){
       // This goes to the last second if NCHAN*NBASELINE%MAX_BURST_LENGTH = 0
       // This goes to the last third if NCHAN*NBASELINE%MAX_BURST_LENGTH != 0
     LOOP_NTIME_PER_CU1:
-      for(j = 0; j < NTIME_PER_CU; j++){	
+      for(j = 0; j < ntime_per_cu; j++){	
       LOOP_CAL_AVERAGE_OUT_M1:
 	for(m = 0; m < MAX_BURST_LENGTH; m++){
 #pragma HLS PIPELINE
-	  loc = j*NBURST_PER_TIME + i*MAX_BURST_LENGTH + m; 
+	  loc = j*nburst_per_time + i*MAX_BURST_LENGTH + m; 
 	  in_pol1_burst = in_pol1[loc];
 	  in_pol2_burst = in_pol2[loc];
 	LOOP_CAL_AVERAGE_OUT_N1:
@@ -131,13 +141,13 @@ extern "C" {
     //////////////////////////////////////////
     // This goes to the last if NCHAN*NBASELINE%MAX_BURST_LENGTH = 0
     // This goes to the last second if NCHAN*NBASELINE%MAX_BURST_LENGTH != 0
-    itran = NTRAN_PER_TIME - 1;
+    itran = ntran_per_time - 1;
   LOOP_NTIME_PER_CU2:
-    for(j = 0; j < NTIME_PER_CU; j++){ 
+    for(j = 0; j < ntime_per_cu; j++){ 
     LOOP_CAL_AVERAGE_OUT_M2:
       for(m = 0; m < MAX_BURST_LENGTH; m++){
 #pragma HLS PIPELINE
-	loc = j*NBURST_PER_TIME + itran*MAX_BURST_LENGTH + m; 
+	loc = j*nburst_per_time + itran*MAX_BURST_LENGTH + m; 
 	in_pol1_burst = in_pol1[loc];
 	in_pol2_burst = in_pol2[loc];
       LOOP_CAL_AVERAGE_OUT_N2:
@@ -170,7 +180,7 @@ extern "C" {
     }
     
   LOOP_BURST_CAL_SKY_RESET_AVERAGE2:
-    for(m = 0; m < NBURST_PER_TIME_REMIND; m++){
+    for(m = 0; m < nburst_per_time_remind; m++){
       // Be sure that only go through and prepare for the reminding samples 
       loc = (itran+1)*MAX_BURST_LENGTH+m;
       cal_pol1_burst[m] = cal_pol1[loc];
@@ -187,13 +197,13 @@ extern "C" {
     
     //////////////////////////    
     // This goes to the last if NCHAN*NBASELINE%MAX_BURST_LENGTH != 0
-    itran = NTRAN_PER_TIME;
+    itran = ntran_per_time;
   LOOP_NTIME_PER_CU3:
-    for(j = 0; j < NTIME_PER_CU; j++){	
+    for(j = 0; j < ntime_per_cu; j++){	
     LOOP_CAL_AVERAGE_OUT_M3:
-      for(m = 0; m < NBURST_PER_TIME_REMIND; m++){
+      for(m = 0; m < nburst_per_time_remind; m++){
 #pragma HLS PIPELINE
-	loc = j*NBURST_PER_TIME + itran*MAX_BURST_LENGTH + m; 
+	loc = j*nburst_per_time + itran*MAX_BURST_LENGTH + m; 
 	in_pol1_burst = in_pol1[loc];
 	in_pol2_burst = in_pol2[loc];
       LOOP_CAL_AVERAGE_OUT_N3:
@@ -218,7 +228,7 @@ extern "C" {
     }
     
   LOOP_BURST_AVERAGE3:
-    for(m = 0; m < NBURST_PER_TIME_REMIND; m++){
+    for(m = 0; m < nburst_per_time_remind; m++){
       // only average out here
 #pragma HLS PIPELINE 
       loc = itran*MAX_BURST_LENGTH + m;

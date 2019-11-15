@@ -1,6 +1,6 @@
 /*
 ******************************************************************************
-** PREPARE CODE FILE
+** GRID CODE FILE
 ******************************************************************************
 */
 
@@ -15,7 +15,9 @@ int grid(
 	 core_data_type *sky,
 	 core_data_type *out,
 	 core_data_type *average_pol1,
-	 core_data_type *average_pol2
+	 core_data_type *average_pol2,
+	 int nsamp_per_time,
+	 int ntime_per_cu
 	 ){
   int i;
   int j;
@@ -30,7 +32,7 @@ int grid(
   compute_data_type average_pol1_tmp;
   compute_data_type average_pol2_tmp;
   
-  for(i = 0; i < NSAMP_PER_TIME; i++){
+  for(i = 0; i < nsamp_per_time; i++){
     sky_tmp.real(sky[2*i]);
     sky_tmp.imag(sky[2*i+1]);
 
@@ -44,8 +46,8 @@ int grid(
     average_pol2_tmp.real(0);
     average_pol2_tmp.imag(0);
       
-    for(j = 0; j < NTIME_PER_CU; j++){
-      loc = j * NSAMP_PER_TIME + i;
+    for(j = 0; j < ntime_per_cu; j++){
+      loc = j * nsamp_per_time + i;
       in_pol1_tmp.real(in_pol1[2*loc]);
       in_pol1_tmp.imag(in_pol1[2*loc+1]);
 	       

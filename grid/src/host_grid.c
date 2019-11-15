@@ -17,11 +17,29 @@ int main(int argc, char* argv[]){
   }	
 
   // Prepare host buffers
-  cl_uint ndata1;
-  cl_uint ndata2;
+  cl_int ndata1;
+  cl_int ndata2;
+  cl_int nchan        = 288;
+  cl_int ntime_per_cu = 256;
+  cl_int nbaseline    = 435;
+  cl_int nsamp_per_time;
+  cl_int nburst_per_time;
+
+  if(is_hw_emulation()){
+    nchan        = 288;
+    ntime_per_cu = 10;
+    nbaseline    = 15;
+  }
+  if(is_sw_emulation()){
+    nchan        = 288;
+    ntime_per_cu = 10;
+    nbaseline    = 15;    
+  }
+  nsamp_per_time  = nchan*nbaseline;
+  nburst_per_time = nsamp_per_time/NSAMP_PER_BURST;
   
-  ndata1 = 2 * NSAMP_PER_TIME;
-  ndata2 = 2 * NTIME_PER_CU * NSAMP_PER_TIME;
+  ndata1 = 2 * nsamp_per_time;
+  ndata2 = 2 * ntime_per_cu * nsamp_per_time;
   
   core_data_type *in_pol1 = NULL;
   core_data_type *in_pol2 = NULL;
@@ -74,7 +92,7 @@ int main(int argc, char* argv[]){
   struct timespec host_start;
   struct timespec host_finish;
   clock_gettime(CLOCK_REALTIME, &host_start);
-  grid(in_pol1, in_pol2, cal_pol1, cal_pol2, sky, sw_out, sw_average_pol1, sw_average_pol2);
+  grid(in_pol1, in_pol2, cal_pol1, cal_pol2, sky, sw_out, sw_average_pol1, sw_average_pol2, nsamp_per_time, ntime_per_cu);
   fprintf(stdout, "INFO: DONE HOST EXECUTION\n");
   clock_gettime(CLOCK_REALTIME, &host_finish);
   elapsed_time = (host_finish.tv_sec - host_start.tv_sec) + (host_finish.tv_nsec - host_start.tv_nsec)/1.0E9L;
@@ -83,7 +101,7 @@ int main(int argc, char* argv[]){
   // Get platform ID and info
   cl_int err;
   cl_uint platforms;
-  cl_uint get_platform_id = 0;
+  cl_int get_platform_id = 0;
   cl_platform_id platform_id;
   cl_platform_id platform_ids[MAX_PALTFORMS];
   char platform_name[PARAM_VALUE_SIZE];  
@@ -105,7 +123,7 @@ int main(int argc, char* argv[]){
   
   // Get device ID and info
   cl_uint devices;
-  cl_uint get_device_id = 0;
+  cl_int get_device_id = 0;
   cl_device_id device_id;
   cl_device_id device_ids[MAX_DEVICES];
   char device_name[PARAM_VALUE_SIZE];
@@ -139,7 +157,7 @@ int main(int argc, char* argv[]){
   unsigned char *binary = NULL;
   size_t binary_size;
   fprintf(stdout, "INFO: loading xclbin %s\n", xclbin);
-  binary_size = (cl_uint)load_file_to_memory(xclbin, (char **) &binary);
+  binary_size = (int)load_file_to_memory(xclbin, (char **) &binary);
   if (binary_size <= 0) {
     fprintf(stderr, "ERROR: Failed to load kernel from xclbin: %s\n", xclbin);
     fprintf(stderr, "ERROR: Please look into the file \"%s\" above line [%d]!\n", __FILE__, __LINE__);
@@ -212,11 +230,14 @@ int main(int argc, char* argv[]){
   OCL_CHECK(err, err = clSetKernelArg(kernel, 4, sizeof(cl_mem), &buffer_sky));
   OCL_CHECK(err, err = clSetKernelArg(kernel, 5, sizeof(cl_mem), &buffer_out)); 
   OCL_CHECK(err, err = clSetKernelArg(kernel, 6, sizeof(cl_mem), &buffer_average_pol1));
-  OCL_CHECK(err, err = clSetKernelArg(kernel, 7, sizeof(cl_mem), &buffer_average_pol2));  
+  OCL_CHECK(err, err = clSetKernelArg(kernel, 7, sizeof(cl_mem), &buffer_average_pol2));
+  OCL_CHECK(err, err = clSetKernelArg(kernel, 8, sizeof(cl_int), &nburst_per_time));
+  OCL_CHECK(err, err = clSetKernelArg(kernel, 9, sizeof(cl_int), &ntime_per_cu));
+  
   fprintf(stdout, "INFO: DONE SETUP KERNEL\n");
 
   // Migrate host memory to device
-  cl_uint inputs = 5;
+  cl_int inputs = 5;
   OCL_CHECK(err, err = clEnqueueMigrateMemObjects(queue, inputs, pt, 0 ,0,NULL, NULL));
   OCL_CHECK(err, err = clFinish(queue));
   fprintf(stdout, "INFO: DONE MEMCPY FROM HOST TO KERNEL\n");
@@ -233,14 +254,13 @@ int main(int argc, char* argv[]){
   fprintf(stdout, "INFO: Elapsed time of kernel is %E seconds\n", elapsed_time);
 
   // Migrate data from device to host
-  cl_uint outputs = 3;
+  cl_int outputs = 3;
   OCL_CHECK(err, err = clEnqueueMigrateMemObjects(queue, outputs, &pt[5], CL_MIGRATE_MEM_OBJECT_HOST, 0, NULL, NULL));
   OCL_CHECK(err, err = clFinish(queue));
   fprintf(stdout, "INFO: DONE MEMCPY FROM KERNEL TO HOST\n");
   
   // Check the result
-  /*
-  cl_uint ndata3 = 0;
+  cl_int ndata3 = 0;
   core_data_type res = 1.0E-2;
   for(i=0;i<ndata1;i++){
     if(fabs(sw_average_pol1[i]-hw_average_pol1[i]) > fabs(sw_average_pol1[i]*res)){
@@ -281,8 +301,7 @@ int main(int argc, char* argv[]){
   }
   fprintf(stdout, "INFO: %d from %d, %.0f%% of OUT is outside %.0f%% range\n", ndata3, ndata2, 100*ndata3/(float)ndata2, 100*(float)res);
   fprintf(stdout, "INFO: DONE RESULT CHECK\n");
-  */
-  
+
   // Cleanup
   clReleaseMemObject(buffer_in_pol1);
   clReleaseMemObject(buffer_in_pol2);
