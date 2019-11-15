@@ -128,3 +128,33 @@ cl_device_id get_device_id(const char* target_device_name)
 
   return device_id;
 }
+
+bool is_sw_emulation() {
+  char *xcl_mode = getenv("XCL_EMULATION_MODE");
+  if ((xcl_mode != NULL) && !strcmp(xcl_mode, "sw_emu")) {
+    return true;
+  }
+  else{
+    return false;
+  }
+}
+
+bool is_hw_emulation() {
+  char *xcl_mode = getenv("XCL_EMULATION_MODE");
+  if ((xcl_mode != NULL) && !strcmp(xcl_mode, "hw_emu")) {
+    return true;
+  }
+  else{
+    return false;
+  }
+}
+
+bool is_xpr_device(const char *device_name) {
+  const char *output = strstr(device_name, "xpr");  
+  if (output == NULL) {
+    return false;
+  }
+  else {
+    return true;
+  }
+}
