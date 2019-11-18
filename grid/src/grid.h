@@ -17,6 +17,7 @@
 #define FLOAT_DATA_TYPE     1
 //#define CORE_DATA_WIDTH     32     // We use float 32-bits complex numbers
 #define CORE_DATA_WIDTH     16     // We use ap_fixed 16-bits complex numbers
+#define FFT_SIZE            256
 
 #if CORE_DATA_WIDTH == 32
 #define COMPUTE_DATA_WIDTH  64     // (2*CORE_DATA_WIDTH), complex 

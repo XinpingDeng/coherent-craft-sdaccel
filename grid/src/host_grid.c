@@ -16,6 +16,7 @@ int main(int argc, char* argv[]){
     return EXIT_FAILURE;
   }	
 
+  // 4368 UV;
   // Prepare host buffers
   cl_int ndata1;
   cl_int ndata2;
