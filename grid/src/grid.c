@@ -8,68 +8,43 @@
 #include "util_sdaccel.h"
 
 int grid(
-	 core_data_type *in_pol1,
-	 core_data_type *in_pol2,
-	 core_data_type *cal_pol1,
-	 core_data_type *cal_pol2,
-	 core_data_type *sky,
+	 core_data_type *in,
+	 core_data_type *coordinate,
 	 core_data_type *out,
-	 core_data_type *average_pol1,
-	 core_data_type *average_pol2,
-	 int nsamp_per_time,
-	 int ntime_per_cu
+	 int nuv_per_cu
 	 ){
   int i;
   int j;
-  int loc;
+  int loc_in;
+  int loc_out;
   
-  compute_data_type in_pol1_tmp;
-  compute_data_type in_pol2_tmp;
-  compute_data_type cal_pol1_tmp;
-  compute_data_type cal_pol2_tmp;
-  compute_data_type sky_tmp;
-  compute_data_type out_tmp;
-  compute_data_type average_pol1_tmp;
-  compute_data_type average_pol2_tmp;
-  
-  for(i = 0; i < nsamp_per_time; i++){
-    sky_tmp.real(sky[2*i]);
-    sky_tmp.imag(sky[2*i+1]);
+  for(i = 0; i < nuv_per_cu; i++){
+    for(j = 0; j < NSAMP_PER_UV_IN; j++){
+      loc_in  = i*NSAMP_PER_UV_IN + j;
+      loc_out = coordinate[2*j] * FFT_SIZE + coordinate[2*j+1];
 
-    cal_pol1_tmp.real(cal_pol1[2*i]);
-    cal_pol1_tmp.imag(cal_pol1[2*i+1]);
-    cal_pol2_tmp.real(cal_pol2[2*i]);
-    cal_pol2_tmp.imag(cal_pol2[2*i+1]);
-
-    average_pol1_tmp.real(0);
-    average_pol1_tmp.imag(0);
-    average_pol2_tmp.real(0);
-    average_pol2_tmp.imag(0);
-      
-    for(j = 0; j < ntime_per_cu; j++){
-      loc = j * nsamp_per_time + i;
-      in_pol1_tmp.real(in_pol1[2*loc]);
-      in_pol1_tmp.imag(in_pol1[2*loc+1]);
-	       
-      in_pol2_tmp.real(in_pol2[2*loc]);
-      in_pol2_tmp.imag(in_pol2[2*loc+1]);
-
-      average_pol1_tmp += in_pol1_tmp;
-      average_pol2_tmp += in_pol2_tmp;
-	
-      out_tmp = in_pol1_tmp * cal_pol1_tmp +
-	in_pol2_tmp * cal_pol2_tmp -
-	sky_tmp;
-	
-      out[2*loc]   = out_tmp.real();
-      out[2*loc+1] = out_tmp.imag();
+      out[2*loc_out]   = in[2*loc_in];
+      out[2*loc_out+1] = in[2*loc_in+1];
     }
-      
-    average_pol1[2*i]   = average_pol1_tmp.real();
-    average_pol1[2*i+1] = average_pol1_tmp.imag();
-    average_pol2[2*i]   = average_pol2_tmp.real();
-    average_pol2[2*i+1] = average_pol2_tmp.imag();
+  }
+  return EXIT_SUCCESS;
+}
+
+int read_coordinate(char *fname, int flen, int *fdat){
+  FILE *fp = NULL;
+  char line[LINE_LENGTH];
+  fp = fopen(fname, "r");
+  if(fp == NULL){
+    fprintf(stderr, "ERROR: Failed to open %s\n", fname);
+    fprintf(stderr, "ERROR: Please look into the file \"%s\" above line [%d]!\n", __FILE__, __LINE__);
+    fprintf(stderr, "ERROR: Test failed ...!\n");
+    exit(EXIT_FAILURE);
+  }
+  for(int i = 0; i < flen; i++){
+    fgets(line, LINE_LENGTH, fp);
+    sscanf(line, "%d %d", &fdat[2*i], &fdat[2*i+1]);
   }
   
+  fclose(fp);
   return EXIT_SUCCESS;
 }
