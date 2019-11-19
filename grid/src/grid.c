@@ -8,9 +8,9 @@
 #include "util_sdaccel.h"
 
 int grid(
-	 core_data_type *in,
-	 core_data_type *coordinate,
-	 core_data_type *out,
+	 uv_t *in,
+	 coord_t *coordinate,
+	 uv_t *out,
 	 int nuv_per_cu
 	 ){
   int i;
@@ -21,7 +21,7 @@ int grid(
   for(i = 0; i < nuv_per_cu; i++){
     for(j = 0; j < NSAMP_PER_UV_IN; j++){
       loc_in  = i*NSAMP_PER_UV_IN + j;
-      loc_out = coordinate[2*j] * FFT_SIZE + coordinate[2*j+1];
+      loc_out = i*NSAMP_PER_UV_OUT + coordinate[2*j] * FFT_SIZE + coordinate[2*j+1];
 
       out[2*loc_out]   = in[2*loc_in];
       out[2*loc_out+1] = in[2*loc_in+1];

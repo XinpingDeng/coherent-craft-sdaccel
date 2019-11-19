@@ -3,9 +3,9 @@
 // Order is assumed to be TBFP, BFP or BF
 extern "C" {  
   void knl_grid(
-		const burst_data_type *in,
-		const burst_data_type *coordinate,
-		burst_data_type *out,
+		const burst_uv *in,
+		const burst_coord *coordinate,
+		burst_uv *out,
 		int nuv_per_cu
 		){
 #pragma HLS INTERFACE m_axi port = in         offset = slave bundle = gmem0 max_read_burst_length=64
@@ -33,9 +33,9 @@ extern "C" {
     int loc_out_remind;
     int loc_out;
     
-    burst_data_type in_burst;
-    burst_data_type coordinate_burst;
-    burst_data_type out_burst;
+    burst_uv in_burst;
+    burst_coord coordinate_burst;
+    burst_uv out_burst;
 
     // Init out burst 
     for(m = 0; m < NDATA_PER_BURST; m++){
@@ -59,7 +59,7 @@ extern "C" {
 	}
 	
 	loc_in_remind  = j%NSAMP_PER_BURST; // Assume that NSAMP_PER_UV_IN%NSAMP_PER_BURST = 0, pad zeros if necessary
-	loc_out        = coordinate_burst.data[2*loc_in_remind]*FFT_SIZE + coordinate_burst.data[2*loc_in_remind+1];
+	loc_out        = i*NSAMP_PER_UV_OUT + coordinate_burst.data[2*loc_in_remind]*FFT_SIZE + coordinate_burst.data[2*loc_in_remind+1];
 	loc_burst_out  = loc_out/NSAMP_PER_BURST;
 
 	if(loc_burst_out!=loc_burst_out_ref){
