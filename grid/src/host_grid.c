@@ -40,16 +40,16 @@ int main(int argc, char* argv[]){
   ndata3 = 2*nuv_per_cu*NSAMP_PER_UV_OUT;
   
   uv_t  *in = NULL;
-  coord_t    *coordinate = NULL;
+  coord_t *coord = NULL;
   uv_t  *sw_out = NULL;
   uv_t  *hw_out = NULL;
-  cl_int *coordinate_int = NULL;
+  cl_int *coord_int = NULL;
   
-  in             = (uv_t *)aligned_alloc(MEM_ALIGNMENT, ndata2*sizeof(uv_t));
-  coordinate     = (coord_t *)aligned_alloc(MEM_ALIGNMENT, ndata1*sizeof(coord_t));
-  sw_out         = (uv_t *)aligned_alloc(MEM_ALIGNMENT, ndata3*sizeof(uv_t));
-  hw_out         = (uv_t *)aligned_alloc(MEM_ALIGNMENT, ndata3*sizeof(uv_t));
-  coordinate_int = (cl_int *)aligned_alloc(MEM_ALIGNMENT, ndata1*sizeof(cl_int));  
+  in        = (uv_t *)aligned_alloc(MEM_ALIGNMENT, ndata2*sizeof(uv_t));
+  coord     = (coord_t *)aligned_alloc(MEM_ALIGNMENT, ndata1*sizeof(coord_t));
+  sw_out    = (uv_t *)aligned_alloc(MEM_ALIGNMENT, ndata3*sizeof(uv_t));
+  hw_out    = (uv_t *)aligned_alloc(MEM_ALIGNMENT, ndata3*sizeof(uv_t));
+  coord_int = (cl_int *)aligned_alloc(MEM_ALIGNMENT, ndata1*sizeof(cl_int));  
   
   fprintf(stdout, "INFO: %f MB memory used on host in total\n",
 	  (ndata2 + ndata1 + 2*ndata3)*CORE_DATA_WIDTH/(8*1024.*1024.));
@@ -66,9 +66,9 @@ int main(int argc, char* argv[]){
   for(i = 0; i < ndata2; i++){
     in[i] = (uv_t)(0.99*(rand()%DATA_RANGE));
   }
-  read_coordinate("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/grid/src/coordinate.txt", NSAMP_PER_UV_IN, coordinate_int);
+  read_coord("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/grid/src/coord.txt", NSAMP_PER_UV_IN, coord_int);
   for(i = 0; i < ndata1; i++){
-    coordinate[i] = (coord_t)coordinate_int[i];
+    coord[i] = (coord_t)coord_int[i];
   }
   memset(sw_out, 0x00, ndata3*sizeof(uv_t));
   memset(hw_out, 0x00, ndata3*sizeof(uv_t));
@@ -78,7 +78,7 @@ int main(int argc, char* argv[]){
   struct timespec host_start;
   struct timespec host_finish;
   clock_gettime(CLOCK_REALTIME, &host_start);
-  grid(in, coordinate, sw_out, nuv_per_cu);
+  grid(in, coord, sw_out, nuv_per_cu);
   fprintf(stdout, "INFO: DONE HOST EXECUTION\n");
   clock_gettime(CLOCK_REALTIME, &host_finish);
   cpu_elapsed_time = (host_finish.tv_sec - host_start.tv_sec) + (host_finish.tv_nsec - host_start.tv_nsec)/1.0E9L;
@@ -165,15 +165,15 @@ int main(int argc, char* argv[]){
 
   // Prepare device buffer
   cl_mem buffer_in;
-  cl_mem buffer_coordinate;
+  cl_mem buffer_coord;
   cl_mem buffer_out;
   cl_mem pt[3];
 
-  OCL_CHECK(err, buffer_in         = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uv_t)*ndata2, in, &err));
-  OCL_CHECK(err, buffer_coordinate = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(coord_t)*ndata1, coordinate, &err));
-  OCL_CHECK(err, buffer_out        = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uv_t)*ndata3, hw_out, &err));
+  OCL_CHECK(err, buffer_in    = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uv_t)*ndata2, in, &err));
+  OCL_CHECK(err, buffer_coord = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(coord_t)*ndata1, coord, &err));
+  OCL_CHECK(err, buffer_out   = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uv_t)*ndata3, hw_out, &err));
   if (!(buffer_in&&
-	buffer_coordinate&&
+	buffer_coord&&
 	buffer_out
 	)) {
     fprintf(stderr, "ERROR: Failed to allocate device memory!\n");
@@ -185,11 +185,11 @@ int main(int argc, char* argv[]){
   // Setup kernel arguments
   // To use multiple banks, this has to be before any enqueue options (e.g., clEnqueueMigrateMemObjects)
   pt[0] = buffer_in;
-  pt[1] = buffer_coordinate;
+  pt[1] = buffer_coord;
   pt[2] = buffer_out;
 
   OCL_CHECK(err, err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &buffer_in));
-  OCL_CHECK(err, err = clSetKernelArg(kernel, 1, sizeof(cl_mem), &buffer_coordinate)); 
+  OCL_CHECK(err, err = clSetKernelArg(kernel, 1, sizeof(cl_mem), &buffer_coord)); 
   OCL_CHECK(err, err = clSetKernelArg(kernel, 2, sizeof(cl_mem), &buffer_out));
   OCL_CHECK(err, err = clSetKernelArg(kernel, 3, sizeof(cl_int), &nuv_per_cu));
   
@@ -218,15 +218,15 @@ int main(int argc, char* argv[]){
   OCL_CHECK(err, err = clFinish(queue));
   fprintf(stdout, "INFO: DONE MEMCPY FROM KERNEL TO HOST\n");
 
+  /*
   // Check the result
   for(i=0;i<ndata3;i++){
     if(sw_out[i] != hw_out[i]){
       fprintf(stderr, "ERROR: Test failed %d (%d %d) %f\t%f\n", i, ((i/2)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i/2)%NSAMP_PER_UV_OUT)%FFT_SIZE, (float)sw_out[i], (float)hw_out[i]);
     }
   }
-  /*
   for(i = 0; i < ndata1; i++) {
-    fprintf(stdout, "%d\n", (int)coordinate[i]);
+    fprintf(stdout, "%d\n", (int)coord[i]);
   }
   */
   
@@ -237,13 +237,13 @@ int main(int argc, char* argv[]){
   
   // Cleanup
   clReleaseMemObject(buffer_in);
-  clReleaseMemObject(buffer_coordinate);
+  clReleaseMemObject(buffer_coord);
   clReleaseMemObject(buffer_out);
   
   free(in);
-  free(coordinate);
+  free(coord);
   free(sw_out);
-  free(coordinate_int);
+  free(coord_int);
   
   clReleaseProgram(program);
   clReleaseKernel(kernel);

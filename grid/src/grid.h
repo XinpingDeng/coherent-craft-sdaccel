@@ -11,7 +11,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdbool.h>
-#include <complex>
+//#include <complex>
 #include <ap_fixed.h>
 #include <ap_int.h>
 
@@ -21,6 +21,7 @@
 #define FFT_SIZE            256
 #define NSAMP_PER_UV_OUT    65536    // FFT_SIZE^2
 #define NSAMP_PER_UV_IN     4368
+#define NDATA_PER_UV_IN     8736
 
 #if CORE_DATA_WIDTH == 32
 #define COMPUTE_DATA_WIDTH  64     // (2*CORE_DATA_WIDTH), complex 
@@ -70,12 +71,12 @@ typedef struct burst_coord{
 
 int grid(
 	 uv_t *in,
-	 coord_t *coordinate,
+	 coord_t *coord,
 	 uv_t *out,
 	 int nuv_per_cu
 	 );
 
-int read_coordinate(
-		    char *fname,
-		    int flen,
-		    int *fdat);
+int read_coord(
+	       char *fname,
+	       int flen,
+	       int *fdat);

@@ -9,7 +9,7 @@
 
 int grid(
 	 uv_t *in,
-	 coord_t *coordinate,
+	 coord_t *coord,
 	 uv_t *out,
 	 int nuv_per_cu
 	 ){
@@ -21,7 +21,7 @@ int grid(
   for(i = 0; i < nuv_per_cu; i++){
     for(j = 0; j < NSAMP_PER_UV_IN; j++){
       loc_in  = i*NSAMP_PER_UV_IN + j;
-      loc_out = i*NSAMP_PER_UV_OUT + coordinate[2*j] * FFT_SIZE + coordinate[2*j+1];
+      loc_out = i*NSAMP_PER_UV_OUT + coord[2*j] * FFT_SIZE + coord[2*j+1];
 
       out[2*loc_out]   = in[2*loc_in];
       out[2*loc_out+1] = in[2*loc_in+1];
@@ -30,7 +30,7 @@ int grid(
   return EXIT_SUCCESS;
 }
 
-int read_coordinate(char *fname, int flen, int *fdat){
+int read_coord(char *fname, int flen, int *fdat){
   FILE *fp = NULL;
   char line[LINE_LENGTH];
   fp = fopen(fname, "r");
