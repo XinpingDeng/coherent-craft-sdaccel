@@ -11,7 +11,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdbool.h>
-//#include <complex>
 #include <ap_fixed.h>
 #include <ap_int.h>
 
