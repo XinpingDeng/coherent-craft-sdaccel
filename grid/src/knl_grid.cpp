@@ -46,7 +46,6 @@ void knl_grid(
     int j;
     int m;
     int loc_uv_in;
-    int loc_uv_out;
     int loc_in;
     int loc_out;
     int loc_burst;
