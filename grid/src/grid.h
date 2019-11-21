@@ -66,7 +66,7 @@ typedef struct burst_uv{
 
 typedef struct burst_coord{
   coord_t data[NDATA_PER_BURST];
-}burst_coord; // The size of this should be 512; BURST_DATA_WIDTH
+}burst_coord; 
 
 int grid(
 	 uv_t *in,
