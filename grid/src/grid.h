@@ -64,6 +64,7 @@ typedef struct burst_uv{
   uv_t data[NDATA_PER_BURST];
 }burst_uv; // The size of this should be 512; BURST_DATA_WIDTH
 
+// The coordinate data size should be the same of each sample, not each data of input and output
 typedef struct burst_coord{
   coord_t data[NDATA_PER_BURST];
 }burst_coord; 
