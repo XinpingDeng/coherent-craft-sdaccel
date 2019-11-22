@@ -13,6 +13,7 @@
 #include <stdbool.h>
 #include <ap_fixed.h>
 #include <ap_int.h>
+#include <assert.h>
 
 #define FLOAT_DATA_TYPE     1
 //#define CORE_DATA_WIDTH     32     // We use float 32-bits complex numbers
