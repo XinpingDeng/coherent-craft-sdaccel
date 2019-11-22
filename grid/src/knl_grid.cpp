@@ -32,14 +32,11 @@ void knl_grid(
 #pragma HLS DATA_PACK variable = out
 #pragma HLS DATA_PACK variable = coord
   
-  burst_coord coord_burst;
+  burst_coord coord_burst[NBURST_PER_UV_OUT];
   burst_uv in_burst[NBURST_PER_UV_IN];
   burst_uv out_burst;
   
-  #pragma HLS DATA_PACK variable = in_burst
-  #pragma HLS DATA_PACK variable = out_burst
-  #pragma HLS DATA_PACK variable = coord_burst
-
+#pragma HLS DATA_PACK variable = in_burst
 #pragma HLS ARRAY_PARTITION variable = in_burst  
   
     int i;
@@ -52,6 +49,12 @@ void knl_grid(
     int loc_samp;
     uv_t tmp1;
     uv_t tmp2;
+
+ LOOP_BURST_COORD:
+    for(i = 0; i < NBURST_PER_UV_OUT; i++){
+#pragma HLS PIPELINE
+      coord_burst[i] = coord[i];
+    }
     
  LOOP_SET_UV_TOP:
     for(i = 0; i < nuv_per_cu; i++){
@@ -66,10 +69,9 @@ void knl_grid(
     LOOP_SET_UV:
       for(j = 0; j < NBURST_PER_UV_OUT; j++){
 #pragma HLS PIPELINE
-	coord_burst = coord[j];
 	for(m = 0; m < NSAMP_PER_BURST; m++){
 #pragma HLS UNROLL
-	  loc_uv_in = coord_burst.data[2*m]-1;
+	  loc_uv_in = coord_burst[j].data[2*m]-1;
 	  if(loc_uv_in > -1){ // Means there is data
 	    loc_burst = loc_uv_in/NSAMP_PER_BURST;
 	    loc_samp  = loc_uv_in%NSAMP_PER_BURST;
