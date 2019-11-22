@@ -33,7 +33,7 @@ void knl_grid(
 #pragma HLS DATA_PACK variable = coord
   
   burst_coord coord_burst[NBURST_PER_UV_OUT];
-  burst_uv in_burst[NBURST_PER_UV_IN];
+  burst_uv in_burst[2];
   burst_uv out_burst;
   
 #pragma HLS DATA_PACK variable = in_burst
@@ -46,6 +46,7 @@ void knl_grid(
     int loc_in;
     int loc_out;
     int loc_burst;
+    int loc_burst_ref;
     int loc_samp;
     uv_t tmp1;
     uv_t tmp2;
@@ -58,22 +59,20 @@ void knl_grid(
     
  LOOP_SET_UV_TOP:
     for(i = 0; i < nuv_per_cu; i++){
-    LOOP_BURST_UV_IN:
-      // Burst in UV_IN
-      for(j = 0; j < NBURST_PER_UV_IN; j++){
-#pragma HLS PIPELINE
-	loc_in = i*NBURST_PER_UV_IN + j;
-	in_burst[j] = in[loc_in];
-      }
-    
+      loc_in        = i*NBURST_PER_UV_IN;
+      in_burst[0]   = in[loc_in];
+      loc_in        = loc_in + 1;
+      in_burst[1]   = in[loc_in];
+      loc_burst_ref = 0;
+      
     LOOP_SET_UV:
       for(j = 0; j < NBURST_PER_UV_OUT; j++){
 #pragma HLS PIPELINE
 	for(m = 0; m < NSAMP_PER_BURST; m++){
 #pragma HLS UNROLL
-	  loc_uv_in = coord_burst[j].data[2*m]-1;
+	  loc_uv_in = coord_burst[j].data[m]-1;
 	  if(loc_uv_in > -1){ // Means there is data
-	    loc_burst = loc_uv_in/NSAMP_PER_BURST;
+	    loc_burst = loc_uv_in/NSAMP_PER_BURST - loc_burst_ref;
 	    loc_samp  = loc_uv_in%NSAMP_PER_BURST;
 	    
 	    tmp1 = in_burst[loc_burst].data[2*loc_samp];
@@ -86,9 +85,16 @@ void knl_grid(
 	  out_burst.data[2*m]     = tmp1;
 	  out_burst.data[2*m + 1] = tmp2;
 	}
-	
 	loc_out = i*NBURST_PER_UV_OUT + j;
 	out[loc_out] = out_burst;
+	
+	// Get next input when the loc_burst is different from loc_burst_ref
+	loc_burst = (coord_burst[j].data[NSAMP_PER_BURST-1] - 1)/NSAMP_PER_BURST;
+	if(loc_burst!=loc_burst_ref){
+	  loc_burst_ref = loc_burst;
+	  in_burst[0]   = in_burst[1];
+	  in_burst[1]   = in_burst[loc_burst_ref+1];
+	}
       }    
     }  
 }
