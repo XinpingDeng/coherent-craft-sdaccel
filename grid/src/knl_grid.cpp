@@ -46,12 +46,10 @@ void knl_grid(
   int loc_in;
   int loc_out;
   int loc_burst;
-  int loc_burst0;
+  int loc_burst2;
   int loc_samp;
   uv_t tmp1;
   uv_t tmp2;
-
-#pragma HLS DEPENDENCE variable = loc_burst0 intra false
   
  LOOP_BURST_COORD:
   for(i = 0; i < NBURST_PER_UV_OUT; i++){
@@ -65,8 +63,7 @@ void knl_grid(
     in_burst[0] = in[loc_in];
     loc_in      = loc_in + 1;
     in_burst[1] = in[loc_in];
-    loc_burst0  = 0;
-      
+          
   LOOP_SET_UV:
     for(j = 0; j < NBURST_PER_UV_OUT; j++){
 #pragma HLS PIPELINE
@@ -74,11 +71,11 @@ void knl_grid(
 #pragma HLS UNROLL
 	loc_uv_in = coord_burst[j].data[m]-1;
 	if(loc_uv_in > -1){ // Means there is data
-	  loc_burst = loc_uv_in/NSAMP_PER_BURST - loc_burst0;
-	  loc_samp  = loc_uv_in%NSAMP_PER_BURST;
+	  loc_burst2 = (loc_uv_in/NSAMP_PER_BURST)%2;
+	  loc_samp   = loc_uv_in%NSAMP_PER_BURST;
 	    
-	  tmp1 = in_burst[loc_burst].data[2*loc_samp];
-	  tmp2 = in_burst[loc_burst].data[2*loc_samp + 1];
+	  tmp1 = in_burst[loc_burst2].data[2*loc_samp];
+	  tmp2 = in_burst[loc_burst2].data[2*loc_samp + 1];
 	}
 	else{// Means there is no data
 	  tmp1 = 0;
@@ -87,15 +84,15 @@ void knl_grid(
 	out_burst.data[2*m]     = tmp1;
 	out_burst.data[2*m + 1] = tmp2;
       }
-      loc_out = i*NBURST_PER_UV_OUT + j;
+      loc_out      = i*NBURST_PER_UV_OUT + j;
       out[loc_out] = out_burst;
       
-      // Get next input when the loc_burst is different from loc_burst0
-      loc_burst = (coord_burst[j].data[NSAMP_PER_BURST-1] - 1)/NSAMP_PER_BURST;
-      if(loc_burst!=loc_burst0){
+      // Get next input when (loc_burst%2)==1
+      loc_burst  = (coord_burst[j].data[NSAMP_PER_BURST-1] - 1)/NSAMP_PER_BURST;
+      loc_burst2 = loc_burst%2;
+      if(loc_burst2 == 1){
 	in_burst[0] = in_burst[1];
 	in_burst[1] = in[loc_burst+1];
-	loc_burst0  = loc_burst;
       }
     }    
   }  
