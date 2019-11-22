@@ -36,65 +36,67 @@ void knl_grid(
   burst_uv in_burst[2];
   burst_uv out_burst;
   
-#pragma HLS DATA_PACK variable = in_burst
+#pragma HLS DATA_PACK variable       = in_burst
 #pragma HLS ARRAY_PARTITION variable = in_burst  
   
-    int i;
-    int j;
-    int m;
-    int loc_uv_in;
-    int loc_in;
-    int loc_out;
-    int loc_burst;
-    int loc_burst_ref;
-    int loc_samp;
-    uv_t tmp1;
-    uv_t tmp2;
+  int i;
+  int j;
+  int m;
+  int loc_uv_in;
+  int loc_in;
+  int loc_out;
+  int loc_burst;
+  int loc_burst0;
+  int loc_samp;
+  uv_t tmp1;
+  uv_t tmp2;
 
+#pragma HLS DEPENDENCE variable = loc_burst0 intra false
+  
  LOOP_BURST_COORD:
-    for(i = 0; i < NBURST_PER_UV_OUT; i++){
+  for(i = 0; i < NBURST_PER_UV_OUT; i++){
 #pragma HLS PIPELINE
-      coord_burst[i] = coord[i];
-    }
+    coord_burst[i] = coord[i];
+  }
     
  LOOP_SET_UV_TOP:
-    for(i = 0; i < nuv_per_cu; i++){
-      loc_in        = i*NBURST_PER_UV_IN;
-      in_burst[0]   = in[loc_in];
-      loc_in        = loc_in + 1;
-      in_burst[1]   = in[loc_in];
-      loc_burst_ref = 0;
+  for(i = 0; i < nuv_per_cu; i++){
+    loc_in      = i*NBURST_PER_UV_IN;
+    in_burst[0] = in[loc_in];
+    loc_in      = loc_in + 1;
+    in_burst[1] = in[loc_in];
+    loc_burst0  = 0;
       
-    LOOP_SET_UV:
-      for(j = 0; j < NBURST_PER_UV_OUT; j++){
+  LOOP_SET_UV:
+    for(j = 0; j < NBURST_PER_UV_OUT; j++){
 #pragma HLS PIPELINE
-	for(m = 0; m < NSAMP_PER_BURST; m++){
+      for(m = 0; m < NSAMP_PER_BURST; m++){
 #pragma HLS UNROLL
-	  loc_uv_in = coord_burst[j].data[m]-1;
-	  if(loc_uv_in > -1){ // Means there is data
-	    loc_burst = loc_uv_in/NSAMP_PER_BURST - loc_burst_ref;
-	    loc_samp  = loc_uv_in%NSAMP_PER_BURST;
+	loc_uv_in = coord_burst[j].data[m]-1;
+	if(loc_uv_in > -1){ // Means there is data
+	  loc_burst = loc_uv_in/NSAMP_PER_BURST - loc_burst0;
+	  loc_samp  = loc_uv_in%NSAMP_PER_BURST;
 	    
-	    tmp1 = in_burst[loc_burst].data[2*loc_samp];
-	    tmp2 = in_burst[loc_burst].data[2*loc_samp + 1];
-	  }
-	  else{// Means there is no data
-	    tmp1 = 0;
-	    tmp2 = 0;	    
-	  }
-	  out_burst.data[2*m]     = tmp1;
-	  out_burst.data[2*m + 1] = tmp2;
+	  tmp1 = in_burst[loc_burst].data[2*loc_samp];
+	  tmp2 = in_burst[loc_burst].data[2*loc_samp + 1];
 	}
-	loc_out = i*NBURST_PER_UV_OUT + j;
-	out[loc_out] = out_burst;
-	
-	// Get next input when the loc_burst is different from loc_burst_ref
-	loc_burst = (coord_burst[j].data[NSAMP_PER_BURST-1] - 1)/NSAMP_PER_BURST;
-	if(loc_burst!=loc_burst_ref){
-	  loc_burst_ref = loc_burst;
-	  in_burst[0]   = in_burst[1];
-	  in_burst[1]   = in_burst[loc_burst_ref+1];
+	else{// Means there is no data
+	  tmp1 = 0;
+	  tmp2 = 0;	    
 	}
-      }    
-    }  
+	out_burst.data[2*m]     = tmp1;
+	out_burst.data[2*m + 1] = tmp2;
+      }
+      loc_out = i*NBURST_PER_UV_OUT + j;
+      out[loc_out] = out_burst;
+      
+      // Get next input when the loc_burst is different from loc_burst0
+      loc_burst = (coord_burst[j].data[NSAMP_PER_BURST-1] - 1)/NSAMP_PER_BURST;
+      if(loc_burst!=loc_burst0){
+	in_burst[0] = in_burst[1];
+	in_burst[1] = in[loc_burst+1];
+	loc_burst0  = loc_burst;
+      }
+    }    
+  }  
 }
