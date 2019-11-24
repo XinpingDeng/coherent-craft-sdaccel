@@ -30,12 +30,11 @@
 #define NDATA_PER_BURST     16     //(2*NSAMP_PER_BURST)
 #define NBURST_PER_UV_OUT   8192   // NSAMP_PER_UV_OUT/NSAMP_PER_BURST
 #define NBURST_PER_UV_IN    546    // NSAMP_PER_UV_OUT/NSAMP_PER_BURST
+typedef int64_t coord_t;
 #if FLOAT_DATA_TYPE == 1
 typedef float uv_t;
-typedef int coord_t;
 #else
 typedef int uv_t;
-typedef int coord_t;
 #endif
 
 #elif CORE_DATA_WIDTH == 16
@@ -45,13 +44,12 @@ typedef int coord_t;
 #define NDATA_PER_BURST     32     //(2*NSAMP_PER_BURST)
 #define NBURST_PER_UV_OUT   4096   // NSAMP_PER_UV_OUT/NSAMP_PER_BURST
 #define NBURST_PER_UV_IN    273    // NSAMP_PER_UV_OUT/NSAMP_PER_BURST
+typedef int coord_t; // The size of this should be CORE_DATA_WIDTH
 #if FLOAT_DATA_TYPE == 1
 #define INTEGER_WIDTH       8      // Integer width of data
 typedef ap_fixed<CORE_DATA_WIDTH, INTEGER_WIDTH> uv_t; // The size of this should be CORE_DATA_WIDTH
-typedef ap_int<CORE_DATA_WIDTH> coord_t; // The size of this should be CORE_DATA_WIDTH
 #else
 typedef ap_int<CORE_DATA_WIDTH> uv_t; // The size of this should be CORE_DATA_WIDTH
-typedef ap_int<CORE_DATA_WIDTH> coord_t; // The size of this should be CORE_DATA_WIDTH
 #endif
 #endif
 
@@ -67,7 +65,7 @@ typedef struct burst_uv{
 
 // The coordinate data size should be the same of each sample, not each data of input and output
 typedef struct burst_coord{
-  coord_t data[NDATA_PER_BURST];
+  coord_t data[NSAMP_PER_BURST];
 }burst_coord; 
 
 int grid(

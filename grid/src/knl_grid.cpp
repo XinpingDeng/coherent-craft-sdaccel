@@ -37,7 +37,7 @@ void knl_grid(
   burst_uv out_burst;
   
 #pragma HLS DATA_PACK variable       = in_burst
-#pragma HLS ARRAY_PARTITION variable = in_burst  
+#pragma HLS ARRAY_PARTITION variable = in_burst  complete
   
   int i;
   int j;
