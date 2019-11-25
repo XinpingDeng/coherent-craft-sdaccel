@@ -35,18 +35,15 @@ void knl_grid(
   burst_coord coord_burst[NBURST_PER_UV_OUT];
   burst_uv out_burst;
   uv_t in_tmp[2*NDATA_PER_BURST];
-  coord_t coord_tmp[NSAMP_PER_UV_OUT];
   
 #pragma HLS ARRAY_PARTITION variable = in_tmp complete
-#pragma HLS ARRAY_PARTITION variable = coord_tmp complete
   
   int i;
   int j;
   int m;
-  int loc_uv_in;
   int loc_in;
   int loc_out;
-  int loc_samp;
+  int loc_unroll;
 
   // Burst in all coordinate
   // It is built with index counting from 1, 0 means there is no data for output
@@ -67,11 +64,11 @@ void knl_grid(
       in_tmp[2*j]   = in[loc_in].data[2*j];
       in_tmp[2*j+1] = in[loc_in].data[2*j+1];
     }
-    loc_in = loc_in + 1;
+    loc_in = loc_in+1;
     for(j = 0; j < NSAMP_PER_BURST; j++){
 #pragma HLS UNROLL
-      in_tmp[NDATA_PER_BURST + 2*j]   = in[loc_in].data[2*j];
-      in_tmp[NDATA_PER_BURST + 2*j+1] = in[loc_in].data[2*j+1];
+      in_tmp[NDATA_PER_BURST+2*j]   = in[loc_in].data[2*j];
+      in_tmp[NDATA_PER_BURST+2*j+1] = in[loc_in].data[2*j+1];
     }
     
   LOOP_SET_UV:
@@ -81,34 +78,34 @@ void knl_grid(
       for(m = 0; m < NSAMP_PER_BURST; m++){
 #pragma HLS UNROLL
 	// Default output block elements be 0
-	out_burst.data[2*m]     = 0;
-	out_burst.data[2*m + 1] = 0;
+	out_burst.data[2*m]   = 0;
+	out_burst.data[2*m+1] = 0;
 
 	// If there is data
-	loc_uv_in = coord_burst[j].data[m]-1;
-	if(loc_uv_in > -1){ 
-	  loc_samp                = loc_uv_in%(2*NSAMP_PER_BURST);	  
-	  out_burst.data[2*m]     = in_tmp[2*loc_samp];
-	  out_burst.data[2*m + 1] = in_tmp[2*loc_samp + 1];
+	loc_in = coord_burst[j].data[m]-1;
+	if(loc_in > -1){ 
+	  loc_unroll            = loc_in%(2*NSAMP_PER_BURST);	  
+	  out_burst.data[2*m]   = in_tmp[2*loc_unroll];
+	  out_burst.data[2*m+1] = in_tmp[2*loc_unroll+1];
 	}
       }
-      loc_out      = i*NBURST_PER_UV_OUT + j;
+      loc_out      = i*NBURST_PER_UV_OUT+j;
       out[loc_out] = out_burst;
       
       // Read in new input block when we are half cross the array
       // Put the new block into the array
-      loc_samp = (coord_burst[j].data[NSAMP_PER_BURST-1] - 1)%(2*NSAMP_PER_BURST);
-      if(loc_samp > (NSAMP_PER_BURST-1)){
-	loc_in = (coord_burst[j].data[NSAMP_PER_BURST-1] - 1)/NSAMP_PER_BURST + 1;
+      loc_unroll = (coord_burst[j].data[NSAMP_PER_BURST-1] - 1)%(2*NSAMP_PER_BURST);
+      if(loc_unroll > (NSAMP_PER_BURST-1)){
+	loc_in = (coord_burst[j].data[NSAMP_PER_BURST-1] - 1)/NSAMP_PER_BURST+1;
 	for(m = 0; m < NSAMP_PER_BURST; m++){
 #pragma HLS UNROLL
 	  // Shift the array with one block size
-	  in_tmp[2*m]   = in_tmp[NDATA_PER_BURST + 2*m];
-	  in_tmp[2*m+1] = in_tmp[NDATA_PER_BURST + 2*m+1];
+	  in_tmp[2*m]   = in_tmp[NDATA_PER_BURST+2*m];
+	  in_tmp[2*m+1] = in_tmp[NDATA_PER_BURST+2*m+1];
 	  
 	  // Put the new block into the array 
-	  in_tmp[NDATA_PER_BURST + 2*m]   = in[loc_in].data[2*m];
-	  in_tmp[NDATA_PER_BURST + 2*m+1] = in[loc_in].data[2*m+1];
+	  in_tmp[NDATA_PER_BURST+2*m]   = in[loc_in].data[2*m];
+	  in_tmp[NDATA_PER_BURST+2*m+1] = in[loc_in].data[2*m+1];
 	}
       }      
     }    
