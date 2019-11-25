@@ -63,11 +63,14 @@ void knl_grid(
     // Read in first two blocks of each input UV
     // Put two blocks into a single array to reduce the source usage
     loc_in   = i*NBURST_PER_UV_IN;
-    in_burst = in[loc_in];
+    //in_burst = in[loc_in];
     for(j = 0; j < NSAMP_PER_BURST; j++){
 #pragma HLS UNROLL
       in_tmp[2*j]   = in_burst.data[2*j];
       in_tmp[2*j+1] = in_burst.data[2*j+1];
+
+      //in_tmp[2*j]   = in[loc_in].data[2*j];
+      //in_tmp[2*j+1] = in[loc_in].data[2*j+1];
     }
     loc_in = loc_in + 1;
     in_burst = in[loc_in]; 
@@ -75,6 +78,8 @@ void knl_grid(
 #pragma HLS UNROLL
       in_tmp[NDATA_PER_BURST + 2*j]   = in_burst.data[2*j];
       in_tmp[NDATA_PER_BURST + 2*j+1] = in_burst.data[2*j+1];
+      //in_tmp[NDATA_PER_BURST + 2*j]   = in[loc_in].data[2*j];
+      //in_tmp[NDATA_PER_BURST + 2*j+1] = in[loc_in].data[2*j+1];
     }
     
   LOOP_SET_UV:
