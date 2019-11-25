@@ -33,13 +33,12 @@ void knl_grid(
 #pragma HLS DATA_PACK variable = coord
   
   burst_coord coord_burst[NBURST_PER_UV_OUT];
-  //burst_coord coord_burst[NBURST_PER_UV_IN];
-  //burst_uv in_burst;
   burst_uv out_burst;
   uv_t in_tmp[2*NDATA_PER_BURST];
+  coord_t coord_tmp[NSAMP_PER_UV_OUT];
   
-  //#pragma HLS DATA_PACK variable       = in_burst
 #pragma HLS ARRAY_PARTITION variable = in_tmp complete
+#pragma HLS ARRAY_PARTITION variable = coord_tmp complete
   
   int i;
   int j;
@@ -62,22 +61,15 @@ void knl_grid(
     // Maximally two input blocks will cover one output block
     // Read in first two blocks of each input UV
     // Put two blocks into a single array to reduce the source usage
-    loc_in   = i*NBURST_PER_UV_IN;
-    //in_burst = in[loc_in];
+    loc_in = i*NBURST_PER_UV_IN;
     for(j = 0; j < NSAMP_PER_BURST; j++){
 #pragma HLS UNROLL
-      //in_tmp[2*j]   = in_burst.data[2*j];
-      //in_tmp[2*j+1] = in_burst.data[2*j+1];
-
       in_tmp[2*j]   = in[loc_in].data[2*j];
       in_tmp[2*j+1] = in[loc_in].data[2*j+1];
     }
     loc_in = loc_in + 1;
-    //in_burst = in[loc_in]; 
     for(j = 0; j < NSAMP_PER_BURST; j++){
 #pragma HLS UNROLL
-      //in_tmp[NDATA_PER_BURST + 2*j]   = in_burst.data[2*j];
-      //in_tmp[NDATA_PER_BURST + 2*j+1] = in_burst.data[2*j+1];
       in_tmp[NDATA_PER_BURST + 2*j]   = in[loc_in].data[2*j];
       in_tmp[NDATA_PER_BURST + 2*j+1] = in[loc_in].data[2*j+1];
     }
@@ -107,8 +99,7 @@ void knl_grid(
       // Put the new block into the array
       loc_samp = (coord_burst[j].data[NSAMP_PER_BURST-1] - 1)%(2*NSAMP_PER_BURST);
       if(loc_samp > (NSAMP_PER_BURST-1)){
-	loc_in   = (coord_burst[j].data[NSAMP_PER_BURST-1] - 1)/NSAMP_PER_BURST + 1;
-	//in_burst = in[loc_in];
+	loc_in = (coord_burst[j].data[NSAMP_PER_BURST-1] - 1)/NSAMP_PER_BURST + 1;
 	for(m = 0; m < NSAMP_PER_BURST; m++){
 #pragma HLS UNROLL
 	  // Shift the array with one block size
@@ -116,8 +107,6 @@ void knl_grid(
 	  in_tmp[2*m+1] = in_tmp[NDATA_PER_BURST + 2*m+1];
 	  
 	  // Put the new block into the array 
-	  //in_tmp[NDATA_PER_BURST + 2*m]   = in_burst.data[2*m];
-	  //in_tmp[NDATA_PER_BURST + 2*m+1] = in_burst.data[2*m+1];
 	  in_tmp[NDATA_PER_BURST + 2*m]   = in[loc_in].data[2*m];
 	  in_tmp[NDATA_PER_BURST + 2*m+1] = in[loc_in].data[2*m+1];
 	}
