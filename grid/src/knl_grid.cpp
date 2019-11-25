@@ -17,9 +17,9 @@ void knl_grid(
 	      int nuv_per_cu
 	      )
 {
-#pragma HLS INTERFACE m_axi port = in    offset = slave bundle = gmem0 //max_read_burst_length=64
-#pragma HLS INTERFACE m_axi port = coord offset = slave bundle = gmem1 //max_read_burst_length=64
-#pragma HLS INTERFACE m_axi port = out   offset = slave bundle = gmem2 //max_read_burst_length=64
+#pragma HLS INTERFACE m_axi port = in    offset = slave bundle = gmem0 max_read_burst_length=64
+#pragma HLS INTERFACE m_axi port = coord offset = slave bundle = gmem1 max_read_burst_length=64
+#pragma HLS INTERFACE m_axi port = out   offset = slave bundle = gmem2 max_read_burst_length=64
 
 #pragma HLS INTERFACE s_axilite port = in         bundle = control
 #pragma HLS INTERFACE s_axilite port = coord      bundle = control
@@ -33,6 +33,7 @@ void knl_grid(
 #pragma HLS DATA_PACK variable = coord
   
   burst_coord coord_burst[NBURST_PER_UV_OUT];
+  //burst_coord coord_burst[NBURST_PER_UV_IN];
   burst_uv in_burst;
   burst_uv out_burst;
   uv_t in_tmp[4*NSAMP_PER_BURST];
@@ -49,6 +50,7 @@ void knl_grid(
   int loc_samp;
 
   // Burst in all coordinate
+  // It is built with index counting from 1, 0 means there is no data for output
  LOOP_BURST_COORD:
   for(i = 0; i < NBURST_PER_UV_OUT; i++){
 #pragma HLS PIPELINE
@@ -67,7 +69,7 @@ void knl_grid(
       in_tmp[2*j]   = in_burst.data[2*j];
       in_tmp[2*j+1] = in_burst.data[2*j+1];
     }
-    loc_in++;
+    loc_in = loc_in + 1;
     in_burst = in[loc_in]; 
     for(j = 0; j < NSAMP_PER_BURST; j++){
 #pragma HLS UNROLL
@@ -100,8 +102,7 @@ void knl_grid(
       // Put the new block into the array
       loc_samp = (coord_burst[j].data[NSAMP_PER_BURST-1] - 1)%(2*NSAMP_PER_BURST);
       if(loc_samp > (NSAMP_PER_BURST-1)){
-	//loc_in   = (coord_burst[j].data[NSAMP_PER_BURST-1] - 1)/NSAMP_PER_BURST + 1;
-	loc_in   ++;
+	loc_in   = (coord_burst[j].data[NSAMP_PER_BURST-1] - 1)/NSAMP_PER_BURST + 1;
 	in_burst = in[loc_in];
 	for(m = 0; m < NSAMP_PER_BURST; m++){
 #pragma HLS UNROLL
