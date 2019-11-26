@@ -59,7 +59,7 @@ int main(int argc, char* argv[]){
 	  ndata2*CORE_DATA_WIDTH/(8*1024.*1024.));  
   fprintf(stdout, "INFO: %f MB memory used on device for raw output\n",
 	  ndata3*CORE_DATA_WIDTH/(8*1024.*1024.));  
-  
+    
   // Prepare input
   cl_uint i;
   srand(time(NULL));
@@ -82,7 +82,7 @@ int main(int argc, char* argv[]){
   fprintf(stdout, "INFO: DONE HOST EXECUTION\n");
   clock_gettime(CLOCK_REALTIME, &host_finish);
   cpu_elapsed_time = (host_finish.tv_sec - host_start.tv_sec) + (host_finish.tv_nsec - host_start.tv_nsec)/1.0E9L;
-  
+
   // Get platform ID and info
   cl_int err;
   cl_uint platforms;
@@ -192,7 +192,7 @@ int main(int argc, char* argv[]){
   OCL_CHECK(err, err = clSetKernelArg(kernel, 1, sizeof(cl_mem), &buffer_coord)); 
   OCL_CHECK(err, err = clSetKernelArg(kernel, 2, sizeof(cl_mem), &buffer_out));
   OCL_CHECK(err, err = clSetKernelArg(kernel, 3, sizeof(cl_int), &nuv_per_cu));
-  
+
   fprintf(stdout, "INFO: DONE SETUP KERNEL\n");
 
   // Migrate host memory to device
@@ -244,7 +244,6 @@ int main(int argc, char* argv[]){
   free(coord);
   free(sw_out);
   free(coord_int);
-  
   clReleaseProgram(program);
   clReleaseKernel(kernel);
   clReleaseCommandQueue(queue);
