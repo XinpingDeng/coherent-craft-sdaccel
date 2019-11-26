@@ -26,16 +26,16 @@ int main(int argc, char* argv[]){
   cl_int nuv_per_cu;
 
   if(is_hw_emulation()){
-    ndm          = 2;
-    ntime_per_cu = 2;
+    ndm          = 1;
+    ntime_per_cu = 1;
   }
   if(is_sw_emulation()){
-    ndm          = 2;
-    ntime_per_cu = 2;
+    ndm          = 1;
+    ntime_per_cu = 1;
   }
   nuv_per_cu = ntime_per_cu*ndm;
 
-  ndata1 = 2*NSAMP_PER_UV_IN;
+  ndata1 = NSAMP_PER_UV_OUT;
   ndata2 = 2*nuv_per_cu*NSAMP_PER_UV_IN;
   ndata3 = 2*nuv_per_cu*NSAMP_PER_UV_OUT;
   
@@ -52,9 +52,9 @@ int main(int argc, char* argv[]){
   coord_int = (cl_int *)aligned_alloc(MEM_ALIGNMENT, ndata1*sizeof(cl_int));  
   
   fprintf(stdout, "INFO: %f MB memory used on host in total\n",
-	  (ndata2 + ndata1 + 2*ndata3)*CORE_DATA_WIDTH/(8*1024.*1024.));
+	  ((ndata2 + 2*ndata3)*CORE_DATA_WIDTH + ndata1*COORD_DATA_WIDTH)/(8*1024.*1024.));
   fprintf(stdout, "INFO: %f MB memory used on device in total\n",
-	  (ndata2 + ndata1 + ndata3)*CORE_DATA_WIDTH/(8*1024.*1024.));
+	  ((ndata2 + ndata3)*CORE_DATA_WIDTH + ndata1*COORD_DATA_WIDTH)/(8*1024.*1024.));
   fprintf(stdout, "INFO: %f MB memory used on device for raw input\n",
 	  ndata2*CORE_DATA_WIDTH/(8*1024.*1024.));  
   fprintf(stdout, "INFO: %f MB memory used on device for raw output\n",
@@ -66,9 +66,11 @@ int main(int argc, char* argv[]){
   for(i = 0; i < ndata2; i++){
     in[i] = (uv_t)(0.99*(rand()%DATA_RANGE));
   }
-  read_coord("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/grid/src/coord.txt", NSAMP_PER_UV_IN, coord_int);
+  read_coord("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/grid/src/uv_coord.txt", NSAMP_PER_UV_OUT, coord_int);
+  fprintf(stdout, "HERE\n");
   for(i = 0; i < ndata1; i++){
     coord[i] = (coord_t)coord_int[i];
+    fprintf(stdout, "%d\n", (int)coord[i]);
   }
   memset(sw_out, 0x00, ndata3*sizeof(uv_t));
   memset(hw_out, 0x00, ndata3*sizeof(uv_t));
@@ -218,17 +220,19 @@ int main(int argc, char* argv[]){
   OCL_CHECK(err, err = clFinish(queue));
   fprintf(stdout, "INFO: DONE MEMCPY FROM KERNEL TO HOST\n");
 
-  /*
   // Check the result
-  for(i=0;i<ndata3;i++){
-    if(sw_out[i] != hw_out[i]){
-      fprintf(stderr, "ERROR: Test failed %d (%d %d) %f\t%f\n", i, ((i/2)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i/2)%NSAMP_PER_UV_OUT)%FFT_SIZE, (float)sw_out[i], (float)hw_out[i]);
-    }
+  FILE *fp=NULL;
+  fp = fopen("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/grid/src/error.txt", "w");
+  for(i=0;i<ndata3/2;i++){
+    //if((sw_out[2*i] != hw_out[2*i])||(sw_out[2*i+1] != hw_out[2*i+1])){
+      //fprintf(stderr, "ERROR: Test failed %d (%d %d) (%f %f) (%f %f)\n", i, ((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE, (float)sw_out[2*i], (float)sw_out[2*i+1], (float)hw_out[2*i], (float)hw_out[2*i+1]);
+      //fprintf(fp, "ERROR: Test failed %d (%d %d) (%f %f) (%f %f)\n", i, ((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE, (float)sw_out[2*i], (float)sw_out[2*i+1], (float)hw_out[2*i], (float)hw_out[2*i+1]);
+      //}
+    //if((hw_out[2*i]==0) &&(hw_out[2*i+1] == 0))
+    if((hw_out[2*i]!=0) ||(hw_out[2*i+1] != 0))
+       fprintf(fp, "ERROR: Test failed %d (%d %d) (%f %f)\n", i, ((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE, (float)hw_out[2*i], (float)hw_out[2*i+1]);
   }
-  for(i = 0; i < ndata1; i++) {
-    fprintf(stdout, "%d\n", (int)coord[i]);
-  }
-  */
+  fclose(fp);
   
   fprintf(stdout, "INFO: DONE RESULT CHECK\n");
   

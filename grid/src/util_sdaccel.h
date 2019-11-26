@@ -21,11 +21,6 @@
 #include <CL/opencl.h>
 #include <CL/cl_ext.h>
 #include <stdbool.h>
-<<<<<<< HEAD
-//#include <iostream>
-=======
-#include <iostream>
->>>>>>> burst-4KB-16bits
 
 cl_uint load_file_to_memory(const char *filename, char **result);
 cl_device_id get_device_id(const char* target_device_name);

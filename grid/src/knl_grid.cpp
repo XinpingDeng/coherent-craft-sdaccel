@@ -17,15 +17,15 @@ void knl_grid(
 	      int nuv_per_cu
 	      )
 {
-#pragma HLS INTERFACE m_axi port = in    offset = slave bundle = gmem0 max_read_burst_length=64
-#pragma HLS INTERFACE m_axi port = coord offset = slave bundle = gmem1 max_read_burst_length=64
+#pragma HLS INTERFACE m_axi port = in    offset = slave bundle = gmem0 
+#pragma HLS INTERFACE m_axi port = coord offset = slave bundle = gmem1 
 #pragma HLS INTERFACE m_axi port = out   offset = slave bundle = gmem2 max_write_burst_length=64
 
 #pragma HLS INTERFACE s_axilite port = in         bundle = control
 #pragma HLS INTERFACE s_axilite port = coord      bundle = control
 #pragma HLS INTERFACE s_axilite port = out        bundle = control
 #pragma HLS INTERFACE s_axilite port = nuv_per_cu bundle = control
-    
+  
 #pragma HLS INTERFACE s_axilite port = return bundle = control
 
 #pragma HLS DATA_PACK variable = in
@@ -33,6 +33,7 @@ void knl_grid(
 #pragma HLS DATA_PACK variable = coord
   
   burst_coord coord_burst[NBURST_PER_UV_OUT];
+  //burst_coord coord_burst[NBURST_PER_UV_IN];
   burst_uv out_burst;
   uv_t in_tmp[2*NDATA_PER_BURST];
   
@@ -77,6 +78,7 @@ void knl_grid(
       // Get one output block ready in one clock cycle
       for(m = 0; m < NSAMP_PER_BURST; m++){
 #pragma HLS UNROLL
+	///*
 	// Default output block elements be 0
 	out_burst.data[2*m]   = 0;
 	out_burst.data[2*m+1] = 0;
@@ -88,6 +90,10 @@ void knl_grid(
 	  out_burst.data[2*m]   = in_tmp[2*loc_unroll];
 	  out_burst.data[2*m+1] = in_tmp[2*loc_unroll+1];
 	}
+	//*/
+	
+	//out_burst.data[2*m]   = (uv_t)coord_burst[j].data[m];
+	//out_burst.data[2*m+1] = (uv_t)coord_burst[j].data[m];
       }
       loc_out      = i*NBURST_PER_UV_OUT+j;
       out[loc_out] = out_burst;
