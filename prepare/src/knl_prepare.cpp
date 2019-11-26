@@ -30,14 +30,14 @@ void knl_prepare(
 		 )
 {
   // Setup the interface, max_*_burst_length defines the max burst length (UG902 for detail)
-#pragma HLS INTERFACE m_axi port = in_pol1      offset = slave bundle = gmem0 max_read_burst_length=64  
-#pragma HLS INTERFACE m_axi port = in_pol2      offset = slave bundle = gmem1 max_read_burst_length=64  
-#pragma HLS INTERFACE m_axi port = cal_pol1     offset = slave bundle = gmem2 max_read_burst_length=64  
-#pragma HLS INTERFACE m_axi port = cal_pol2     offset = slave bundle = gmem3 max_read_burst_length=64  
-#pragma HLS INTERFACE m_axi port = sky          offset = slave bundle = gmem4 max_read_burst_length=64  
-#pragma HLS INTERFACE m_axi port = out          offset = slave bundle = gmem5 max_write_burst_length=64 
-#pragma HLS INTERFACE m_axi port = average_pol1 offset = slave bundle = gmem6 max_write_burst_length=64 
-#pragma HLS INTERFACE m_axi port = average_pol2 offset = slave bundle = gmem7 max_write_burst_length=64 
+#pragma HLS INTERFACE m_axi port = in_pol1      offset = slave bundle = gmem0 //max_read_burst_length=64  
+#pragma HLS INTERFACE m_axi port = in_pol2      offset = slave bundle = gmem1 //max_read_burst_length=64  
+#pragma HLS INTERFACE m_axi port = cal_pol1     offset = slave bundle = gmem2 //max_read_burst_length=64  
+#pragma HLS INTERFACE m_axi port = cal_pol2     offset = slave bundle = gmem3 //max_read_burst_length=64  
+#pragma HLS INTERFACE m_axi port = sky          offset = slave bundle = gmem4 //max_read_burst_length=64  
+#pragma HLS INTERFACE m_axi port = out          offset = slave bundle = gmem5 //max_write_burst_length=64 
+#pragma HLS INTERFACE m_axi port = average_pol1 offset = slave bundle = gmem6 //max_write_burst_length=64 
+#pragma HLS INTERFACE m_axi port = average_pol2 offset = slave bundle = gmem7 //max_write_burst_length=64 
 
 #pragma HLS INTERFACE s_axilite port = in_pol1         bundle = control
 #pragma HLS INTERFACE s_axilite port = in_pol2         bundle = control
@@ -249,6 +249,6 @@ void knl_prepare(
     loc = itran*MAX_BURST_LENGTH + m;
     average_pol1[loc] = average_pol1_burst[m];
     average_pol2[loc] = average_pol2_burst[m];
-  }    
+  }
   ///////////////////////////////////////////////
 }
