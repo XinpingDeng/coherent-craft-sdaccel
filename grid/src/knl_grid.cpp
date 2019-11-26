@@ -19,7 +19,7 @@ void knl_grid(
 {
 #pragma HLS INTERFACE m_axi port = in    offset = slave bundle = gmem0 max_read_burst_length=64
 #pragma HLS INTERFACE m_axi port = coord offset = slave bundle = gmem1 max_read_burst_length=64
-#pragma HLS INTERFACE m_axi port = out   offset = slave bundle = gmem2 max_read_burst_length=64
+#pragma HLS INTERFACE m_axi port = out   offset = slave bundle = gmem2 max_write_burst_length=64
 
 #pragma HLS INTERFACE s_axilite port = in         bundle = control
 #pragma HLS INTERFACE s_axilite port = coord      bundle = control
