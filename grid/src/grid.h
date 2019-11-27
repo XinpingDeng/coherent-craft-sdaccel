@@ -16,8 +16,8 @@
 #include <assert.h>
 
 #define FLOAT_DATA_TYPE     1
-//#define CORE_DATA_WIDTH     32     // We use float 32-bits complex numbers
-#define CORE_DATA_WIDTH     16       // We use ap_fixed 16-bits complex numbers
+#define CORE_DATA_WIDTH     32     // We use float 32-bits complex numbers
+//#define CORE_DATA_WIDTH     16       // We use ap_fixed 16-bits complex numbers
 #define FFT_SIZE            256
 #define NSAMP_PER_UV_OUT    65536    // FFT_SIZE^2
 #define NSAMP_PER_UV_IN     4368
@@ -54,11 +54,12 @@ typedef ap_int<CORE_DATA_WIDTH> uv_t; // The size of this should be CORE_DATA_WI
 #endif
 #endif
 
-typedef ap_uint<COORD_DATA_WIDTH> coord_t;
+//typedef ap_uint<COORD_DATA_WIDTH> coord_t;
+typedef int coord_t;
 // The struct should have NSAMP_PER_BURST data in, and also need to pad to next 2^n bits
 typedef struct burst_coord{
   coord_t data[NSAMP_PER_BURST];
-  char pad[NBYTE_PAD_COORD];
+  //char pad[NBYTE_PAD_COORD];
 }burst_coord; 
 
 #define MAX_PALTFORMS       16

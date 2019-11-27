@@ -46,14 +46,26 @@ void knl_grid(
   int loc_out;
   int loc_unroll;
 
+  //int index=0;
+  //FILE *fp = NULL;
+  //
+  //fp = fopen("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/grid/src/knl_error.txt", "w");
   // Burst in all coordinate
   // It is built with index counting from 1, 0 means there is no data for output
  LOOP_BURST_COORD:
   for(i = 0; i < NBURST_PER_UV_OUT; i++){
 #pragma HLS PIPELINE
     coord_burst[i] = coord[i];
+    for(j = 0; j < NSAMP_PER_BURST; j++){
+      //if(coord_burst[i].data[j]!=0){
+      //	//fprintf(stdout, "%d\t%d\t%d\n", index, (int)coord_burst[i].data[j], (int)coord[i].data[j]);
+      //	fprintf(fp, "%d\t%d\n", index, (int)coord_burst[i].data[j]);
+      //	index++;
+      //}
+    }
   }
-    
+  //fclose(fp);
+  
  LOOP_SET_UV_TOP:
   for(i = 0; i < nuv_per_cu; i++){
     // Maximally two input blocks will cover one output block
@@ -92,8 +104,8 @@ void knl_grid(
 	}
 	//*/
 	
-	//out_burst.data[2*m]   = (uv_t)coord_burst[j].data[m];
-	//out_burst.data[2*m+1] = (uv_t)coord_burst[j].data[m];
+	//out_burst.data[2*m]   = coord_burst[j].data[m]-1;
+	//out_burst.data[2*m+1] = coord_burst[j].data[m]-1;
       }
       loc_out      = i*NBURST_PER_UV_OUT+j;
       out[loc_out] = out_burst;

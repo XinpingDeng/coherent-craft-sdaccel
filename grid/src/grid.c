@@ -18,12 +18,20 @@ int grid(
   int loc_in;
   int loc_out;
   
+  //int index=0;
+  //FILE *fp = NULL;
+  //fp = fopen("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/grid/src/host_error.txt", "w");
+  
   for(i = 0; i < nuv_per_cu; i++){
     for(j = 0; j < NSAMP_PER_UV_OUT; j++){
       loc_out = i*NSAMP_PER_UV_OUT + j;
       out[2*loc_out]   = 0;
       out[2*loc_out+1] = 0;
       if(coord[j]!=0){
+	//fprintf(stdout, "%d\t%d\n", index, (int)coord[j]);
+	//fprintf(fp, "%d\t%d\n", index, (int)coord[j]);
+	//fprintf(fp, "%d %d\n", j/FFT_SIZE, j%FFT_SIZE);
+	//index++;
 	loc_in  = i*NSAMP_PER_UV_IN + coord[j] - 1;
 	
 	out[2*loc_out]   = in[2*loc_in];
@@ -31,6 +39,8 @@ int grid(
       }
     }
   }
+  //fclose(fp);
+  
   return EXIT_SUCCESS;
 }
 
