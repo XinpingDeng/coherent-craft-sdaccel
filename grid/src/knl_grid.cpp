@@ -33,7 +33,6 @@ void knl_grid(
 #pragma HLS DATA_PACK variable = coord
   
   burst_coord coord_burst[NBURST_PER_UV_OUT];
-  //burst_coord coord_burst[NBURST_PER_UV_IN];
   burst_uv out_burst;
   uv_t in_tmp[2*NDATA_PER_BURST];
   
@@ -46,10 +45,8 @@ void knl_grid(
   int loc_out;
   int loc_unroll;
   int coord_in;
-  int coord_tmp;
   int loc_in_count=0;
   FILE *fp = NULL;
-  int transaction;
   
   fp = fopen("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/grid/src/index_knl.txt", "w");
   
@@ -103,23 +100,19 @@ void knl_grid(
       // Read in new input block when we are half cross the array
       // Put the new block into the array
       loc_unroll  = 0;
-      transaction = 0;
-      coord_tmp   = 0;
       for(m = 0; m < NSAMP_PER_BURST; m++){
-	coord_in = coord_burst[j].data[m];
-	if(coord_in != 0){
-	  coord_tmp = coord_in;
-	  transaction++;
+	coord_in = coord_burst[j].data[NSAMP_PER_BURST-m-1];
+	if(coord_in != 0){	  
+	  loc_unroll = (coord_in -1 - loc_in_count*NSAMP_PER_BURST)%(2*NSAMP_PER_BURST);
+	  break;
 	}
       }
-      loc_unroll = (coord_tmp -1 - loc_in_count*NSAMP_PER_BURST)%(2*NSAMP_PER_BURST);
       
-      if(loc_unroll > (NSAMP_PER_BURST-1)){
-	loc_in = (coord_tmp-1)/NSAMP_PER_BURST + 1;
-	
-	fprintf(fp, "HERE CHANGE1:\t%d\t%d\t%d\t%d\t%d\t%d\n", j, transaction, loc_unroll, coord_tmp - 1, (coord_tmp-1)/NSAMP_PER_BURST, loc_in);	
+      if(loc_unroll > (NSAMP_PER_BURST-2)){
+	loc_in++;
+	loc_in_count++;
+	fprintf(fp, "%d\t%d\n", loc_in, loc_in_count);	
 
-	loc_in_count ++;
 	for(m = 0; m < NSAMP_PER_BURST; m++){
 #pragma HLS UNROLL
 	  // Shift the array with one block size
@@ -127,25 +120,9 @@ void knl_grid(
 	  in_tmp[2*m+1] = in_tmp[NDATA_PER_BURST+2*m+1];
 	  
 	  // Put the new block into the array 
-	  in_tmp[NDATA_PER_BURST+2*m]   = in[loc_in].data[2*m];
-	  in_tmp[NDATA_PER_BURST+2*m+1] = in[loc_in].data[2*m+1];
+	  in_tmp[NDATA_PER_BURST+2*m]   = in[loc_in%NBURST_PER_UV_IN].data[2*m];
+	  in_tmp[NDATA_PER_BURST+2*m+1] = in[loc_in%NBURST_PER_UV_IN].data[2*m+1];
 	}
-      }
-      else{
-      if(transaction == NSAMP_PER_BURST){
-	loc_in = (coord_tmp-1)/NSAMP_PER_BURST + 1;
-	fprintf(fp, "HERE CHANGE2:\t%d\t%d\t%d\t%d\t%d\n", j, loc_unroll, coord_tmp - 1, (coord_tmp-1)/NSAMP_PER_BURST, loc_in);	
-	for(m = 0; m < NSAMP_PER_BURST; m++){
-#pragma HLS UNROLL
-	  // Shift the array with one block size
-	  in_tmp[2*m]   = in_tmp[NDATA_PER_BURST+2*m];
-	  in_tmp[2*m+1] = in_tmp[NDATA_PER_BURST+2*m+1];
-	  
-	  // Put the new block into the array 
-	  in_tmp[NDATA_PER_BURST+2*m]   = in[loc_in].data[2*m];
-	  in_tmp[NDATA_PER_BURST+2*m+1] = in[loc_in].data[2*m+1];
-	}
-      }
       }
     }    
   }
