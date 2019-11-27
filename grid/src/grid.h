@@ -21,6 +21,7 @@
 #define FFT_SIZE            256
 #define NSAMP_PER_UV_OUT    65536    // FFT_SIZE^2
 #define NSAMP_PER_UV_IN     4368
+//#define NSAMP_PER_UV_IN     3568
 #define NDATA_PER_UV_IN     8736
 #define COORD_DATA_WIDTH    13       // Wide enough to cover the input index range
 
