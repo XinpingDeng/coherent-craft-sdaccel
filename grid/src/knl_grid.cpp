@@ -45,8 +45,8 @@ void knl_grid(
   int loc_in_burst;
   int loc_out_burst;
   
-  FILE *fp = NULL;
-  fp = fopen("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/grid/src/index_knl.txt", "w");
+  //FILE *fp = NULL;
+  //fp = fopen("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/grid/src/index_knl.txt", "w");
     
   // Burst in all coordinate
   // It is built with index counting from 1, 0 means there is no data for output
@@ -85,9 +85,10 @@ void knl_grid(
 	out_burst.data[2*m+1] = 0;
 
 	// If there is data
-	loc_in = coord_burst[j].data[m]-1;
-	if(loc_in > -1){ 
-	  loc_unroll            = loc_in%(2*NSAMP_PER_BURST);	  
+	loc_in = coord_burst[j].data[m];
+	if(loc_in != 0){ 
+	  //loc_unroll            = loc_in%(2*NSAMP_PER_BURST);
+	  loc_unroll            = (loc_in -1 - (loc_in_burst - 1)*NSAMP_PER_BURST)%(2*NSAMP_PER_BURST);	   
 	  out_burst.data[2*m]   = in_tmp[2*loc_unroll];
 	  out_burst.data[2*m+1] = in_tmp[2*loc_unroll+1];
 	}
@@ -97,12 +98,12 @@ void knl_grid(
       
       // Read in new input block when we are half cross the array
       // Put the new block into the array
-      for(m = 0; m < NSAMP_PER_BURST; m++){
-	loc_in = coord_burst[j].data[m];
-	if(loc_in != 0){
-	  fprintf(fp, "CHANGE:\t(%d %d)\n", (j*NSAMP_PER_BURST+m)/FFT_SIZE, (j*NSAMP_PER_BURST+m)%FFT_SIZE);
-	}
-      }
+      //for(m = 0; m < NSAMP_PER_BURST; m++){
+      //	loc_in = coord_burst[j].data[m];
+      //	if(loc_in != 0){
+      //	  fprintf(fp, "CHANGE:\t(%d %d)\n", (j*NSAMP_PER_BURST+m)/FFT_SIZE, (j*NSAMP_PER_BURST+m)%FFT_SIZE);
+      //	}
+      //}
       for(m = 0; m < NSAMP_PER_BURST; m++){
 	loc_in = coord_burst[j].data[NSAMP_PER_BURST-m-1];
 	if(loc_in != 0){
@@ -132,5 +133,5 @@ void knl_grid(
       }
     }    
   }
-  fclose(fp);
+  //fclose(fp);
 }
