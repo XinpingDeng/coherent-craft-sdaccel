@@ -61,13 +61,14 @@ void knl_grid(
     // Maximally two input blocks will cover one output block
     // Read in first two blocks of each input UV
     // Put two blocks into a single array to reduce the source usage
+    
     loc_in_burst = i*NBURST_PER_UV_IN;
     for(j = 0; j < NSAMP_PER_BURST; j++){
 #pragma HLS UNROLL
       in_tmp[2*j]   = in[loc_in_burst].data[2*j];
       in_tmp[2*j+1] = in[loc_in_burst].data[2*j+1];
     }
-    loc_in_burst = loc_in_burst+1;
+    loc_in_burst = i*NBURST_PER_UV_IN+1;
     for(j = 0; j < NSAMP_PER_BURST; j++){
 #pragma HLS UNROLL
       in_tmp[NDATA_PER_BURST+2*j]   = in[loc_in_burst].data[2*j];
@@ -76,7 +77,10 @@ void knl_grid(
     
   LOOP_SET_UV:
     for(j = 0; j < NBURST_PER_UV_OUT; j++){
-#pragma HLS PIPELINE
+#pragma HLS PIPELINE  
+      //#pragma HLS DEPENDENCE variable = loc_in_burst intra true
+      //#pragma HLS DEPENDENCE variable = loc_in_burst inter true
+    
       // Get one output block ready in one clock cycle
       for(m = 0; m < NSAMP_PER_BURST; m++){
 #pragma HLS UNROLL
@@ -87,8 +91,8 @@ void knl_grid(
 	// If there is data
 	loc_in = coord_burst[j].data[m];
 	if(loc_in != 0){ 
-	  //loc_unroll            = loc_in%(2*NSAMP_PER_BURST);
-	  loc_unroll            = (loc_in -1 - (loc_in_burst - 1)*NSAMP_PER_BURST)%(2*NSAMP_PER_BURST);	   
+	  //loc_unroll            = (loc_in -1 - (loc_in_burst - 1)*NSAMP_PER_BURST)%(2*NSAMP_PER_BURST);
+	  loc_unroll            = (loc_in -1 - (loc_in/NSAMP_PER_BURST - 1)*NSAMP_PER_BURST)%(2*NSAMP_PER_BURST);
 	  out_burst.data[2*m]   = in_tmp[2*loc_unroll];
 	  out_burst.data[2*m+1] = in_tmp[2*loc_unroll+1];
 	}
