@@ -37,19 +37,20 @@ void knl_grid(
   uv_t in_tmp[2*NDATA_PER_BURST];
   
 #pragma HLS ARRAY_PARTITION variable = in_tmp complete
-  
   int i;
   int j;
   int m;
   int loc_in;
-  int loc_out;
   int loc_unroll;
-  int coord_in;
-  int loc_in_count=0;
-  FILE *fp = NULL;
+  int loc_in_burst;
+  int loc_out_burst;
+  //int loc_in_burst_count;
+
+  //#pragma HLS DEPENDENCE variable = loc_in_burst_count intra false
   
-  fp = fopen("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/grid/src/index_knl.txt", "w");
-  
+  //FILE *fp = NULL;
+  //fp = fopen("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/grid/src/index_knl.txt", "w");
+    
   // Burst in all coordinate
   // It is built with index counting from 1, 0 means there is no data for output
  LOOP_BURST_COORD:
@@ -63,17 +64,18 @@ void knl_grid(
     // Maximally two input blocks will cover one output block
     // Read in first two blocks of each input UV
     // Put two blocks into a single array to reduce the source usage
-    loc_in = i*NBURST_PER_UV_IN;
+    //loc_in_burst_count = 0;
+    loc_in_burst = i*NBURST_PER_UV_IN;
     for(j = 0; j < NSAMP_PER_BURST; j++){
 #pragma HLS UNROLL
-      in_tmp[2*j]   = in[loc_in].data[2*j];
-      in_tmp[2*j+1] = in[loc_in].data[2*j+1];
+      in_tmp[2*j]   = in[loc_in_burst].data[2*j];
+      in_tmp[2*j+1] = in[loc_in_burst].data[2*j+1];
     }
-    loc_in = loc_in+1;
+    loc_in_burst = loc_in_burst+1;
     for(j = 0; j < NSAMP_PER_BURST; j++){
 #pragma HLS UNROLL
-      in_tmp[NDATA_PER_BURST+2*j]   = in[loc_in].data[2*j];
-      in_tmp[NDATA_PER_BURST+2*j+1] = in[loc_in].data[2*j+1];
+      in_tmp[NDATA_PER_BURST+2*j]   = in[loc_in_burst].data[2*j];
+      in_tmp[NDATA_PER_BURST+2*j+1] = in[loc_in_burst].data[2*j+1];
     }
     
   LOOP_SET_UV:
@@ -94,25 +96,26 @@ void knl_grid(
 	  out_burst.data[2*m+1] = in_tmp[2*loc_unroll+1];
 	}
       }
-      loc_out      = i*NBURST_PER_UV_OUT+j;
-      out[loc_out] = out_burst;
+      loc_out_burst      = i*NBURST_PER_UV_OUT+j;
+      out[loc_out_burst] = out_burst;
       
       // Read in new input block when we are half cross the array
       // Put the new block into the array
-      loc_unroll  = 0;
       for(m = 0; m < NSAMP_PER_BURST; m++){
-	coord_in = coord_burst[j].data[NSAMP_PER_BURST-m-1];
-	if(coord_in != 0){	  
-	  loc_unroll = (coord_in -1 - loc_in_count*NSAMP_PER_BURST)%(2*NSAMP_PER_BURST);
+	loc_in = coord_burst[j].data[NSAMP_PER_BURST-m-1];
+	if(loc_in != 0){
 	  break;
 	}
       }
       
+      loc_unroll = (loc_in -1 - (loc_in_burst - 1)*NSAMP_PER_BURST)%(2*NSAMP_PER_BURST);
+      //loc_unroll = (loc_in -1 - loc_in_burst_count*NSAMP_PER_BURST)%(2*NSAMP_PER_BURST);
       if(loc_unroll > (NSAMP_PER_BURST-2)){
-	loc_in++;
-	loc_in_count++;
-	fprintf(fp, "%d\t%d\n", loc_in, loc_in_count);	
-
+	loc_in_burst       = loc_in/NSAMP_PER_BURST+1;
+	//loc_in_burst_count = loc_in/NSAMP_PER_BURST;
+	
+	//fprintf(fp, "CHANGE:\t%d\t%d\n", loc_in-1, loc_unroll);
+	
 	for(m = 0; m < NSAMP_PER_BURST; m++){
 #pragma HLS UNROLL
 	  // Shift the array with one block size
@@ -120,11 +123,11 @@ void knl_grid(
 	  in_tmp[2*m+1] = in_tmp[NDATA_PER_BURST+2*m+1];
 	  
 	  // Put the new block into the array 
-	  in_tmp[NDATA_PER_BURST+2*m]   = in[loc_in%NBURST_PER_UV_IN].data[2*m];
-	  in_tmp[NDATA_PER_BURST+2*m+1] = in[loc_in%NBURST_PER_UV_IN].data[2*m+1];
+	  in_tmp[NDATA_PER_BURST+2*m]   = in[loc_in_burst].data[2*m];
+	  in_tmp[NDATA_PER_BURST+2*m+1] = in[loc_in_burst].data[2*m+1];
 	}
       }
     }    
   }
-  fclose(fp);
+  //fclose(fp);
 }

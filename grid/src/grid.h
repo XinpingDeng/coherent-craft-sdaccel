@@ -20,8 +20,7 @@
 //#define CORE_DATA_WIDTH     16       // We use ap_fixed 16-bits complex numbers
 #define FFT_SIZE            256
 #define NSAMP_PER_UV_OUT    65536    // FFT_SIZE^2
-#define NSAMP_PER_UV_IN     4368
-//#define NSAMP_PER_UV_IN     3568
+#define NSAMP_PER_UV_IN     3568
 #define NDATA_PER_UV_IN     8736
 #define COORD_DATA_WIDTH    13       // Wide enough to cover the input index range
 
@@ -31,7 +30,7 @@
 #define NSAMP_PER_BURST     8
 #define NDATA_PER_BURST     16     //(2*NSAMP_PER_BURST)
 #define NBURST_PER_UV_OUT   8192   // NSAMP_PER_UV_OUT/NSAMP_PER_BURST
-#define NBURST_PER_UV_IN    546    // NSAMP_PER_UV_OUT/NSAMP_PER_BURST
+#define NBURST_PER_UV_IN    446    // NSAMP_PER_UV_OUT/NSAMP_PER_BURST
 #define NBYTE_PAD_COORD     3      // Number of bytes to pad coord struct to next 2^n bits
 #if FLOAT_DATA_TYPE == 1
 typedef float uv_t;
@@ -45,7 +44,7 @@ typedef int uv_t;
 #define NSAMP_PER_BURST     16
 #define NDATA_PER_BURST     32     //(2*NSAMP_PER_BURST)
 #define NBURST_PER_UV_OUT   4096   // NSAMP_PER_UV_OUT/NSAMP_PER_BURST
-#define NBURST_PER_UV_IN    273    // NSAMP_PER_UV_OUT/NSAMP_PER_BURST
+#define NBURST_PER_UV_IN    223    // NSAMP_PER_UV_OUT/NSAMP_PER_BURST
 #define NBYTE_PAD_COORD     6      // Number of bytes to pad coord struct to next 2^n bits
 #if FLOAT_DATA_TYPE == 1
 #define INTEGER_WIDTH       8      // Integer width of data

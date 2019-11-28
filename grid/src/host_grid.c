@@ -66,7 +66,7 @@ int main(int argc, char* argv[]){
   for(i = 0; i < ndata2; i++){
     in[i] = (uv_t)(0.99*(rand()%DATA_RANGE));
   }
-  read_coord("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/grid/src/uv_coord.txt", NSAMP_PER_UV_OUT, coord_int);
+  read_coord("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/grid/src/uv_coord_single.txt", NSAMP_PER_UV_OUT, coord_int);
   for(i = 0; i < ndata1; i++){
     coord[i] = (coord_t)coord_int[i];
     //if(coord_int[i]!=0)
@@ -224,16 +224,16 @@ int main(int argc, char* argv[]){
   FILE *fp=NULL;
   fp = fopen("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/grid/src/error.txt", "w");
   for(i=0;i<ndata3/2;i++){
-    if((sw_out[2*i] != hw_out[2*i])||(sw_out[2*i+1] != hw_out[2*i+1])){
-      //fprintf(stderr, "ERROR: Test failed %d (%d %d) (%f %f) (%f %f)\n", i, ((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE, (float)sw_out[2*i], (float)sw_out[2*i+1], (float)hw_out[2*i], (float)hw_out[2*i+1]);
-      //fprintf(fp, "ERROR: Test failed %d (%d %d) (%f %f) (%f %f)\n", i, ((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE, (float)sw_out[2*i], (float)sw_out[2*i+1], (float)hw_out[2*i], (float)hw_out[2*i+1]);
-      fprintf(fp, "ERROR: Test failed %d (%d %d)\n", i, ((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE);
-    }
+    //if((sw_out[2*i] != hw_out[2*i])||(sw_out[2*i+1] != hw_out[2*i+1])){
+    //  //fprintf(stderr, "ERROR: Test failed %d (%d %d) (%f %f) (%f %f)\n", i, ((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE, (float)sw_out[2*i], (float)sw_out[2*i+1], (float)hw_out[2*i], (float)hw_out[2*i+1]);
+    //  //fprintf(fp, "ERROR: Test failed %d (%d %d) (%f %f) (%f %f)\n", i, ((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE, (float)sw_out[2*i], (float)sw_out[2*i+1], (float)hw_out[2*i], (float)hw_out[2*i+1]);
+    //  fprintf(fp, "ERROR: Test failed %d (%d %d)\n", i, ((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE);
+    //}
     //if((hw_out[2*i]==0) &&(hw_out[2*i+1] == 0))
     //if((hw_out[2*i]!=0) ||(hw_out[2*i+1] != 0))
     //fprintf(fp, "ERROR: Test failed %d (%d %d) (%f %f)\n", i, ((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE, (float)hw_out[2*i], (float)hw_out[2*i+1]);
-    //if((sw_out[2*i]!=0) ||(sw_out[2*i+1] != 0))
-    //fprintf(fp, "ERROR: Test failed %d (%d %d) (%f %f)\n", i, ((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE, (float)sw_out[2*i], (float)sw_out[2*i+1]);
+    if((sw_out[2*i]!=0) ||(sw_out[2*i+1] != 0))
+      fprintf(fp, "ERROR: Test failed %d (%d %d) (%f %f)\n", i, ((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE, (float)sw_out[2*i], (float)sw_out[2*i+1]);
   }
   fclose(fp);
   
