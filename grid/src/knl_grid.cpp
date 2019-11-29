@@ -45,6 +45,9 @@ void knl_grid(
   int loc_in_burst;
   int loc_out_burst;
   
+#pragma HLS DEPENDENCE variable = loc_in_burst intra true 
+#pragma HLS DEPENDENCE variable = loc_in_burst inter true
+  
   //FILE *fp = NULL;
   //fp = fopen("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/grid/src/index_knl.txt", "w");
     
@@ -78,9 +81,6 @@ void knl_grid(
   LOOP_SET_UV:
     for(j = 0; j < NBURST_PER_UV_OUT; j++){
 #pragma HLS PIPELINE  
-      //#pragma HLS DEPENDENCE variable = loc_in_burst intra true
-      //#pragma HLS DEPENDENCE variable = loc_in_burst inter true
-    
       // Get one output block ready in one clock cycle
       for(m = 0; m < NSAMP_PER_BURST; m++){
 #pragma HLS UNROLL
@@ -91,9 +91,8 @@ void knl_grid(
 	// If there is data
 	loc_in = coord_burst[j].data[m];
 	if(loc_in != 0){ 
-	  //loc_unroll            = (loc_in -1 - (loc_in_burst - 1)*NSAMP_PER_BURST)%(2*NSAMP_PER_BURST);
-	  loc_unroll            = (loc_in -1 - (loc_in/NSAMP_PER_BURST - 1)*NSAMP_PER_BURST)%(2*NSAMP_PER_BURST);
-	  out_burst.data[2*m]   = in_tmp[2*loc_unroll];
+	  loc_unroll            = (loc_in -1 - (loc_in_burst - 1)*NSAMP_PER_BURST)%(2*NSAMP_PER_BURST);
+       	  out_burst.data[2*m]   = in_tmp[2*loc_unroll];
 	  out_burst.data[2*m+1] = in_tmp[2*loc_unroll+1];
 	}
       }
@@ -108,6 +107,7 @@ void knl_grid(
       //	  fprintf(fp, "CHANGE:\t(%d %d)\n", (j*NSAMP_PER_BURST+m)/FFT_SIZE, (j*NSAMP_PER_BURST+m)%FFT_SIZE);
       //	}
       //}
+    LOOP_GET_LOC_IN:
       for(m = 0; m < NSAMP_PER_BURST; m++){
 	loc_in = coord_burst[j].data[NSAMP_PER_BURST-m-1];
 	if(loc_in != 0){
@@ -115,11 +115,8 @@ void knl_grid(
 	}
       }
       
-      loc_unroll = (loc_in -1 - (loc_in_burst - 1)*NSAMP_PER_BURST)%(2*NSAMP_PER_BURST);
-      if(loc_unroll > (NSAMP_PER_BURST-2)){
-	loc_in_burst = loc_in/NSAMP_PER_BURST+1;
-	
-	//fprintf(fp, "CHANGE:\t%d\t%d\n", loc_in-1, loc_unroll);
+      if((loc_in/NSAMP_PER_BURST)>=loc_in_burst){
+	loc_in_burst  = loc_in/NSAMP_PER_BURST+1;
 	
 	for(m = 0; m < NSAMP_PER_BURST; m++){
 #pragma HLS UNROLL
