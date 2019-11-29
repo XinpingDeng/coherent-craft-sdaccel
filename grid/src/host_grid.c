@@ -59,12 +59,15 @@ int main(int argc, char* argv[]){
 	  ndata2*CORE_DATA_WIDTH/(8*1024.*1024.));  
   fprintf(stdout, "INFO: %f MB memory used on device for raw output\n",
 	  ndata3*CORE_DATA_WIDTH/(8*1024.*1024.));  
-    
+
+  FILE *fp=NULL;
+  fp = fopen("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/grid/src/error.txt", "w");
   // Prepare input
   cl_uint i;
   srand(time(NULL));
   for(i = 0; i < ndata2; i++){
     in[i] = (uv_t)(0.99*(rand()%DATA_RANGE));
+    //fprintf(fp, "%f\n", in[i].to_float());
   }
   read_coord("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/grid/src/uv_coord_single.txt", NSAMP_PER_UV_OUT, coord_int);
   for(i = 0; i < ndata1; i++){
@@ -221,12 +224,12 @@ int main(int argc, char* argv[]){
   fprintf(stdout, "INFO: DONE MEMCPY FROM KERNEL TO HOST\n");
 
   // Check the result
-  FILE *fp=NULL;
-  fp = fopen("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/grid/src/error.txt", "w");
   for(i=0;i<ndata3/2;i++){
+    //fprintf(fp, "ERROR: Test failed %d (%d %d) (%f %f) (%f %f)\n", i, ((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE, (float)sw_out[2*i], (float)sw_out[2*i+1], (float)hw_out[2*i], (float)hw_out[2*i+1]);
     if((sw_out[2*i] != hw_out[2*i])||(sw_out[2*i+1] != hw_out[2*i+1])){
       //fprintf(stderr, "ERROR: Test failed %d (%d %d) (%f %f) (%f %f)\n", i, ((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE, (float)sw_out[2*i], (float)sw_out[2*i+1], (float)hw_out[2*i], (float)hw_out[2*i+1]);
-      fprintf(fp, "ERROR: Test failed %d (%d %d) (%f %f) (%f %f)\n", i, ((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE, (float)sw_out[2*i], (float)sw_out[2*i+1], (float)hw_out[2*i], (float)hw_out[2*i+1]);
+      //fprintf(fp, "ERROR: Test failed %d (%d %d) (%f %f) (%f %f)\n", i, ((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE, (float)sw_out[2*i], (float)sw_out[2*i+1], (float)hw_out[2*i], (float)hw_out[2*i+1]);
+      fprintf(fp, "ERROR: Test failed %d (%d %d) (%f %f) (%f %f)\n", i, ((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE, sw_out[2*i].to_float(), sw_out[2*i+1].to_float(), hw_out[2*i].to_float(), hw_out[2*i+1].to_float());
       //fprintf(fp, "ERROR: Test failed %d (%d %d)\n", i, ((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE);
     }
     //if((hw_out[2*i]==0) &&(hw_out[2*i+1] == 0))
