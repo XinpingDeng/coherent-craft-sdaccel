@@ -18,11 +18,15 @@ int main(int argc, char* argv[]){
 
   // 4368 UV;
   // Prepare host buffers
-  cl_int ndata1;
-  cl_int ndata2;
-  cl_int ndata3;
+  //cl_int ndata1;
+  //cl_int ndata2;
+  //cl_int ndata3;
+  uint64_t ndata1;
+  uint64_t ndata2;
+  uint64_t ndata3;
   cl_int ndm          = 1024;
-  cl_int ntime_per_cu = 256;
+  //cl_int ntime_per_cu = 256;
+  cl_int ntime_per_cu = 1;
   cl_int nuv_per_cu;
 
   if(is_hw_emulation()){
@@ -36,8 +40,8 @@ int main(int argc, char* argv[]){
   nuv_per_cu = ntime_per_cu*ndm;
 
   ndata1 = NSAMP_PER_UV_OUT;
-  ndata2 = 2*nuv_per_cu*NSAMP_PER_UV_IN;
-  ndata3 = 2*nuv_per_cu*NSAMP_PER_UV_OUT;
+  ndata2 = 2*nuv_per_cu*(uint64_t)NSAMP_PER_UV_IN;
+  ndata3 = 2*nuv_per_cu*(uint64_t)NSAMP_PER_UV_OUT;
   
   uv_t  *in = NULL;
   coord_t *coord = NULL;
@@ -63,7 +67,7 @@ int main(int argc, char* argv[]){
   FILE *fp=NULL;
   fp = fopen("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/grid/src/error.txt", "w");
   // Prepare input
-  cl_uint i;
+  uint64_t i;
   srand(time(NULL));
   for(i = 0; i < ndata2; i++){
     in[i] = (uv_t)(0.99*(rand()%DATA_RANGE));
