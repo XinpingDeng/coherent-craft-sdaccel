@@ -22,8 +22,8 @@
 #define NSAMP_PER_UV_OUT    65536    // FFT_SIZE^2
 #define NSAMP_PER_UV_IN     3568
 #define NDATA_PER_UV_IN     8736
-#define COORD_DATA_WIDTH    16       // Wide enough to cover the input index range
-//#define COORD_DATA_WIDTH    13       // Wide enough to cover the input index range
+#define COORD_DATA_WIDTH1    16       // Wider than the required width, but to 2^n
+#define COORD_DATA_WIDTH2    13       // Wide enough to cover the input index range
 
 #if CORE_DATA_WIDTH == 32
 #define COMPUTE_DATA_WIDTH  64     // (2*CORE_DATA_WIDTH), complex 
@@ -32,9 +32,6 @@
 #define NDATA_PER_BURST     16     //(2*NSAMP_PER_BURST)
 #define NBURST_PER_UV_OUT   8192   // NSAMP_PER_UV_OUT/NSAMP_PER_BURST
 #define NBURST_PER_UV_IN    446    // NSAMP_PER_UV_OUT/NSAMP_PER_BURST
-//#define NBYTE_PAD_COORD     3      // Number of bytes to pad coord struct to next 2^n bits
-#define COORD_PAD_WIDTH     24      // Number of bits to pad coord struct to next 2^n bits
-//#define COORD_PAD_WIDTH     32      // Number of bits to pad coord struct to next 2^n bits
 #if FLOAT_DATA_TYPE == 1
 typedef float uv_t;
 #else
@@ -48,9 +45,6 @@ typedef int uv_t;
 #define NDATA_PER_BURST     32     //(2*NSAMP_PER_BURST)
 #define NBURST_PER_UV_OUT   4096   // NSAMP_PER_UV_OUT/NSAMP_PER_BURST
 #define NBURST_PER_UV_IN    223    // NSAMP_PER_UV_OUT/NSAMP_PER_BURST
-//#define NBYTE_PAD_COORD     6      // Number of bytes to pad coord struct to next 2^n bits
-#define COORD_PAD_WIDTH     48      // Number of bits to pad coord struct to next 2^n bits
-//#define COORD_PAD_WIDTH     64     // Number of bits to pad coord struct to next 2^n bits
 #if FLOAT_DATA_TYPE == 1
 #define INTEGER_WIDTH       8      // Integer width of data
 typedef ap_fixed<CORE_DATA_WIDTH, INTEGER_WIDTH> uv_t; // The size of this should be CORE_DATA_WIDTH
@@ -59,13 +53,11 @@ typedef ap_int<CORE_DATA_WIDTH> uv_t; // The size of this should be CORE_DATA_WI
 #endif
 #endif
 
-typedef ap_uint<COORD_DATA_WIDTH> coord_t;
-//typedef int coord_t;
-// The struct should have NSAMP_PER_BURST data in, and also need to pad to next 2^n bits
+typedef ap_uint<COORD_DATA_WIDTH1> coord_t1; // Use for the top-level interface
+typedef ap_uint<COORD_DATA_WIDTH2> coord_t2; // Use inside the kernel
+
 typedef struct burst_coord{
-  coord_t data[NSAMP_PER_BURST];
-  //char pad[NBYTE_PAD_COORD];
-  //ap_uint<COORD_PAD_WIDTH> pad; // If we pad here, the input should be paded also.
+  coord_t1 data[NSAMP_PER_BURST];
 }burst_coord; 
 
 #define MAX_PALTFORMS       16
@@ -80,7 +72,7 @@ typedef struct burst_uv{
 
 int grid(
 	 uv_t *in,
-	 coord_t *coord,
+	 coord_t1 *coord,
 	 uv_t *out,
 	 int nuv_per_cu
 	 );

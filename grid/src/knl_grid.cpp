@@ -32,14 +32,17 @@ void knl_grid(
 #pragma HLS DATA_PACK variable = out
 #pragma HLS DATA_PACK variable = coord
   
-  burst_coord coord_burst[NBURST_PER_UV_OUT];
   burst_uv out_burst;
   uv_t in_tmp[2*NDATA_PER_BURST];
+  coord_t2 coord_burst[NSAMP_PER_UV_OUT];
   
 #pragma HLS ARRAY_PARTITION variable = in_tmp complete
+#pragma HLS ARRAY_PARTITION variable = coord_burst cyclic factor=16
+
   int i;
   int j;
   int m;
+  int loc_coord;
   int loc_in;
   int loc_unroll;
   int loc_in_burst;
@@ -48,15 +51,16 @@ void knl_grid(
 #pragma HLS DEPENDENCE variable = loc_in_burst intra true 
 #pragma HLS DEPENDENCE variable = loc_in_burst inter true
   
-  //FILE *fp = NULL;
-  //fp = fopen("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/grid/src/index_knl.txt", "w");
-    
   // Burst in all coordinate
   // It is built with index counting from 1, 0 means there is no data for output
  LOOP_BURST_COORD:
   for(i = 0; i < NBURST_PER_UV_OUT; i++){
 #pragma HLS PIPELINE
-    coord_burst[i] = coord[i];
+    for(j = 0; j < NSAMP_PER_BURST; j++){
+#pragma HLS UNROLL
+      loc_coord = i*NSAMP_PER_BURST+j;
+      coord_burst[loc_coord] = coord[i].data[j];
+    }
   }
   
  LOOP_SET_UV_TOP:
@@ -89,7 +93,8 @@ void knl_grid(
 	out_burst.data[2*m+1] = 0;
 
 	// If there is data
-	loc_in = coord_burst[j].data[m];
+	loc_coord = j*NSAMP_PER_BURST+m;
+	loc_in = coord_burst[loc_coord];
 	if(loc_in != 0){ 
 	  loc_unroll            = (loc_in -1 - (loc_in_burst - 1)*NSAMP_PER_BURST)%(2*NSAMP_PER_BURST);
        	  out_burst.data[2*m]   = in_tmp[2*loc_unroll];
@@ -99,17 +104,10 @@ void knl_grid(
       loc_out_burst      = i*NBURST_PER_UV_OUT+j;
       out[loc_out_burst] = out_burst;
       
-      // Read in new input block when we are half cross the array
-      // Put the new block into the array
-      //for(m = 0; m < NSAMP_PER_BURST; m++){
-      //	loc_in = coord_burst[j].data[m];
-      //	if(loc_in != 0){
-      //	  fprintf(fp, "CHANGE:\t(%d %d)\n", (j*NSAMP_PER_BURST+m)/FFT_SIZE, (j*NSAMP_PER_BURST+m)%FFT_SIZE);
-      //	}
-      //}
     LOOP_GET_LOC_IN:
       for(m = 0; m < NSAMP_PER_BURST; m++){
-	loc_in = coord_burst[j].data[NSAMP_PER_BURST-m-1];
+	loc_coord = j*NSAMP_PER_BURST+NSAMP_PER_BURST-m-1;
+	loc_in = coord_burst[loc_coord];
 	if(loc_in != 0){
 	  break;
 	}
@@ -134,5 +132,4 @@ void knl_grid(
       }
     }    
   }
-  //fclose(fp);
 }

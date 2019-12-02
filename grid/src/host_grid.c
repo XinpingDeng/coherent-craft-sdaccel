@@ -18,9 +18,6 @@ int main(int argc, char* argv[]){
 
   // 4368 UV;
   // Prepare host buffers
-  //cl_int ndata1;
-  //cl_int ndata2;
-  //cl_int ndata3;
   uint64_t ndata1;
   uint64_t ndata2;
   uint64_t ndata3;
@@ -44,21 +41,21 @@ int main(int argc, char* argv[]){
   ndata3 = 2*nuv_per_cu*(uint64_t)NSAMP_PER_UV_OUT;
   
   uv_t  *in = NULL;
-  coord_t *coord = NULL;
+  coord_t1 *coord = NULL;
   uv_t  *sw_out = NULL;
   uv_t  *hw_out = NULL;
   cl_int *coord_int = NULL;
   
   in        = (uv_t *)aligned_alloc(MEM_ALIGNMENT, ndata2*sizeof(uv_t));
-  coord     = (coord_t *)aligned_alloc(MEM_ALIGNMENT, ndata1*sizeof(coord_t));
+  coord     = (coord_t1 *)aligned_alloc(MEM_ALIGNMENT, ndata1*sizeof(coord_t1));
   sw_out    = (uv_t *)aligned_alloc(MEM_ALIGNMENT, ndata3*sizeof(uv_t));
   hw_out    = (uv_t *)aligned_alloc(MEM_ALIGNMENT, ndata3*sizeof(uv_t));
   coord_int = (cl_int *)aligned_alloc(MEM_ALIGNMENT, ndata1*sizeof(cl_int));  
   
   fprintf(stdout, "INFO: %f MB memory used on host in total\n",
-	  ((ndata2 + 2*ndata3)*CORE_DATA_WIDTH + ndata1*COORD_DATA_WIDTH)/(8*1024.*1024.));
+	  ((ndata2 + 2*ndata3)*CORE_DATA_WIDTH + ndata1*COORD_DATA_WIDTH1)/(8*1024.*1024.));
   fprintf(stdout, "INFO: %f MB memory used on device in total\n",
-	  ((ndata2 + ndata3)*CORE_DATA_WIDTH + ndata1*COORD_DATA_WIDTH)/(8*1024.*1024.));
+	  ((ndata2 + ndata3)*CORE_DATA_WIDTH + ndata1*COORD_DATA_WIDTH1)/(8*1024.*1024.));
   fprintf(stdout, "INFO: %f MB memory used on device for raw input\n",
 	  ndata2*CORE_DATA_WIDTH/(8*1024.*1024.));  
   fprintf(stdout, "INFO: %f MB memory used on device for raw output\n",
@@ -75,7 +72,7 @@ int main(int argc, char* argv[]){
   }
   read_coord("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/grid/src/uv_coord_single.txt", NSAMP_PER_UV_OUT, coord_int);
   for(i = 0; i < ndata1; i++){
-    coord[i] = (coord_t)coord_int[i];
+    coord[i] = (coord_t1)coord_int[i];
     //if(coord_int[i]!=0)
     //fprintf(stdout, "%d\n", (int)coord[i]);
   }
@@ -179,7 +176,7 @@ int main(int argc, char* argv[]){
   cl_mem pt[3];
 
   OCL_CHECK(err, buffer_in    = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uv_t)*ndata2, in, &err));
-  OCL_CHECK(err, buffer_coord = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(coord_t)*ndata1, coord, &err));
+  OCL_CHECK(err, buffer_coord = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(coord_t1)*ndata1, coord, &err));
   OCL_CHECK(err, buffer_out   = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uv_t)*ndata3, hw_out, &err));
   if (!(buffer_in&&
 	buffer_coord&&
@@ -229,19 +226,9 @@ int main(int argc, char* argv[]){
 
   // Check the result
   for(i=0;i<ndata3/2;i++){
-    //fprintf(fp, "ERROR: Test failed %d (%d %d) (%f %f) (%f %f)\n", i, ((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE, (float)sw_out[2*i], (float)sw_out[2*i+1], (float)hw_out[2*i], (float)hw_out[2*i+1]);
     if((sw_out[2*i] != hw_out[2*i])||(sw_out[2*i+1] != hw_out[2*i+1])){
-      //fprintf(stderr, "ERROR: Test failed %d (%d %d) (%f %f) (%f %f)\n", i, ((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE, (float)sw_out[2*i], (float)sw_out[2*i+1], (float)hw_out[2*i], (float)hw_out[2*i+1]);
-      //fprintf(fp, "ERROR: Test failed %d (%d %d) (%f %f) (%f %f)\n", i, ((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE, (float)sw_out[2*i], (float)sw_out[2*i+1], (float)hw_out[2*i], (float)hw_out[2*i+1]);
       fprintf(fp, "ERROR: Test failed %d (%d %d) (%f %f) (%f %f)\n", i, ((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE, sw_out[2*i].to_float(), sw_out[2*i+1].to_float(), hw_out[2*i].to_float(), hw_out[2*i+1].to_float());
-      //fprintf(fp, "ERROR: Test failed %d (%d %d)\n", i, ((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE);
     }
-    //if((hw_out[2*i]==0) &&(hw_out[2*i+1] == 0))
-    //if((hw_out[2*i]!=0) ||(hw_out[2*i+1] != 0))
-    //fprintf(fp, "ERROR: Test failed %d (%d %d) (%f %f)\n", i, ((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE, (float)hw_out[2*i], (float)hw_out[2*i+1]);
-    //if((sw_out[2*i]!=0) ||(sw_out[2*i+1] != 0))
-    //  fprintf(fp, "ERROR: Test failed %d (%d %d) (%f %f)\n", i, ((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE, (float)sw_out[2*i], (float)sw_out[2*i+1]);
-    //fprintf(fp, "CHANGE:\t(%d %d)\n",((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE);
   }
   fclose(fp);
   

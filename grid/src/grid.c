@@ -9,7 +9,7 @@
 
 int grid(
 	 uv_t *in,
-	 coord_t *coord,
+	 coord_t1 *coord,
 	 uv_t *out,
 	 int nuv_per_cu
 	 ){
