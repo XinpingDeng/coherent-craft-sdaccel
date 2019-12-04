@@ -17,11 +17,18 @@ int boxcar(
 	   ){
   int i;
   int j;
-  int loc_in;
-  int loc_out;
+  int m;
+  long loc_in;
+  long loc_out;
   
   for(i = 0; i < ndm; i++){
     for(j = 0; j < ntime; j++){
-      
+      for(m = 0; m < NSAMP_PER_IMG; m++){
+	loc_in  = i*ntime*NSAMP_PER_IMG + j*NSAMP_PER_IMG + m;
+	loc_out = loc_in;
+
+	out1[loc_out] = in[loc_in];
+      }
+    }
   }
 }

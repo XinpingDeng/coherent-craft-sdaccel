@@ -237,11 +237,11 @@ void boxcar1(
 
  LOOP_BOXCAR1_I:
   for(i = 0; i < ndm; i++){
-  LOOP_BOXCAR1_J1:
+  LOOP_BOXCAR1_M1:
     // Read in the first image of each DM, get boxcar1 and setup for boxcar2
-    for(j = 0; j < NBURST_PER_IMG; j++){
+    for(m = 0; m < NBURST_PER_IMG; m++){
 #pragma HLS PIPELINE
-      loc = i*NBURST_PER_IMG*ntime + j;
+      loc = i*NBURST_PER_IMG*ntime + m;
       in_burst = in[loc];
       // Boxcar1
       boxcar1_stream_out.write(in_burst);
@@ -250,13 +250,13 @@ void boxcar1(
       boxcar1_stream.write(in_burst);
     }
 
-  LOOP_BOXCAR1_M:
+  LOOP_BOXCAR1_J:
     // Read in the rest images expect the last one, get boxcar1 and setup for boxcar2
-    for(m = 1; m < (ntime - 1); m++){
-    LOOP_BOXCAR1_N:
-      for(n = 0; n < NBURST_PER_IMG; n++){
+    for(j = 1; j < (ntime - 1); j++){
+    LOOP_BOXCAR1_M2:
+      for(m = 0; m < NBURST_PER_IMG; m++){
 #pragma HLS PIPELINE
-	loc = i*ntime*NBURST_PER_IMG + m*NBURST_PER_IMG + n;
+	loc = i*ntime*NBURST_PER_IMG + j*NBURST_PER_IMG + m;
 	in_burst = in[loc];
 	// Boxcar1
 	boxcar1_stream_out.write(in_burst);
@@ -267,11 +267,11 @@ void boxcar1(
       }
     }
     
-  LOOP_BOXCAR1_J2:
+  LOOP_BOXCAR1_M3:
     // Read in the last image of each DM, get boxcar1 and setup for boxcar2
-    for(j = 0; j < NBURST_PER_IMG; j++){
+    for(m = 0; m < NBURST_PER_IMG; m++){
 #pragma HLS PIPELINE
-      loc = i*ntime*NBURST_PER_IMG + (ntime-1)*NBURST_PER_IMG + n;
+      loc = i*ntime*NBURST_PER_IMG + (ntime-1)*NBURST_PER_IMG + m;
       in_burst = in[loc];
       // Boxcar1
       boxcar1_stream_out.write(in_burst);
@@ -318,7 +318,7 @@ void boxcar2(
       boxcar2_stream_out.write(burst_result);
       // Setup boxcar3
       // Here only setup long stream
-      boxcar2_stream.write(burst_current);
+      boxcar2_stream.write(burst_result);
     }
     
   LOOP_BOXCAR2_J:
