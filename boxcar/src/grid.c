@@ -18,41 +18,62 @@ int boxcar(
   int i;
   int j;
   int m;
-  long current_loc;
-  long previous_loc;
-  int tmp2;
-  int tmp3;
-  core_t current_in;
-  core_t previous_in;
+  long loc_out;
+  long loc_out;
+  core_t boxcar;
+  core_t previous;
   
   for(i = 0; i < ndm; i++){
     for(j = 0; j < NSAMP_PER_IMG; j++){
-      tmp2 = 0;
-      tmp3 = 0;
-      
+      // boxcar1
       for(m = 0; m < ntime; m++){
-	current_loc  = i*ntime*NSAMP_PER_IMG + m*NSAMP_PER_IMG + j;
-	previous_loc = current_loc;
-	current_in = in[current_loc];
+	loc_in  = i*ntime*NSAMP_PER_IMG + m*NSAMP_PER_IMG + j;
+	loc_out = loc_in;	
+	out1[loc_out] = = in[loc_in];
+      }
+
+      // boxcar2
+      boxcar = 0;
+      loc_in = i*ntime*NSAMP_PER_IMG + j;
+      previous = in[loc_in];
+      for(m = 0; m < 2; m++){
+	loc_in = i*ntime*NSAMP_PER_IMG + m*NSAMP_PER_IMG + j;
+	boxcar += in[loc_in];	
+      }
+      loc_out      = i*ntime*NSAMP_PER_IMG + j;
+      out[loc_out] = boxcar;      
+      for(m = 2; m < ntime; m++){
+	loc_in   = i*ntime*NSAMP_PER_IMG + m*NSAMP_PER_IMG + j;
+	boxcar   += in[loc_in];
+	boxcar   -= previous;
+
+	loc_out       = i*ntime*NSAMP_PER_IMG + (m-1)*NSAMP_PER_IMG + j;
+	out2[loc_out] = boxcar;
 	
-	out1[current_loc] = current_in;
+	loc_in   = i*ntime*NSAMP_PER_IMG + (m-1)*NSAMP_PER_IMG + j;
+	previous = in[loc_in];
+      }
+      
+      // boxcar3
+      boxcar = 0;
+      loc_in = i*ntime*NSAMP_PER_IMG + j;
+      previous = in[loc_in];
+      for(m = 0; m < 3; m++){
+	loc_in = i*ntime*NSAMP_PER_IMG + m*NSAMP_PER_IMG + j;
+	boxcar += in[loc_in];	
+      }
+      loc_out      = i*ntime*NSAMP_PER_IMG + j;
+      out[loc_out] = boxcar;      
+      for(m = 3; m < ntime; m++){
+	loc_in   = i*ntime*NSAMP_PER_IMG + m*NSAMP_PER_IMG + j;
+	boxcar   += in[loc_in];
+	boxcar   -= previous;
+
+	loc_out       = i*ntime*NSAMP_PER_IMG + (m-2)*NSAMP_PER_IMG + j;
+	out3[loc_out] = boxcar;
 	
-	if (m==0){
-	  tmp2 = current_in;
-	  tmp3 = current_in;
-	}
-	if(m==1){
-	  previous_loc = i*ntime*NSAMP_PER_IMG + j;
-	  tmp2 = tmp2 + current_in;
-	  tmp3 = tmp3 + current_in;
-	  
-	  previous_in = in[previous_loc];
-	  out2[previous_loc] = tmp2;
-	}
-	else{
-	  tmp2 = tmp2 + current_in-previous_in;
-	  
-	}
+	loc_in   = i*ntime*NSAMP_PER_IMG + (m-2)*NSAMP_PER_IMG + j;
+	previous = in[loc_in];
       }
     }
   }

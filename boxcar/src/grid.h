@@ -56,3 +56,12 @@ typedef struct burst_t{
 }burst_t; // The size of this should be 512; BURST_DATA_WIDTH
 
 typedef hls::stream<burst_t> stream_t;
+
+int boxcar(
+	   const core_t *in,
+	   core_t *out1,
+	   core_t *out2,
+	   core_t *out3,
+	   int ndm,
+	   int ntime
+	   );

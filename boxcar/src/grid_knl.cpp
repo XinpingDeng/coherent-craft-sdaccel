@@ -1,4 +1,4 @@
-#include "grid_knl.h"
+#include "grid.h"
 
 // Order is assumed to be TBFP, BFP or BF
 extern "C" {  
