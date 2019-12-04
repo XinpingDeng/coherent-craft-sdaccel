@@ -84,7 +84,7 @@ int main(int argc, char* argv[]){
   struct timespec host_start;
   struct timespec host_finish;
   clock_gettime(CLOCK_REALTIME, &host_start);
-  grid(in, coord, sw_out, nuv_per_cu);
+  boxcar(in, coord, sw_out, nuv_per_cu);
   fprintf(stdout, "INFO: DONE HOST EXECUTION\n");
   clock_gettime(CLOCK_REALTIME, &host_finish);
   cpu_elapsed_time = (host_finish.tv_sec - host_start.tv_sec) + (host_finish.tv_nsec - host_start.tv_nsec)/1.0E9L;
@@ -167,7 +167,7 @@ int main(int argc, char* argv[]){
 
   // Create the kernel
   cl_kernel kernel;
-  OCL_CHECK(err, kernel = clCreateKernel(program, "knl_grid", &err));
+  OCL_CHECK(err, kernel = clCreateKernel(program, "knl_boxcar", &err));
 
   // Prepare device buffer
   cl_mem buffer_in;

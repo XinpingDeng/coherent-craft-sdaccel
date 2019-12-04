@@ -1,6 +1,6 @@
 #include "grid.h"
 
-// Order is assumed to be TBFP, BFP or BF
+// Order is assumed to be DM-TIME-UV
 extern "C" {  
   void knl_grid(
 		const burst_uv *in,

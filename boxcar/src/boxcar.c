@@ -7,48 +7,74 @@
 #include "boxcar.h"
 #include "util_sdaccel.h"
 
-int grid(
-	 uv_t *in,
-	 coord_t1 *coord,
-	 uv_t *out,
-	 int nuv_per_cu
-	 ){
+int boxcar(
+	   const core_t *in,
+	   core_t *out1,
+	   core_t *out2,
+	   core_t *out3,
+	   int ndm,
+	   int ntime
+	   ){
   int i;
   int j;
-  int loc_in;
-  int loc_out;
+  int m;
+  long loc_out;
+  long loc_out;
+  core_t boxcar;
+  core_t previous;
   
-  for(i = 0; i < nuv_per_cu; i++){
-    for(j = 0; j < NSAMP_PER_UV_OUT; j++){
-      loc_out = i*NSAMP_PER_UV_OUT + j;
-      out[2*loc_out]   = 0;
-      out[2*loc_out+1] = 0;
-      if(coord[j]!=0){
-	loc_in  = i*NSAMP_PER_UV_IN + coord[j] - 1;
-	out[2*loc_out]   = in[2*loc_in];
-	out[2*loc_out+1] = in[2*loc_in+1];
+  for(i = 0; i < ndm; i++){
+    for(j = 0; j < NSAMP_PER_IMG; j++){
+      // boxcar1
+      for(m = 0; m < ntime; m++){
+	loc_in  = i*ntime*NSAMP_PER_IMG + m*NSAMP_PER_IMG + j;
+	loc_out = loc_in;	
+	out1[loc_out] = = in[loc_in];
+      }
+
+      // boxcar2
+      boxcar = 0;
+      loc_in = i*ntime*NSAMP_PER_IMG + j;
+      previous = in[loc_in];
+      for(m = 0; m < 2; m++){
+	loc_in = i*ntime*NSAMP_PER_IMG + m*NSAMP_PER_IMG + j;
+	boxcar += in[loc_in];	
+      }
+      loc_out      = i*ntime*NSAMP_PER_IMG + j;
+      out[loc_out] = boxcar;      
+      for(m = 2; m < ntime; m++){
+	loc_in   = i*ntime*NSAMP_PER_IMG + m*NSAMP_PER_IMG + j;
+	boxcar   += in[loc_in];
+	boxcar   -= previous;
+
+	loc_out       = i*ntime*NSAMP_PER_IMG + (m-1)*NSAMP_PER_IMG + j;
+	out2[loc_out] = boxcar;
+	
+	loc_in   = i*ntime*NSAMP_PER_IMG + (m-1)*NSAMP_PER_IMG + j;
+	previous = in[loc_in];
+      }
+      
+      // boxcar3
+      boxcar = 0;
+      loc_in = i*ntime*NSAMP_PER_IMG + j;
+      previous = in[loc_in];
+      for(m = 0; m < 3; m++){
+	loc_in = i*ntime*NSAMP_PER_IMG + m*NSAMP_PER_IMG + j;
+	boxcar += in[loc_in];	
+      }
+      loc_out      = i*ntime*NSAMP_PER_IMG + j;
+      out[loc_out] = boxcar;      
+      for(m = 3; m < ntime; m++){
+	loc_in   = i*ntime*NSAMP_PER_IMG + m*NSAMP_PER_IMG + j;
+	boxcar   += in[loc_in];
+	boxcar   -= previous;
+
+	loc_out       = i*ntime*NSAMP_PER_IMG + (m-2)*NSAMP_PER_IMG + j;
+	out3[loc_out] = boxcar;
+	
+	loc_in   = i*ntime*NSAMP_PER_IMG + (m-2)*NSAMP_PER_IMG + j;
+	previous = in[loc_in];
       }
     }
   }
-
-  return EXIT_SUCCESS;
-}
-
-int read_coord(char *fname, int flen, int *fdat){
-  FILE *fp = NULL;
-  char line[LINE_LENGTH];
-  fp = fopen(fname, "r");
-  if(fp == NULL){
-    fprintf(stderr, "ERROR: Failed to open %s\n", fname);
-    fprintf(stderr, "ERROR: Please look into the file \"%s\" above line [%d]!\n", __FILE__, __LINE__);
-    fprintf(stderr, "ERROR: Test failed ...!\n");
-    exit(EXIT_FAILURE);
-  }
-  for(int i = 0; i < flen; i++){
-    fgets(line, LINE_LENGTH, fp);
-    sscanf(line, "%d", &fdat[i]);
-  }
-  
-  fclose(fp);
-  return EXIT_SUCCESS;
 }

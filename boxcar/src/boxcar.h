@@ -14,51 +14,36 @@
 #include <ap_fixed.h>
 #include <ap_int.h>
 #include <assert.h>
+#include <hls_stream.h>
 
 #define FLOAT_DATA_TYPE     1
-//#define CORE_DATA_WIDTH     32     // We use float 32-bits complex numbers
-#define CORE_DATA_WIDTH     16       // We use ap_fixed 16-bits complex numbers
-#define FFT_SIZE            256
-#define NSAMP_PER_UV_OUT    65536    // FFT_SIZE^2
-#define NSAMP_PER_UV_IN     3568
-#define NDATA_PER_UV_IN     8736
-#define COORD_DATA_WIDTH1    16       // Wider than the required width, but to 2^n
-#define COORD_DATA_WIDTH2    13       // Wide enough to cover the input index range
+//#define CORE_DATA_WIDTH     32     // We use float 32-bits real numbers
+#define CORE_DATA_WIDTH     8       // We use ap_fixed 8-bits real numbers
+#define NSAMP_PER_IMG        65536    // 256^2
 
 #if CORE_DATA_WIDTH == 32
 #define COMPUTE_DATA_WIDTH  64     // (2*CORE_DATA_WIDTH), complex 
 #define DATA_RANGE          4096
-#define NSAMP_PER_BURST     8
-#define NDATA_PER_BURST     16     //(2*NSAMP_PER_BURST)
-#define NBURST_PER_UV_OUT   8192   // NSAMP_PER_UV_OUT/NSAMP_PER_BURST
-#define NBURST_PER_UV_IN    446    // NSAMP_PER_UV_OUT/NSAMP_PER_BURST
-#if FLOAT_DATA_TYPE == 1
-typedef float uv_t;
-#else
-typedef int uv_t;
-#endif
-
-#elif CORE_DATA_WIDTH == 16
-#define COMPUTE_DATA_WIDTH  32     // (2*CORE_DATA_WIDTH), complex 
-#define DATA_RANGE          127
 #define NSAMP_PER_BURST     16
-#define NDATA_PER_BURST     32     //(2*NSAMP_PER_BURST)
-#define NBURST_PER_UV_OUT   4096   // NSAMP_PER_UV_OUT/NSAMP_PER_BURST
-#define NBURST_PER_UV_IN    223    // NSAMP_PER_UV_OUT/NSAMP_PER_BURST
+#define NBURST_PER_IMG      8192   // NSAMP_PER_IMG_OUT/NSAMP_PER_BURST
 #if FLOAT_DATA_TYPE == 1
-#define INTEGER_WIDTH       8      // Integer width of data
-typedef ap_fixed<CORE_DATA_WIDTH, INTEGER_WIDTH> uv_t; // The size of this should be CORE_DATA_WIDTH
+typedef float core_t;
 #else
-typedef ap_int<CORE_DATA_WIDTH> uv_t; // The size of this should be CORE_DATA_WIDTH
-#endif
+typedef int core_t;
 #endif
 
-typedef ap_uint<COORD_DATA_WIDTH1> coord_t1; // Use for the top-level interface
-typedef ap_uint<COORD_DATA_WIDTH2> coord_t2; // Use inside the kernel
-
-typedef struct burst_coord{
-  coord_t1 data[NSAMP_PER_BURST];
-}burst_coord; 
+#elif CORE_DATA_WIDTH == 8
+#define COMPUTE_DATA_WIDTH  16     // (2*CORE_DATA_WIDTH), complex 
+#define DATA_RANGE          63
+#define NSAMP_PER_BURST     64
+#define NBURST_PER_IMG      1024   // NSAMP_PER_IMG_OUT/NSAMP_PER_BURST
+#if FLOAT_DATA_TYPE == 1
+#define INTEGER_WIDTH       6      // Integer width of data
+typedef ap_fixed<CORE_DATA_WIDTH, INTEGER_WIDTH> core_t; // The size of this should be CORE_DATA_WIDTH
+#else
+typedef ap_int<CORE_DATA_WIDTH> core_t; // The size of this should be CORE_DATA_WIDTH
+#endif
+#endif
 
 #define MAX_PALTFORMS       16
 #define MAX_DEVICES         16
@@ -66,18 +51,17 @@ typedef struct burst_coord{
 #define MEM_ALIGNMENT       4096  // memory alignment on device
 #define LINE_LENGTH         4096
 
-typedef struct burst_uv{
-  uv_t data[NDATA_PER_BURST];
-}burst_uv; // The size of this should be 512; BURST_DATA_WIDTH
+typedef struct burst_t{
+  core_t data[NSAMP_PER_BURST];
+}burst_t; // The size of this should be 512; BURST_DATA_WIDTH
 
-int grid(
-	 uv_t *in,
-	 coord_t1 *coord,
-	 uv_t *out,
-	 int nuv_per_cu
-	 );
+typedef hls::stream<burst_t> stream_t;
 
-int read_coord(
-	       char *fname,
-	       int flen,
-	       int *fdat);
+int boxcar(
+	   const core_t *in,
+	   core_t *out1,
+	   core_t *out2,
+	   core_t *out3,
+	   int ndm,
+	   int ntime
+	   );
