@@ -76,113 +76,107 @@ void knl_boxcar(
   
   stream_t boxcar1_stream;
   stream_t boxcar2_stream;
-  stream_t boxcar3_stream;
-  stream_t boxcar4_stream;
-  stream_t boxcar5_stream;
-  stream_t boxcar6_stream;
-  stream_t boxcar7_stream;
-  stream_t boxcar8_stream;
-  stream_t boxcar9_stream;
-  stream_t boxcar10_stream;
-  stream_t boxcar11_stream;
-  stream_t boxcar12_stream;
-  stream_t boxcar13_stream;
-  stream_t boxcar14_stream;
-  stream_t boxcar15_stream;
-  stream_t boxcar16_stream;
+  //stream_t boxcar3_stream;
+  //stream_t boxcar4_stream;
+  //stream_t boxcar5_stream;
+  //stream_t boxcar6_stream;
+  //stream_t boxcar7_stream;
+  //stream_t boxcar8_stream;
+  //stream_t boxcar9_stream;
+  //stream_t boxcar10_stream;
+  //stream_t boxcar11_stream;
+  //stream_t boxcar12_stream;
+  //stream_t boxcar13_stream;
+  //stream_t boxcar14_stream;
+  //stream_t boxcar15_stream;
   
   stream_t boxcar1_stream_hold;
   stream_t boxcar2_stream_hold;
-  stream_t boxcar3_stream_hold;
-  stream_t boxcar4_stream_hold;
-  stream_t boxcar5_stream_hold;
-  stream_t boxcar6_stream_hold;
-  stream_t boxcar7_stream_hold;
-  stream_t boxcar8_stream_hold;
-  stream_t boxcar9_stream_hold;
-  stream_t boxcar10_stream_hold;
-  stream_t boxcar11_stream_hold;
-  stream_t boxcar12_stream_hold;
-  stream_t boxcar13_stream_hold;
-  stream_t boxcar14_stream_hold;
-  stream_t boxcar15_stream_hold;
-  stream_t boxcar16_stream_hold;
+  //stream_t boxcar3_stream_hold;
+  //stream_t boxcar4_stream_hold;
+  //stream_t boxcar5_stream_hold;
+  //stream_t boxcar6_stream_hold;
+  //stream_t boxcar7_stream_hold;
+  //stream_t boxcar8_stream_hold;
+  //stream_t boxcar9_stream_hold;
+  //stream_t boxcar10_stream_hold;
+  //stream_t boxcar11_stream_hold;
+  //stream_t boxcar12_stream_hold;
+  //stream_t boxcar13_stream_hold;
+  //stream_t boxcar14_stream_hold;
+  //stream_t boxcar15_stream_hold;
   
   stream_t boxcar1_stream_out;
   stream_t boxcar2_stream_out;
   stream_t boxcar3_stream_out;
-  stream_t boxcar4_stream_out;
-  stream_t boxcar5_stream_out;
-  stream_t boxcar6_stream_out;
-  stream_t boxcar7_stream_out;
-  stream_t boxcar8_stream_out;
-  stream_t boxcar9_stream_out;
-  stream_t boxcar10_stream_out;
-  stream_t boxcar11_stream_out;
-  stream_t boxcar12_stream_out;
-  stream_t boxcar13_stream_out;
-  stream_t boxcar14_stream_out;
-  stream_t boxcar15_stream_out;
-  stream_t boxcar16_stream_out;
+  //stream_t boxcar4_stream_out;
+  //stream_t boxcar5_stream_out;
+  //stream_t boxcar6_stream_out;
+  //stream_t boxcar7_stream_out;
+  //stream_t boxcar8_stream_out;
+  //stream_t boxcar9_stream_out;
+  //stream_t boxcar10_stream_out;
+  //stream_t boxcar11_stream_out;
+  //stream_t boxcar12_stream_out;
+  //stream_t boxcar13_stream_out;
+  //stream_t boxcar14_stream_out;
+  //stream_t boxcar15_stream_out;
+  //stream_t boxcar16_stream_out;
   
   // These streams hold multiple images, delay for NBURST_PER_IMG, accumulate happens when new samples come in
   // The size should be NBURST_PER_IMG + 1, but can not use defined variable here
   // Long stream afterwards
 #pragma HLS STREAM variable = boxcar1_stream depth = 1025
 #pragma HLS STREAM variable = boxcar2_stream depth = 1025
-#pragma HLS STREAM variable = boxcar3_stream depth = 1025
-#pragma HLS STREAM variable = boxcar4_stream depth = 1025
-#pragma HLS STREAM variable = boxcar5_stream depth = 1025
-#pragma HLS STREAM variable = boxcar6_stream depth = 1025
-#pragma HLS STREAM variable = boxcar7_stream depth = 1025
-#pragma HLS STREAM variable = boxcar8_stream depth = 1025
-#pragma HLS STREAM variable = boxcar9_stream depth = 1025
-#pragma HLS STREAM variable = boxcar10_stream depth = 1025
-#pragma HLS STREAM variable = boxcar11_stream depth = 1025
-#pragma HLS STREAM variable = boxcar12_stream depth = 1025
-#pragma HLS STREAM variable = boxcar13_stream depth = 1025
-#pragma HLS STREAM variable = boxcar14_stream depth = 1025
-#pragma HLS STREAM variable = boxcar15_stream depth = 1025
-
-//#pragma HLS RESOURCE variable=boxcar1_stream core=XPM_MEMORY uram
-//#pragma HLS RESOURCE variable=boxcar2_stream core=XPM_MEMORY uram
-//#pragma HLS RESOURCE variable=boxcar3_stream core=XPM_MEMORY uram
+//#pragma HLS STREAM variable = boxcar3_stream depth = 1025
+//#pragma HLS STREAM variable = boxcar4_stream depth = 1025
+//#pragma HLS STREAM variable = boxcar5_stream depth = 1025
+//#pragma HLS STREAM variable = boxcar6_stream depth = 1025
+//#pragma HLS STREAM variable = boxcar7_stream depth = 1025
+//#pragma HLS STREAM variable = boxcar8_stream depth = 1025
+//#pragma HLS STREAM variable = boxcar9_stream depth = 1025
+//#pragma HLS STREAM variable = boxcar10_stream depth = 1025
+//#pragma HLS STREAM variable = boxcar11_stream depth = 1025
+//#pragma HLS STREAM variable = boxcar12_stream depth = 1025
+//#pragma HLS STREAM variable = boxcar13_stream depth = 1025
+//#pragma HLS STREAM variable = boxcar14_stream depth = 1025
+//#pragma HLS STREAM variable = boxcar15_stream depth = 1025
   
   // These streams hold one new income sample, the delay between them and the above streams is 1024 (NBURST_PER_IMG)
   // Short stream afterwards
-#pragma HLS STREAM variable = boxcar1_stream_hold depth = 1
-#pragma HLS STREAM variable = boxcar2_stream_hold depth = 1
-#pragma HLS STREAM variable = boxcar3_stream_hold depth = 1
-#pragma HLS STREAM variable = boxcar4_stream_hold depth = 1
-#pragma HLS STREAM variable = boxcar5_stream_hold depth = 1
-#pragma HLS STREAM variable = boxcar6_stream_hold depth = 1
-#pragma HLS STREAM variable = boxcar7_stream_hold depth = 1
-#pragma HLS STREAM variable = boxcar8_stream_hold depth = 1
-#pragma HLS STREAM variable = boxcar9_stream_hold depth = 1
-#pragma HLS STREAM variable = boxcar10_stream_hold depth = 1
-#pragma HLS STREAM variable = boxcar11_stream_hold depth = 1
-#pragma HLS STREAM variable = boxcar12_stream_hold depth = 1
-#pragma HLS STREAM variable = boxcar13_stream_hold depth = 1
-#pragma HLS STREAM variable = boxcar14_stream_hold depth = 1
-#pragma HLS STREAM variable = boxcar15_stream_hold depth = 1
+#pragma HLS STREAM variable = boxcar1_stream_hold //depth = 1
+#pragma HLS STREAM variable = boxcar2_stream_hold //depth = 1
+//#pragma HLS STREAM variable = boxcar3_stream_hold //depth = 1
+//#pragma HLS STREAM variable = boxcar4_stream_hold //depth = 1
+//#pragma HLS STREAM variable = boxcar5_stream_hold //depth = 1
+//#pragma HLS STREAM variable = boxcar6_stream_hold //depth = 1
+//#pragma HLS STREAM variable = boxcar7_stream_hold //depth = 1
+//#pragma HLS STREAM variable = boxcar8_stream_hold //depth = 1
+//#pragma HLS STREAM variable = boxcar9_stream_hold //depth = 1
+//#pragma HLS STREAM variable = boxcar10_stream_hold //depth = 1
+//#pragma HLS STREAM variable = boxcar11_stream_hold //depth = 1
+//#pragma HLS STREAM variable = boxcar12_stream_hold //depth = 1
+//#pragma HLS STREAM variable = boxcar13_stream_hold //depth = 1
+//#pragma HLS STREAM variable = boxcar14_stream_hold //depth = 1
+//#pragma HLS STREAM variable = boxcar15_stream_hold //depth = 1
 
   // These streams hols one outcome sample
-#pragma HLS STREAM variable = boxcar1_stream_out depth = 1
-#pragma HLS STREAM variable = boxcar2_stream_out depth = 1
-#pragma HLS STREAM variable = boxcar3_stream_out depth = 1
-#pragma HLS STREAM variable = boxcar4_stream_out depth = 1
-#pragma HLS STREAM variable = boxcar5_stream_out depth = 1
-#pragma HLS STREAM variable = boxcar6_stream_out depth = 1
-#pragma HLS STREAM variable = boxcar7_stream_out depth = 1
-#pragma HLS STREAM variable = boxcar8_stream_out depth = 1
-#pragma HLS STREAM variable = boxcar9_stream_out depth = 1
-#pragma HLS STREAM variable = boxcar10_stream_out depth = 1
-#pragma HLS STREAM variable = boxcar11_stream_out depth = 1
-#pragma HLS STREAM variable = boxcar12_stream_out depth = 1
-#pragma HLS STREAM variable = boxcar13_stream_out depth = 1
-#pragma HLS STREAM variable = boxcar14_stream_out depth = 1
-#pragma HLS STREAM variable = boxcar15_stream_out depth = 1
-#pragma HLS STREAM variable = boxcar16_stream_out depth = 1
+#pragma HLS STREAM variable = boxcar1_stream_out //depth = 1
+#pragma HLS STREAM variable = boxcar2_stream_out //depth = 1
+#pragma HLS STREAM variable = boxcar3_stream_out //depth = 1
+//#pragma HLS STREAM variable = boxcar4_stream_out //depth = 1
+//#pragma HLS STREAM variable = boxcar5_stream_out //depth = 1
+//#pragma HLS STREAM variable = boxcar6_stream_out //depth = 1
+//#pragma HLS STREAM variable = boxcar7_stream_out //depth = 1
+//#pragma HLS STREAM variable = boxcar8_stream_out //depth = 1
+//#pragma HLS STREAM variable = boxcar9_stream_out //depth = 1
+//#pragma HLS STREAM variable = boxcar10_stream_out //depth = 1
+//#pragma HLS STREAM variable = boxcar11_stream_out //depth = 1
+//#pragma HLS STREAM variable = boxcar12_stream_out //depth = 1
+//#pragma HLS STREAM variable = boxcar13_stream_out //depth = 1
+//#pragma HLS STREAM variable = boxcar14_stream_out //depth = 1
+//#pragma HLS STREAM variable = boxcar15_stream_out //depth = 1
+//#pragma HLS STREAM variable = boxcar16_stream_out //depth = 1
 
 #pragma HLS DATAFLOW
   
@@ -242,7 +236,8 @@ void boxcar1(
     for(m = 0; m < NBURST_PER_IMG; m++){
 #pragma HLS PIPELINE
       loc = i*NBURST_PER_IMG*ntime + m;
-      in_burst = in[loc];
+      //in_burst = in[loc];
+      in_burst = in[0];
       // Boxcar1
       boxcar1_stream_out.write(in_burst);
       // Setup for boxcar2
@@ -257,7 +252,8 @@ void boxcar1(
       for(m = 0; m < NBURST_PER_IMG; m++){
 #pragma HLS PIPELINE
 	loc = i*ntime*NBURST_PER_IMG + j*NBURST_PER_IMG + m;
-	in_burst = in[loc];
+	//in_burst = in[loc];
+	in_burst = in[0];
 	// Boxcar1
 	boxcar1_stream_out.write(in_burst);
 	// Setup for boxcar2
@@ -272,7 +268,8 @@ void boxcar1(
     for(m = 0; m < NBURST_PER_IMG; m++){
 #pragma HLS PIPELINE
       loc = i*ntime*NBURST_PER_IMG + (ntime-1)*NBURST_PER_IMG + m;
-      in_burst = in[loc];
+      //in_burst = in[loc];
+      in_burst = in[0];
       // Boxcar1
       boxcar1_stream_out.write(in_burst);
       // Here only setup the short stream
@@ -463,22 +460,25 @@ void write_out(
  LOOP_WRITE_I:
   for(i = 0; i < ndm; i++){
   LOOP_WRITE_M1:
-    // Write the first boxcar1
+    // Write the boxcar1 of the first timestamp
     for(m = 0; m < NBURST_PER_IMG; m++){
 #pragma HLS PIPELINE
       loc = i*ntime*NBURST_PER_IMG + m;
-      out1[loc] = boxcar1_stream_out.read();
+      //out1[loc] = boxcar1_stream_out.read();
+      out1[0] = boxcar1_stream_out.read();
     }
 
   LOOP_WRITE_M2:
-    // Write the first boxcar2
+    // Write the boxcar2 of the first timestamp
     for(m = 0; m < NBURST_PER_IMG; m++){
 #pragma HLS PIPELINE
       loc = i*ntime*NBURST_PER_IMG + NBURST_PER_IMG + m;
-      out1[loc] = boxcar1_stream_out.read();
+      //out1[loc] = boxcar1_stream_out.read();
+      out1[0] = boxcar1_stream_out.read();
       
       loc = i*ntime*NBURST_PER_IMG + m;
-      out2[loc] = boxcar2_stream_out.read();
+      //out2[loc] = boxcar2_stream_out.read();
+      out2[0] = boxcar2_stream_out.read();
     }
 
   LOOP_WRITE_J:
@@ -489,13 +489,16 @@ void write_out(
       for(m = 0; m < NBURST_PER_IMG; m++){
 #pragma HLS PIPELINE
 	loc = i*ntime*NBURST_PER_IMG + j*NBURST_PER_IMG + m;
-	out1[loc] = boxcar1_stream_out.read();
+	//out1[loc] = boxcar1_stream_out.read();
+	out1[0] = boxcar1_stream_out.read();
 
 	loc = i*ntime*NBURST_PER_IMG + (j-1)*NBURST_PER_IMG + m;
-	out2[loc] = boxcar2_stream_out.read();
+	//out2[loc] = boxcar2_stream_out.read();
+	out2[0] = boxcar2_stream_out.read();
 	
 	loc = i*ntime*NBURST_PER_IMG + (j-2)*NBURST_PER_IMG + m;
-	out3[loc] = boxcar3_stream_out.read();	
+	//out3[loc] = boxcar3_stream_out.read();
+	out3[0] = boxcar3_stream_out.read();	
       }      
     }
   }

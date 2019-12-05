@@ -15,6 +15,7 @@
 #include <ap_int.h>
 #include <assert.h>
 #include <hls_stream.h>
+#include <inttypes.h>
 
 #define FLOAT_DATA_TYPE     1
 //#define CORE_DATA_WIDTH     32     // We use float 32-bits real numbers
@@ -25,7 +26,7 @@
 #define COMPUTE_DATA_WIDTH  64     // (2*CORE_DATA_WIDTH), complex 
 #define DATA_RANGE          4096
 #define NSAMP_PER_BURST     16
-#define NBURST_PER_IMG      8192   // NSAMP_PER_IMG_OUT/NSAMP_PER_BURST
+#define NBURST_PER_IMG      4096   // NSAMP_PER_IMG_OUT/NSAMP_PER_BURST
 #if FLOAT_DATA_TYPE == 1
 typedef float core_t;
 #else

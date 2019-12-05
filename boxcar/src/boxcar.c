@@ -18,7 +18,7 @@ int boxcar(
   int i;
   int j;
   int m;
-  long loc_out;
+  long loc_in;
   long loc_out;
   core_t boxcar;
   core_t previous;
@@ -29,7 +29,7 @@ int boxcar(
       for(m = 0; m < ntime; m++){
 	loc_in  = i*ntime*NSAMP_PER_IMG + m*NSAMP_PER_IMG + j;
 	loc_out = loc_in;	
-	out1[loc_out] = = in[loc_in];
+	out1[loc_out] = in[loc_in];
       }
 
       // boxcar2
@@ -41,7 +41,7 @@ int boxcar(
 	boxcar += in[loc_in];	
       }
       loc_out      = i*ntime*NSAMP_PER_IMG + j;
-      out[loc_out] = boxcar;      
+      out2[loc_out] = boxcar;      
       for(m = 2; m < ntime; m++){
 	loc_in   = i*ntime*NSAMP_PER_IMG + m*NSAMP_PER_IMG + j;
 	boxcar   += in[loc_in];
@@ -63,7 +63,7 @@ int boxcar(
 	boxcar += in[loc_in];	
       }
       loc_out      = i*ntime*NSAMP_PER_IMG + j;
-      out[loc_out] = boxcar;      
+      out3[loc_out] = boxcar;      
       for(m = 3; m < ntime; m++){
 	loc_in   = i*ntime*NSAMP_PER_IMG + m*NSAMP_PER_IMG + j;
 	boxcar   += in[loc_in];
@@ -77,4 +77,5 @@ int boxcar(
       }
     }
   }
+  return EXIT_SUCCESS;
 }
