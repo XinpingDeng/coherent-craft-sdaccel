@@ -185,7 +185,7 @@ int main(int argc, char* argv[]){
   pt[0] = buffer_in;
   pt[1] = buffer_out1;
   pt[2] = buffer_out2;
-  pt[2] = buffer_out3;
+  pt[3] = buffer_out3;
 
   OCL_CHECK(err, err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &buffer_in));
   OCL_CHECK(err, err = clSetKernelArg(kernel, 1, sizeof(cl_mem), &buffer_out1)); 
@@ -208,7 +208,7 @@ int main(int argc, char* argv[]){
   cl_float kernel_elapsed_time;
   clock_gettime(CLOCK_REALTIME, &device_start);
   OCL_CHECK(err, err = clEnqueueTask(queue, kernel, 0, NULL, NULL));
-  OCL_CHECK(err, err = clFinish(queue));
+  //OCL_CHECK(err, err = clFinish(queue));
   fprintf(stdout, "INFO: DONE KERNEL EXECUTION\n");
   clock_gettime(CLOCK_REALTIME, &device_finish);
   kernel_elapsed_time = (device_finish.tv_sec - device_start.tv_sec) + (device_finish.tv_nsec - device_start.tv_nsec)/1.0E9L;
@@ -218,7 +218,7 @@ int main(int argc, char* argv[]){
   OCL_CHECK(err, err = clEnqueueMigrateMemObjects(queue, outputs, &pt[1], CL_MIGRATE_MEM_OBJECT_HOST, 0, NULL, NULL));
   OCL_CHECK(err, err = clFinish(queue));
   fprintf(stdout, "INFO: DONE MEMCPY FROM KERNEL TO HOST\n");
-  
+
   /*
   // Check the result
   for(i=0;i<ndata1;i++){
@@ -247,18 +247,23 @@ int main(int argc, char* argv[]){
   clReleaseMemObject(buffer_out1);
   clReleaseMemObject(buffer_out2);
   clReleaseMemObject(buffer_out3);
+  fprintf(stdout, "INFO: DONE clReleaseMemObject\n");  
   
   free(in);
   free(sw_out1);
   free(sw_out2);
   free(sw_out3);
-  free(hw_out1);
-  free(hw_out2);
-  free(hw_out3);
-    
+  //free(hw_out1);
+  //free(hw_out2);
+  //free(hw_out3);
+  fprintf(stdout, "INFO: DONE FREE\n");
+  
   clReleaseProgram(program);
+  fprintf(stdout, "INFO: clReleaseProgram\n");
   clReleaseKernel(kernel);
+  fprintf(stdout, "INFO: clReleaseKernel\n");
   clReleaseCommandQueue(queue);
+  fprintf(stdout, "INFO: clReleaseCommandQueue\n");
   clReleaseContext(context);
 
   fprintf(stdout, "INFO: DONE ALL\n");

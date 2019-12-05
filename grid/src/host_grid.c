@@ -245,6 +245,7 @@ int main(int argc, char* argv[]){
   free(in);
   free(coord);
   free(sw_out);
+  free(hw_out);
   free(coord_int);
   clReleaseProgram(program);
   clReleaseKernel(kernel);

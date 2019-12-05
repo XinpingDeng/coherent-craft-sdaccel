@@ -2,14 +2,14 @@
 
 // Order is assumed to be DM-TIME-IMAGE
 extern "C" {  
-void knl_boxcar(
-		const burst_t *in,
-		burst_t *out1,
-		burst_t *out2,
-		burst_t *out3,
-		int ndm,
-		int ntime
-		);  
+  void knl_boxcar(
+		  const burst_t *in,
+		  burst_t *out1,
+		  burst_t *out2,
+		  burst_t *out3,
+		  int ndm,
+		  int ntime
+		  );  
   void boxcar1(
 	       const burst_t *in,
 	       stream_t &boxcar1_stream,
@@ -128,91 +128,91 @@ void knl_boxcar(
   // Long stream afterwards
 #pragma HLS STREAM variable = boxcar1_stream depth = 1025
 #pragma HLS STREAM variable = boxcar2_stream depth = 1025
-//#pragma HLS STREAM variable = boxcar3_stream depth = 1025
-//#pragma HLS STREAM variable = boxcar4_stream depth = 1025
-//#pragma HLS STREAM variable = boxcar5_stream depth = 1025
-//#pragma HLS STREAM variable = boxcar6_stream depth = 1025
-//#pragma HLS STREAM variable = boxcar7_stream depth = 1025
-//#pragma HLS STREAM variable = boxcar8_stream depth = 1025
-//#pragma HLS STREAM variable = boxcar9_stream depth = 1025
-//#pragma HLS STREAM variable = boxcar10_stream depth = 1025
-//#pragma HLS STREAM variable = boxcar11_stream depth = 1025
-//#pragma HLS STREAM variable = boxcar12_stream depth = 1025
-//#pragma HLS STREAM variable = boxcar13_stream depth = 1025
-//#pragma HLS STREAM variable = boxcar14_stream depth = 1025
-//#pragma HLS STREAM variable = boxcar15_stream depth = 1025
+  //#pragma HLS STREAM variable = boxcar3_stream depth = 1025
+  //#pragma HLS STREAM variable = boxcar4_stream depth = 1025
+  //#pragma HLS STREAM variable = boxcar5_stream depth = 1025
+  //#pragma HLS STREAM variable = boxcar6_stream depth = 1025
+  //#pragma HLS STREAM variable = boxcar7_stream depth = 1025
+  //#pragma HLS STREAM variable = boxcar8_stream depth = 1025
+  //#pragma HLS STREAM variable = boxcar9_stream depth = 1025
+  //#pragma HLS STREAM variable = boxcar10_stream depth = 1025
+  //#pragma HLS STREAM variable = boxcar11_stream depth = 1025
+  //#pragma HLS STREAM variable = boxcar12_stream depth = 1025
+  //#pragma HLS STREAM variable = boxcar13_stream depth = 1025
+  //#pragma HLS STREAM variable = boxcar14_stream depth = 1025
+  //#pragma HLS STREAM variable = boxcar15_stream depth = 1025
   
   // These streams hold one new income sample, the delay between them and the above streams is 1024 (NBURST_PER_IMG)
   // Short stream afterwards
 #pragma HLS STREAM variable = boxcar1_stream_hold //depth = 1
 #pragma HLS STREAM variable = boxcar2_stream_hold //depth = 1
-//#pragma HLS STREAM variable = boxcar3_stream_hold //depth = 1
-//#pragma HLS STREAM variable = boxcar4_stream_hold //depth = 1
-//#pragma HLS STREAM variable = boxcar5_stream_hold //depth = 1
-//#pragma HLS STREAM variable = boxcar6_stream_hold //depth = 1
-//#pragma HLS STREAM variable = boxcar7_stream_hold //depth = 1
-//#pragma HLS STREAM variable = boxcar8_stream_hold //depth = 1
-//#pragma HLS STREAM variable = boxcar9_stream_hold //depth = 1
-//#pragma HLS STREAM variable = boxcar10_stream_hold //depth = 1
-//#pragma HLS STREAM variable = boxcar11_stream_hold //depth = 1
-//#pragma HLS STREAM variable = boxcar12_stream_hold //depth = 1
-//#pragma HLS STREAM variable = boxcar13_stream_hold //depth = 1
-//#pragma HLS STREAM variable = boxcar14_stream_hold //depth = 1
-//#pragma HLS STREAM variable = boxcar15_stream_hold //depth = 1
+  //#pragma HLS STREAM variable = boxcar3_stream_hold //depth = 1
+  //#pragma HLS STREAM variable = boxcar4_stream_hold //depth = 1
+  //#pragma HLS STREAM variable = boxcar5_stream_hold //depth = 1
+  //#pragma HLS STREAM variable = boxcar6_stream_hold //depth = 1
+  //#pragma HLS STREAM variable = boxcar7_stream_hold //depth = 1
+  //#pragma HLS STREAM variable = boxcar8_stream_hold //depth = 1
+  //#pragma HLS STREAM variable = boxcar9_stream_hold //depth = 1
+  //#pragma HLS STREAM variable = boxcar10_stream_hold //depth = 1
+  //#pragma HLS STREAM variable = boxcar11_stream_hold //depth = 1
+  //#pragma HLS STREAM variable = boxcar12_stream_hold //depth = 1
+  //#pragma HLS STREAM variable = boxcar13_stream_hold //depth = 1
+  //#pragma HLS STREAM variable = boxcar14_stream_hold //depth = 1
+  //#pragma HLS STREAM variable = boxcar15_stream_hold //depth = 1
 
   // These streams hols one outcome sample
 #pragma HLS STREAM variable = boxcar1_stream_out //depth = 1
 #pragma HLS STREAM variable = boxcar2_stream_out //depth = 1
 #pragma HLS STREAM variable = boxcar3_stream_out //depth = 1
-//#pragma HLS STREAM variable = boxcar4_stream_out //depth = 1
-//#pragma HLS STREAM variable = boxcar5_stream_out //depth = 1
-//#pragma HLS STREAM variable = boxcar6_stream_out //depth = 1
-//#pragma HLS STREAM variable = boxcar7_stream_out //depth = 1
-//#pragma HLS STREAM variable = boxcar8_stream_out //depth = 1
-//#pragma HLS STREAM variable = boxcar9_stream_out //depth = 1
-//#pragma HLS STREAM variable = boxcar10_stream_out //depth = 1
-//#pragma HLS STREAM variable = boxcar11_stream_out //depth = 1
-//#pragma HLS STREAM variable = boxcar12_stream_out //depth = 1
-//#pragma HLS STREAM variable = boxcar13_stream_out //depth = 1
-//#pragma HLS STREAM variable = boxcar14_stream_out //depth = 1
-//#pragma HLS STREAM variable = boxcar15_stream_out //depth = 1
-//#pragma HLS STREAM variable = boxcar16_stream_out //depth = 1
+  //#pragma HLS STREAM variable = boxcar4_stream_out //depth = 1
+  //#pragma HLS STREAM variable = boxcar5_stream_out //depth = 1
+  //#pragma HLS STREAM variable = boxcar6_stream_out //depth = 1
+  //#pragma HLS STREAM variable = boxcar7_stream_out //depth = 1
+  //#pragma HLS STREAM variable = boxcar8_stream_out //depth = 1
+  //#pragma HLS STREAM variable = boxcar9_stream_out //depth = 1
+  //#pragma HLS STREAM variable = boxcar10_stream_out //depth = 1
+  //#pragma HLS STREAM variable = boxcar11_stream_out //depth = 1
+  //#pragma HLS STREAM variable = boxcar12_stream_out //depth = 1
+  //#pragma HLS STREAM variable = boxcar13_stream_out //depth = 1
+  //#pragma HLS STREAM variable = boxcar14_stream_out //depth = 1
+  //#pragma HLS STREAM variable = boxcar15_stream_out //depth = 1
+  //#pragma HLS STREAM variable = boxcar16_stream_out //depth = 1
 
 #pragma HLS DATAFLOW
   
-  boxcar1(in,
-	  boxcar1_stream,
-	  boxcar1_stream_hold,
-	  boxcar1_stream_out,
-	  ndm,
-	  ntime);
-  
-  boxcar2(
-	  boxcar1_stream,
-	  boxcar1_stream_hold,
-	  boxcar2_stream,
-	  boxcar2_stream_hold,
-	  boxcar2_stream_out,
-	  ndm,
-	  ntime);
-  
-  boxcar3(
-	  boxcar2_stream,
-	  boxcar2_stream_hold,
-	  boxcar3_stream_out,
-	  ndm,
-	  ntime);
-  
-  write_out(
+    boxcar1(in,
+	    boxcar1_stream,
+	    boxcar1_stream_hold,
 	    boxcar1_stream_out,
-	    boxcar2_stream_out,
-	    boxcar3_stream_out,
-	    out1,
-	    out2,
-	    out3,
 	    ndm,
-	    ntime	       
-	    );
+	    ntime);
+  
+    boxcar2(
+	    boxcar1_stream,
+	    boxcar1_stream_hold,
+	    boxcar2_stream,
+	    boxcar2_stream_hold,
+	    boxcar2_stream_out,
+	    ndm,
+	    ntime);
+  
+    boxcar3(
+	    boxcar2_stream,
+	    boxcar2_stream_hold,
+	    boxcar3_stream_out,
+	    ndm,
+	    ntime);
+  
+    write_out(
+	      boxcar1_stream_out,
+	      boxcar2_stream_out,
+	      boxcar3_stream_out,
+	      out1,
+	      out2,
+	      out3,
+	      ndm,
+	      ntime	       
+	      );
 }
 
 void boxcar1(
@@ -236,8 +236,8 @@ void boxcar1(
     for(m = 0; m < NBURST_PER_IMG; m++){
 #pragma HLS PIPELINE
       loc = i*NBURST_PER_IMG*ntime + m;
-      //in_burst = in[loc];
-      in_burst = in[0];
+      in_burst = in[loc];
+      //in_burst = in[0];
       // Boxcar1
       boxcar1_stream_out.write(in_burst);
       // Setup for boxcar2
@@ -252,8 +252,8 @@ void boxcar1(
       for(m = 0; m < NBURST_PER_IMG; m++){
 #pragma HLS PIPELINE
 	loc = i*ntime*NBURST_PER_IMG + j*NBURST_PER_IMG + m;
-	//in_burst = in[loc];
-	in_burst = in[0];
+	in_burst = in[loc];
+	//in_burst = in[0];
 	// Boxcar1
 	boxcar1_stream_out.write(in_burst);
 	// Setup for boxcar2
@@ -268,8 +268,8 @@ void boxcar1(
     for(m = 0; m < NBURST_PER_IMG; m++){
 #pragma HLS PIPELINE
       loc = i*ntime*NBURST_PER_IMG + (ntime-1)*NBURST_PER_IMG + m;
-      //in_burst = in[loc];
-      in_burst = in[0];
+      in_burst = in[loc];
+      //in_burst = in[0];
       // Boxcar1
       boxcar1_stream_out.write(in_burst);
       // Here only setup the short stream
@@ -456,7 +456,7 @@ void write_out(
   int j;
   int m;
   int loc;
-
+  
  LOOP_WRITE_I:
   for(i = 0; i < ndm; i++){
   LOOP_WRITE_M1:
@@ -464,8 +464,8 @@ void write_out(
     for(m = 0; m < NBURST_PER_IMG; m++){
 #pragma HLS PIPELINE
       loc = i*ntime*NBURST_PER_IMG + m;
-      //out1[loc] = boxcar1_stream_out.read();
-      out1[0] = boxcar1_stream_out.read();
+      out1[loc] = boxcar1_stream_out.read();
+      //out1[0] = boxcar1_stream_out.read();
     }
 
   LOOP_WRITE_M2:
@@ -473,12 +473,12 @@ void write_out(
     for(m = 0; m < NBURST_PER_IMG; m++){
 #pragma HLS PIPELINE
       loc = i*ntime*NBURST_PER_IMG + NBURST_PER_IMG + m;
-      //out1[loc] = boxcar1_stream_out.read();
-      out1[0] = boxcar1_stream_out.read();
+      out1[loc] = boxcar1_stream_out.read();
+      //out1[0] = boxcar1_stream_out.read();
       
       loc = i*ntime*NBURST_PER_IMG + m;
-      //out2[loc] = boxcar2_stream_out.read();
-      out2[0] = boxcar2_stream_out.read();
+      out2[loc] = boxcar2_stream_out.read();
+      //out2[0] = boxcar2_stream_out.read();
     }
 
   LOOP_WRITE_J:
@@ -489,16 +489,16 @@ void write_out(
       for(m = 0; m < NBURST_PER_IMG; m++){
 #pragma HLS PIPELINE
 	loc = i*ntime*NBURST_PER_IMG + j*NBURST_PER_IMG + m;
-	//out1[loc] = boxcar1_stream_out.read();
-	out1[0] = boxcar1_stream_out.read();
+	out1[loc] = boxcar1_stream_out.read();
+	//out1[0] = boxcar1_stream_out.read();
 
 	loc = i*ntime*NBURST_PER_IMG + (j-1)*NBURST_PER_IMG + m;
-	//out2[loc] = boxcar2_stream_out.read();
-	out2[0] = boxcar2_stream_out.read();
+	out2[loc] = boxcar2_stream_out.read();
+	//out2[0] = boxcar2_stream_out.read();
 	
 	loc = i*ntime*NBURST_PER_IMG + (j-2)*NBURST_PER_IMG + m;
-	//out3[loc] = boxcar3_stream_out.read();
-	out3[0] = boxcar3_stream_out.read();	
+	out3[loc] = boxcar3_stream_out.read();
+	//out3[0] = boxcar3_stream_out.read();	
       }      
     }
   }
