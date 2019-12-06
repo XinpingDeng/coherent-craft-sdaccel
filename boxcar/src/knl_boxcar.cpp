@@ -213,6 +213,7 @@ void boxcar1(
       out1[loc] = in_burst;
       // Here only setup the short stream
       // Setup for boxcar2
+      boxcar1_stream.write(in_burst);
       boxcar1_stream_hold.write(in_burst);
     }
   }
@@ -304,7 +305,15 @@ void boxcar2(
       out2[loc] = burst_result;
       // Setup boxcar3
       // Here only setup short stream
+      boxcar2_stream.write(burst_result);
       boxcar2_stream_hold.write(burst_current);
+    }
+
+  LOOP_BOXCAR2_M4:
+    // Read the remind data from boxcar1_stream and empty it
+    for(m = 0; m < NBURST_PER_IMG; m++){
+#pragma HLS PIPELINE
+      burst_previous = boxcar1_stream.read();
     }    
   }  
 }
@@ -384,6 +393,13 @@ void boxcar3(
       // Sendout boxcar3
       loc = i*(ntime-2)*NBURST_PER_IMG + (ntime-3)*NBURST_PER_IMG + m;
       out3[loc] = burst_result;
-    }    
+    }
+    
+  LOOP_BOXCAR3_M4:
+    // Read the remind data from boxcar2_stream and empty it
+    for(m = 0; m < NBURST_PER_IMG; m++){
+#pragma HLS PIPELINE
+      burst_previous = boxcar2_stream.read();
+    }
   }  
 }

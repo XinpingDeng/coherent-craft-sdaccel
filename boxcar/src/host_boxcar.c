@@ -20,16 +20,16 @@ int main(int argc, char* argv[]){
   uint64_t ndata1;
   uint64_t ndata2;
   uint64_t ndata3;
-  cl_int ndm   = 2;
+  cl_int ndm   = 4;
   cl_int ntime = 32;
 
   if(is_hw_emulation()){
     ndm   = 2;
-    ntime = 32;
+    ntime = 16;
   }
   if(is_sw_emulation()){
     ndm   = 2;
-    ntime = 32;
+    ntime = 16;
   }
 
   ndata1 = ndm*(uint64_t)NSAMP_PER_IMG*ntime;
