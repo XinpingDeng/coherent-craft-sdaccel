@@ -35,7 +35,7 @@ int main(int argc, char* argv[]){
   ndata1 = ndm*(uint64_t)NSAMP_PER_IMG*ntime;
   ndata2 = ndm*(uint64_t)NSAMP_PER_IMG*(ntime-1);
   ndata3 = ndm*(uint64_t)NSAMP_PER_IMG*(ntime-2);
-
+  
   core_t *in      = NULL;
   core_t *sw_out1 = NULL;
   core_t *sw_out2 = NULL;
@@ -208,7 +208,7 @@ int main(int argc, char* argv[]){
   cl_float kernel_elapsed_time;
   clock_gettime(CLOCK_REALTIME, &device_start);
   OCL_CHECK(err, err = clEnqueueTask(queue, kernel, 0, NULL, NULL));
-  //OCL_CHECK(err, err = clFinish(queue));
+  OCL_CHECK(err, err = clFinish(queue));
   fprintf(stdout, "INFO: DONE KERNEL EXECUTION\n");
   clock_gettime(CLOCK_REALTIME, &device_finish);
   kernel_elapsed_time = (device_finish.tv_sec - device_start.tv_sec) + (device_finish.tv_nsec - device_start.tv_nsec)/1.0E9L;
@@ -219,25 +219,64 @@ int main(int argc, char* argv[]){
   OCL_CHECK(err, err = clFinish(queue));
   fprintf(stdout, "INFO: DONE MEMCPY FROM KERNEL TO HOST\n");
 
-  /*
+  // Save result to files for further check
+  FILE *fp=NULL;
+  fp = fopen("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/boxcar/src/out1.txt", "w");
+  for(i = 0; i < ndata1; i++) {
+    fprintf(fp, "%f\n", sw_out1[i].to_float());
+  }
+  fclose(fp);
+  
+  fp = fopen("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/boxcar/src/out2.txt", "w");
+  for(i = 0; i < ndata2; i++) {
+    fprintf(fp, "%f\n", sw_out2[i].to_float());
+  }
+  fclose(fp);
+  
+  fp = fopen("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/boxcar/src/out3.txt", "w");
+  for(i = 0; i < ndata3; i++) {
+    fprintf(fp, "%f\n", sw_out3[i].to_float());
+  }
+  fclose(fp);
+  
   // Check the result
+  uint64_t counter;
+  counter = 0;
   for(i=0;i<ndata1;i++){
+    if(sw_out1[i]!=0){
+      counter++;
+    }    
     if(sw_out1[i] != hw_out1[i]){
       fprintf(stderr, "ERROR: Test failed %"PRIu64" (%f %f)\n", i, sw_out1[i].to_float(), hw_out1[i].to_float());
+      break;
     }
   }
+  fprintf(stderr, "INFO: %"PRIu64" none zero out1 out of %"PRIu64", which is %.0f\%\n", counter, ndata1, 100.0*(float)counter/ndata1);
+
+  counter = 0;
   for(i=0;i<ndata2;i++){
+    if(sw_out2[i]!=0){
+      counter++;
+    }   
     if(sw_out2[i] != hw_out2[i]){
       fprintf(stderr, "ERROR: Test failed %"PRIu64" (%f %f)\n", i, sw_out2[i].to_float(), hw_out2[i].to_float());
+      break;
     }
   }
+  fprintf(stderr, "INFO: %"PRIu64" none zero out2 out of %"PRIu64", which is %.0f\%\n", counter, ndata2, 100.0*(float)counter/ndata2);
+
+  counter = 0;
   for(i=0;i<ndata3;i++){
+    if(sw_out3[i]!=0){
+      counter++;
+    }   
     if(sw_out3[i] != hw_out3[i]){
       fprintf(stderr, "ERROR: Test failed %"PRIu64" (%f %f)\n", i, sw_out3[i].to_float(), hw_out3[i].to_float());
+      break;
     }
   }
+  fprintf(stderr, "INFO: %"PRIu64" none zero out3 out of %"PRIu64", which is %.0f\%\n", counter, ndata3, 100.0*(float)counter/ndata3);
   fprintf(stdout, "INFO: DONE RESULT CHECK\n");
-  */
   
   fprintf(stdout, "INFO: Elapsed time of CPU code is %E seconds\n", cpu_elapsed_time);
   fprintf(stdout, "INFO: Elapsed time of kernel is %E seconds\n", kernel_elapsed_time);
@@ -253,9 +292,9 @@ int main(int argc, char* argv[]){
   free(sw_out1);
   free(sw_out2);
   free(sw_out3);
-  //free(hw_out1);
-  //free(hw_out2);
-  //free(hw_out3);
+  free(hw_out1);
+  free(hw_out2);
+  free(hw_out3);
   fprintf(stdout, "INFO: DONE FREE\n");
   
   clReleaseProgram(program);

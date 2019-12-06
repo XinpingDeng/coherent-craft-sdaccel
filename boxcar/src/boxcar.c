@@ -40,14 +40,14 @@ int boxcar(
 	loc_in = i*ntime*NSAMP_PER_IMG + m*NSAMP_PER_IMG + j;
 	boxcar += in[loc_in];	
       }
-      loc_out      = i*ntime*NSAMP_PER_IMG + j;
+      loc_out      = i*(ntime-1)*NSAMP_PER_IMG + j;
       out2[loc_out] = boxcar;      
       for(m = 2; m < ntime; m++){
 	loc_in   = i*ntime*NSAMP_PER_IMG + m*NSAMP_PER_IMG + j;
 	boxcar   += in[loc_in];
 	boxcar   -= previous;
 
-	loc_out       = i*ntime*NSAMP_PER_IMG + (m-1)*NSAMP_PER_IMG + j;
+	loc_out       = i*(ntime-1)*NSAMP_PER_IMG + (m-1)*NSAMP_PER_IMG + j;
 	out2[loc_out] = boxcar;
 	
 	loc_in   = i*ntime*NSAMP_PER_IMG + (m-1)*NSAMP_PER_IMG + j;
@@ -62,14 +62,14 @@ int boxcar(
 	loc_in = i*ntime*NSAMP_PER_IMG + m*NSAMP_PER_IMG + j;
 	boxcar += in[loc_in];	
       }
-      loc_out      = i*ntime*NSAMP_PER_IMG + j;
+      loc_out      = i*(ntime-2)*NSAMP_PER_IMG + j;
       out3[loc_out] = boxcar;      
       for(m = 3; m < ntime; m++){
 	loc_in   = i*ntime*NSAMP_PER_IMG + m*NSAMP_PER_IMG + j;
 	boxcar   += in[loc_in];
 	boxcar   -= previous;
 
-	loc_out       = i*ntime*NSAMP_PER_IMG + (m-2)*NSAMP_PER_IMG + j;
+	loc_out       = i*(ntime-2)*NSAMP_PER_IMG + (m-2)*NSAMP_PER_IMG + j;
 	out3[loc_out] = boxcar;
 	
 	loc_in   = i*ntime*NSAMP_PER_IMG + (m-2)*NSAMP_PER_IMG + j;

@@ -74,8 +74,8 @@ void knl_boxcar(
 #pragma HLS DATA_PACK variable = out2
 #pragma HLS DATA_PACK variable = out3
   
-  stream_t boxcar1_stream;
-  stream_t boxcar2_stream;
+  static stream_t boxcar1_stream;
+  static stream_t boxcar2_stream;
   //stream_t boxcar3_stream;
   //stream_t boxcar4_stream;
   //stream_t boxcar5_stream;
@@ -90,8 +90,8 @@ void knl_boxcar(
   //stream_t boxcar14_stream;
   //stream_t boxcar15_stream;
   
-  stream_t boxcar1_stream_hold;
-  stream_t boxcar2_stream_hold;
+  static stream_t boxcar1_stream_hold;
+  static stream_t boxcar2_stream_hold;
   //stream_t boxcar3_stream_hold;
   //stream_t boxcar4_stream_hold;
   //stream_t boxcar5_stream_hold;
@@ -106,9 +106,9 @@ void knl_boxcar(
   //stream_t boxcar14_stream_hold;
   //stream_t boxcar15_stream_hold;
   
-  stream_t boxcar1_stream_out;
-  stream_t boxcar2_stream_out;
-  stream_t boxcar3_stream_out;
+  static stream_t boxcar1_stream_out;
+  static stream_t boxcar2_stream_out;
+  static stream_t boxcar3_stream_out;
   //stream_t boxcar4_stream_out;
   //stream_t boxcar5_stream_out;
   //stream_t boxcar6_stream_out;
@@ -179,7 +179,6 @@ void knl_boxcar(
   //#pragma HLS STREAM variable = boxcar16_stream_out //depth = 1
 
 #pragma HLS DATAFLOW
-  
     boxcar1(in,
 	    boxcar1_stream,
 	    boxcar1_stream_hold,
@@ -237,7 +236,6 @@ void boxcar1(
 #pragma HLS PIPELINE
       loc = i*NBURST_PER_IMG*ntime + m;
       in_burst = in[loc];
-      //in_burst = in[0];
       // Boxcar1
       boxcar1_stream_out.write(in_burst);
       // Setup for boxcar2
@@ -253,7 +251,6 @@ void boxcar1(
 #pragma HLS PIPELINE
 	loc = i*ntime*NBURST_PER_IMG + j*NBURST_PER_IMG + m;
 	in_burst = in[loc];
-	//in_burst = in[0];
 	// Boxcar1
 	boxcar1_stream_out.write(in_burst);
 	// Setup for boxcar2
@@ -269,7 +266,6 @@ void boxcar1(
 #pragma HLS PIPELINE
       loc = i*ntime*NBURST_PER_IMG + (ntime-1)*NBURST_PER_IMG + m;
       in_burst = in[loc];
-      //in_burst = in[0];
       // Boxcar1
       boxcar1_stream_out.write(in_burst);
       // Here only setup the short stream
@@ -465,7 +461,6 @@ void write_out(
 #pragma HLS PIPELINE
       loc = i*ntime*NBURST_PER_IMG + m;
       out1[loc] = boxcar1_stream_out.read();
-      //out1[0] = boxcar1_stream_out.read();
     }
 
   LOOP_WRITE_M2:
@@ -474,11 +469,9 @@ void write_out(
 #pragma HLS PIPELINE
       loc = i*ntime*NBURST_PER_IMG + NBURST_PER_IMG + m;
       out1[loc] = boxcar1_stream_out.read();
-      //out1[0] = boxcar1_stream_out.read();
       
-      loc = i*ntime*NBURST_PER_IMG + m;
+      loc = i*(ntime-1)*NBURST_PER_IMG + m;
       out2[loc] = boxcar2_stream_out.read();
-      //out2[0] = boxcar2_stream_out.read();
     }
 
   LOOP_WRITE_J:
@@ -490,15 +483,12 @@ void write_out(
 #pragma HLS PIPELINE
 	loc = i*ntime*NBURST_PER_IMG + j*NBURST_PER_IMG + m;
 	out1[loc] = boxcar1_stream_out.read();
-	//out1[0] = boxcar1_stream_out.read();
 
-	loc = i*ntime*NBURST_PER_IMG + (j-1)*NBURST_PER_IMG + m;
+	loc = i*(ntime-1)*NBURST_PER_IMG + (j-1)*NBURST_PER_IMG + m;
 	out2[loc] = boxcar2_stream_out.read();
-	//out2[0] = boxcar2_stream_out.read();
 	
-	loc = i*ntime*NBURST_PER_IMG + (j-2)*NBURST_PER_IMG + m;
+	loc = i*(ntime-2)*NBURST_PER_IMG + (j-2)*NBURST_PER_IMG + m;
 	out3[loc] = boxcar3_stream_out.read();
-	//out3[0] = boxcar3_stream_out.read();	
       }      
     }
   }
