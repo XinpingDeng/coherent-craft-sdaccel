@@ -14,7 +14,7 @@ extern "C" {
 	       const burst_t *in,
 	       stream_t &boxcar1_stream,
 	       stream_t &in_stream_hold1,
-	       stream_t &boxcar1_stream_out,
+	       burst_t *out1,
 	       int ndm,
 	       int ntime);
   
@@ -23,27 +23,16 @@ extern "C" {
 	       stream_t &boxcar1_stream_hold,
 	       stream_t &boxcar2_stream,
 	       stream_t &boxcar2_stream_hold,
-	       stream_t &boxcar2_stream_out,
+	       burst_t *out2,
 	       int ndm,
 	       int ntime);
   
   void boxcar3(
 	       stream_t &boxcar2_stream,
 	       stream_t &boxcar2_stream_hold,
-	       stream_t &boxcar3_stream_out,
+	       burst_t *out3,
 	       int ndm,
 	       int ntime);
-  
-  void write_out(
-		 stream_t &boxcar1_stream_out,
-		 stream_t &boxcar2_stream_out,
-		 stream_t &boxcar3_stream_out,
-		 burst_t *out1,
-		 burst_t *out2,
-		 burst_t *out3,
-		 int ndm,
-		 int ntime	       
-		 );
 }
 
 void knl_boxcar(
@@ -106,23 +95,6 @@ void knl_boxcar(
   //stream_t boxcar14_stream_hold;
   //stream_t boxcar15_stream_hold;
   
-  static stream_t boxcar1_stream_out;
-  static stream_t boxcar2_stream_out;
-  static stream_t boxcar3_stream_out;
-  //stream_t boxcar4_stream_out;
-  //stream_t boxcar5_stream_out;
-  //stream_t boxcar6_stream_out;
-  //stream_t boxcar7_stream_out;
-  //stream_t boxcar8_stream_out;
-  //stream_t boxcar9_stream_out;
-  //stream_t boxcar10_stream_out;
-  //stream_t boxcar11_stream_out;
-  //stream_t boxcar12_stream_out;
-  //stream_t boxcar13_stream_out;
-  //stream_t boxcar14_stream_out;
-  //stream_t boxcar15_stream_out;
-  //stream_t boxcar16_stream_out;
-  
   // These streams hold multiple images, delay for NBURST_PER_IMG, accumulate happens when new samples come in
   // The size should be NBURST_PER_IMG + 1, but can not use defined variable here
   // Long stream afterwards
@@ -160,65 +132,36 @@ void knl_boxcar(
   //#pragma HLS STREAM variable = boxcar14_stream_hold //depth = 1
   //#pragma HLS STREAM variable = boxcar15_stream_hold //depth = 1
 
-  // These streams hols one outcome sample
-#pragma HLS STREAM variable = boxcar1_stream_out //depth = 1
-#pragma HLS STREAM variable = boxcar2_stream_out //depth = 1
-#pragma HLS STREAM variable = boxcar3_stream_out //depth = 1
-  //#pragma HLS STREAM variable = boxcar4_stream_out //depth = 1
-  //#pragma HLS STREAM variable = boxcar5_stream_out //depth = 1
-  //#pragma HLS STREAM variable = boxcar6_stream_out //depth = 1
-  //#pragma HLS STREAM variable = boxcar7_stream_out //depth = 1
-  //#pragma HLS STREAM variable = boxcar8_stream_out //depth = 1
-  //#pragma HLS STREAM variable = boxcar9_stream_out //depth = 1
-  //#pragma HLS STREAM variable = boxcar10_stream_out //depth = 1
-  //#pragma HLS STREAM variable = boxcar11_stream_out //depth = 1
-  //#pragma HLS STREAM variable = boxcar12_stream_out //depth = 1
-  //#pragma HLS STREAM variable = boxcar13_stream_out //depth = 1
-  //#pragma HLS STREAM variable = boxcar14_stream_out //depth = 1
-  //#pragma HLS STREAM variable = boxcar15_stream_out //depth = 1
-  //#pragma HLS STREAM variable = boxcar16_stream_out //depth = 1
-
 #pragma HLS DATAFLOW
-    boxcar1(in,
-	    boxcar1_stream,
-	    boxcar1_stream_hold,
-	    boxcar1_stream_out,
-	    ndm,
-	    ntime);
+  boxcar1(in,
+	  boxcar1_stream,
+	  boxcar1_stream_hold,
+	  out1,
+	  ndm,
+	  ntime);
   
-    boxcar2(
-	    boxcar1_stream,
-	    boxcar1_stream_hold,
-	    boxcar2_stream,
-	    boxcar2_stream_hold,
-	    boxcar2_stream_out,
-	    ndm,
-	    ntime);
+  boxcar2(
+	  boxcar1_stream,
+	  boxcar1_stream_hold,
+	  boxcar2_stream,
+	  boxcar2_stream_hold,
+	  out2,
+	  ndm,
+	  ntime);
   
-    boxcar3(
-	    boxcar2_stream,
-	    boxcar2_stream_hold,
-	    boxcar3_stream_out,
-	    ndm,
-	    ntime);
-  
-    write_out(
-	      boxcar1_stream_out,
-	      boxcar2_stream_out,
-	      boxcar3_stream_out,
-	      out1,
-	      out2,
-	      out3,
-	      ndm,
-	      ntime	       
-	      );
+  boxcar3(
+	  boxcar2_stream,
+	  boxcar2_stream_hold,
+	  out3,
+	  ndm,
+	  ntime);
 }
 
 void boxcar1(
 	     const burst_t *in,
 	     stream_t &boxcar1_stream,
 	     stream_t &boxcar1_stream_hold,
-	     stream_t &boxcar1_stream_out,
+	     burst_t *out1,
 	     int ndm,
 	     int ntime){
   int i;
@@ -237,7 +180,7 @@ void boxcar1(
       loc = i*NBURST_PER_IMG*ntime + m;
       in_burst = in[loc];
       // Boxcar1
-      boxcar1_stream_out.write(in_burst);
+      out1[loc] = in_burst;
       // Setup for boxcar2
       // Here only setup the long stream
       boxcar1_stream.write(in_burst);
@@ -252,7 +195,7 @@ void boxcar1(
 	loc = i*ntime*NBURST_PER_IMG + j*NBURST_PER_IMG + m;
 	in_burst = in[loc];
 	// Boxcar1
-	boxcar1_stream_out.write(in_burst);
+	out1[loc] = in_burst;
 	// Setup for boxcar2
 	// Here setup both long and short stream
 	boxcar1_stream.write(in_burst);
@@ -267,7 +210,7 @@ void boxcar1(
       loc = i*ntime*NBURST_PER_IMG + (ntime-1)*NBURST_PER_IMG + m;
       in_burst = in[loc];
       // Boxcar1
-      boxcar1_stream_out.write(in_burst);
+      out1[loc] = in_burst;
       // Here only setup the short stream
       // Setup for boxcar2
       boxcar1_stream_hold.write(in_burst);
@@ -280,7 +223,7 @@ void boxcar2(
 	     stream_t &boxcar1_stream_hold,
 	     stream_t &boxcar2_stream,
 	     stream_t &boxcar2_stream_hold,
-	     stream_t &boxcar2_stream_out,
+	     burst_t *out2,
 	     int ndm,
 	     int ntime){
   burst_t burst_previous;
@@ -291,6 +234,7 @@ void boxcar2(
   int j;
   int m;
   int n;
+  int loc;
     
  LOOP_BOXCAR2_I:
   for(i = 0; i < ndm; i++){
@@ -308,7 +252,8 @@ void boxcar2(
 	burst_result.data[n] = burst_previous.data[n] + burst_current.data[n];
       }
       // Sendout boxcar2
-      boxcar2_stream_out.write(burst_result);
+      loc = i*(ntime-1)*NBURST_PER_IMG + m;
+      out2[loc] = burst_result;
       // Setup boxcar3
       // Here only setup long stream
       boxcar2_stream.write(burst_result);
@@ -331,7 +276,8 @@ void boxcar2(
 	}
 
 	// Sendout boxcar2
-	boxcar2_stream_out.write(burst_result);
+	loc = i*(ntime-1)*NBURST_PER_IMG + (j-1)*NBURST_PER_IMG + m;
+	out2[loc] = burst_result;
 	// Setup boxcar3
 	// Here setup both long and short stream
 	boxcar2_stream.write(burst_result);
@@ -354,7 +300,8 @@ void boxcar2(
       }
 
       // Sendout boxcar2
-      boxcar2_stream_out.write(burst_result);
+      loc = i*(ntime-1)*NBURST_PER_IMG + (ntime-2)*NBURST_PER_IMG + m;
+      out2[loc] = burst_result;
       // Setup boxcar3
       // Here only setup short stream
       boxcar2_stream_hold.write(burst_current);
@@ -365,17 +312,18 @@ void boxcar2(
 void boxcar3(
 	     stream_t &boxcar2_stream,
 	     stream_t &boxcar2_stream_hold,
-	     stream_t &boxcar3_stream_out,
+	     burst_t *out3,
 	     int ndm,
 	     int ntime){
   burst_t burst_previous;
   burst_t burst_current;
   burst_t burst_result;
-
+  
   int i;
   int j;
   int m;
   int n;
+  int loc;
     
  LOOP_BOXCAR3_I:
   for(i = 0; i < ndm; i++){
@@ -393,7 +341,8 @@ void boxcar3(
 	burst_result.data[n] = burst_previous.data[n] + burst_current.data[n];
       }
       // Sendout boxcar3
-      boxcar3_stream_out.write(burst_result);
+      loc = i*(ntime-2)*NBURST_PER_IMG + m;
+      out3[loc] = burst_result;
     }
     
   LOOP_BOXCAR3_J:
@@ -413,7 +362,8 @@ void boxcar3(
 	}
 
 	// Sendout boxcar3
-	boxcar3_stream_out.write(burst_result);
+	loc = i*(ntime-2)*NBURST_PER_IMG + (j-2)*NBURST_PER_IMG + m;
+	out3[loc] = burst_result;
       }
     }
     
@@ -432,64 +382,8 @@ void boxcar3(
       }
 
       // Sendout boxcar3
-      boxcar3_stream_out.write(burst_result);
+      loc = i*(ntime-2)*NBURST_PER_IMG + (ntime-3)*NBURST_PER_IMG + m;
+      out3[loc] = burst_result;
     }    
   }  
-}
-
-void write_out(
-	       stream_t &boxcar1_stream_out,
-	       stream_t &boxcar2_stream_out,
-	       stream_t &boxcar3_stream_out,
-	       burst_t *out1,
-	       burst_t *out2,
-	       burst_t *out3,
-	       int ndm,
-	       int ntime	       
-	       ){
-  
-  int i;
-  int j;
-  int m;
-  int loc;
-  
- LOOP_WRITE_I:
-  for(i = 0; i < ndm; i++){
-  LOOP_WRITE_M1:
-    // Write the boxcar1 of the first timestamp
-    for(m = 0; m < NBURST_PER_IMG; m++){
-#pragma HLS PIPELINE
-      loc = i*ntime*NBURST_PER_IMG + m;
-      out1[loc] = boxcar1_stream_out.read();
-    }
-
-  LOOP_WRITE_M2:
-    // Write the boxcar2 of the first timestamp
-    for(m = 0; m < NBURST_PER_IMG; m++){
-#pragma HLS PIPELINE
-      loc = i*ntime*NBURST_PER_IMG + NBURST_PER_IMG + m;
-      out1[loc] = boxcar1_stream_out.read();
-      
-      loc = i*(ntime-1)*NBURST_PER_IMG + m;
-      out2[loc] = boxcar2_stream_out.read();
-    }
-
-  LOOP_WRITE_J:
-    // Write the rest of boxcar1 and boxcar2
-    // Write all boxcar3
-    for(j = 2; j < ntime; j++){
-    LOOP_WRITE_M3:
-      for(m = 0; m < NBURST_PER_IMG; m++){
-#pragma HLS PIPELINE
-	loc = i*ntime*NBURST_PER_IMG + j*NBURST_PER_IMG + m;
-	out1[loc] = boxcar1_stream_out.read();
-
-	loc = i*(ntime-1)*NBURST_PER_IMG + (j-1)*NBURST_PER_IMG + m;
-	out2[loc] = boxcar2_stream_out.read();
-	
-	loc = i*(ntime-2)*NBURST_PER_IMG + (j-2)*NBURST_PER_IMG + m;
-	out3[loc] = boxcar3_stream_out.read();
-      }      
-    }
-  }
 }

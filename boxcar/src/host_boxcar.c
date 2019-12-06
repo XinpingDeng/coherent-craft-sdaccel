@@ -238,7 +238,7 @@ int main(int argc, char* argv[]){
     fprintf(fp, "%f\n", sw_out3[i].to_float());
   }
   fclose(fp);
-  
+
   // Check the result
   uint64_t counter;
   counter = 0;
@@ -264,7 +264,7 @@ int main(int argc, char* argv[]){
     }
   }
   fprintf(stderr, "INFO: %"PRIu64" none zero out2 out of %"PRIu64", which is %.0f\%\n", counter, ndata2, 100.0*(float)counter/ndata2);
-
+  
   counter = 0;
   for(i=0;i<ndata3;i++){
     if(sw_out3[i]!=0){
