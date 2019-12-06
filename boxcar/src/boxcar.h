@@ -34,7 +34,7 @@ typedef int core_t;
 
 #elif CORE_DATA_WIDTH == 8
 #define COMPUTE_DATA_WIDTH  16     // (2*CORE_DATA_WIDTH), complex 
-#define DATA_RANGE          10
+#define DATA_RANGE          10     // Careful with the range *****
 #define NSAMP_PER_BURST     64
 #define NBURST_PER_IMG      1024   // NSAMP_PER_IMG_OUT/NSAMP_PER_BURST
 #if FLOAT_DATA_TYPE == 1

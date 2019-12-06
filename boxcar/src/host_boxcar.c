@@ -24,11 +24,11 @@ int main(int argc, char* argv[]){
   cl_int ntime = 32;
 
   if(is_hw_emulation()){
-    ndm   = 2;
+    ndm   = 1;
     ntime = 16;
   }
   if(is_sw_emulation()){
-    ndm   = 2;
+    ndm   = 1;
     ntime = 16;
   }
 
@@ -51,6 +51,13 @@ int main(int argc, char* argv[]){
   hw_out2 = (core_t *)aligned_alloc(MEM_ALIGNMENT, ndata2*sizeof(core_t));
   sw_out3 = (core_t *)aligned_alloc(MEM_ALIGNMENT, ndata3*sizeof(core_t));
   hw_out3 = (core_t *)aligned_alloc(MEM_ALIGNMENT, ndata3*sizeof(core_t));
+  
+  memset(sw_out1, 0x00, ndata1*sizeof(core_t));
+  memset(hw_out1, 0x00, ndata1*sizeof(core_t));
+  memset(sw_out2, 0x00, ndata2*sizeof(core_t));
+  memset(hw_out2, 0x00, ndata2*sizeof(core_t));
+  memset(sw_out3, 0x00, ndata3*sizeof(core_t));
+  memset(hw_out3, 0x00, ndata3*sizeof(core_t));
   
   fprintf(stdout, "INFO: %f MB memory used on host in total\n",
 	  ((3*ndata1 + 2*ndata2 + 2*ndata3)*CORE_DATA_WIDTH)/(8*1024.*1024.));
