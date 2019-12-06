@@ -44,10 +44,10 @@ void knl_boxcar(
 		int ntime
 		)
 {
-#pragma HLS INTERFACE m_axi port = in   offset = slave bundle = gmem0 
-#pragma HLS INTERFACE m_axi port = out1 offset = slave bundle = gmem1
-#pragma HLS INTERFACE m_axi port = out2 offset = slave bundle = gmem2
-#pragma HLS INTERFACE m_axi port = out3 offset = slave bundle = gmem3
+#pragma HLS INTERFACE m_axi port = in   offset = slave bundle = gmem0 max_read_burst_length=64
+#pragma HLS INTERFACE m_axi port = out1 offset = slave bundle = gmem1 max_write_burst_length=64
+#pragma HLS INTERFACE m_axi port = out2 offset = slave bundle = gmem2 max_write_burst_length=64
+#pragma HLS INTERFACE m_axi port = out3 offset = slave bundle = gmem3 max_write_burst_length=64
 
 #pragma HLS INTERFACE s_axilite port = in     bundle = control
 #pragma HLS INTERFACE s_axilite port = out1   bundle = control

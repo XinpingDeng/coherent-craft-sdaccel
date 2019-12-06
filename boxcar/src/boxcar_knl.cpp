@@ -173,7 +173,8 @@ void boxcar1(
 
  LOOP_BOXCAR1_I:
   for(i = 0; i < ndm; i++){
-  LOOP_BOXCAR1_J:
+    //#pragma HLS LOOP_FLATTEN OFF
+    LOOP_BOXCAR1_J:
     // Read in the rest images expect the last one, get boxcar1 and setup for boxcar2
     for(j = 0; j < ntime; j++){
     LOOP_BOXCAR1_M:
@@ -184,10 +185,11 @@ void boxcar1(
 	// Boxcar1
 	out1[loc] = in_burst;
 	// Setup for boxcar2
-	// Here setup both long and short stream
+	// Here setup long stream
 	if(j<(ntime-1)){
 	  boxcar1_stream.write(in_burst);
 	}
+	// Here setup short stream
 	if(j>0){
 	  boxcar1_stream_hold.write(in_burst);
 	}
@@ -216,8 +218,9 @@ void boxcar2(
     
  LOOP_BOXCAR2_I:
   for(i = 0; i < ndm; i++){
-  LOOP_BOXCAR2_J:
-    // Calculate the rest boxcar2 (except the last one) of each DM and setup for boxcar3
+    //#pragma HLS LOOP_FLATTEN OFF
+    LOOP_BOXCAR2_J:
+    // Calculate the rest boxcar2 of each DM and setup for boxcar3
     for(j = 0; j < (ntime-1); j++){
     LOOP_BOXCAR2_M:
       for(m = 0; m < NBURST_PER_IMG; m++){
@@ -236,10 +239,11 @@ void boxcar2(
 	loc = i*(ntime-1)*NBURST_PER_IMG + j*NBURST_PER_IMG + m;
 	out2[loc] = burst_result;
 	// Setup boxcar3
-	// Here setup both long and short stream
+	// Here setup long stream 
 	if(j<(ntime-2)){
 	  boxcar2_stream.write(burst_result);
 	}
+	// Here setup short stream
 	if(j>0){
 	  boxcar2_stream_hold.write(burst_current);
 	}
@@ -265,8 +269,9 @@ void boxcar3(
   int loc;
     
  LOOP_BOXCAR3_I:
-  for(i = 0; i < ndm; i++){    
-  LOOP_BOXCAR3_J:
+  for(i = 0; i < ndm; i++){
+    //#pragma HLS LOOP_FLATTEN OFF
+    LOOP_BOXCAR3_J:
     // Calculate the rest boxcar3 of each DM 
     for(j = 0; j < (ntime-2); j++){
     LOOP_BOXCAR3_M:
