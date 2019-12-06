@@ -24,11 +24,11 @@ int main(int argc, char* argv[]){
   cl_int ntime = 32;
 
   if(is_hw_emulation()){
-    ndm   = 1;
+    ndm   = 2;
     ntime = 16;
   }
   if(is_sw_emulation()){
-    ndm   = 1;
+    ndm   = 2;
     ntime = 16;
   }
 
@@ -293,7 +293,7 @@ int main(int argc, char* argv[]){
   clReleaseMemObject(buffer_out1);
   clReleaseMemObject(buffer_out2);
   clReleaseMemObject(buffer_out3);
-  fprintf(stdout, "INFO: DONE clReleaseMemObject\n");  
+  //fprintf(stdout, "INFO: DONE clReleaseMemObject\n");  
   
   free(in);
   free(sw_out1);
@@ -302,14 +302,14 @@ int main(int argc, char* argv[]){
   free(hw_out1);
   free(hw_out2);
   free(hw_out3);
-  fprintf(stdout, "INFO: DONE FREE\n");
+  //fprintf(stdout, "INFO: DONE FREE\n");
   
   clReleaseProgram(program);
-  fprintf(stdout, "INFO: clReleaseProgram\n");
+  //fprintf(stdout, "INFO: clReleaseProgram\n");
   clReleaseKernel(kernel);
-  fprintf(stdout, "INFO: clReleaseKernel\n");
+  //fprintf(stdout, "INFO: clReleaseKernel\n");
   clReleaseCommandQueue(queue);
-  fprintf(stdout, "INFO: clReleaseCommandQueue\n");
+  //fprintf(stdout, "INFO: clReleaseCommandQueue\n");
   clReleaseContext(context);
 
   fprintf(stdout, "INFO: DONE ALL\n");

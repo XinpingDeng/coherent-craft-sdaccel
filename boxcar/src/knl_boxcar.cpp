@@ -63,8 +63,8 @@ void knl_boxcar(
 #pragma HLS DATA_PACK variable = out2
 #pragma HLS DATA_PACK variable = out3
   
-  stream_t boxcar1_stream;
-  stream_t boxcar2_stream;
+  static stream_t boxcar1_stream;
+  static stream_t boxcar2_stream;
   //stream_t boxcar3_stream;
   //stream_t boxcar4_stream;
   //stream_t boxcar5_stream;
@@ -79,8 +79,8 @@ void knl_boxcar(
   //stream_t boxcar14_stream;
   //stream_t boxcar15_stream;
   
-  stream_t boxcar1_stream_hold;
-  stream_t boxcar2_stream_hold;
+  static stream_t boxcar1_stream_hold;
+  static stream_t boxcar2_stream_hold;
   //stream_t boxcar3_stream_hold;
   //stream_t boxcar4_stream_hold;
   //stream_t boxcar5_stream_hold;
@@ -98,8 +98,8 @@ void knl_boxcar(
   // These streams hold multiple images, delay for NBURST_PER_IMG, accumulate happens when new samples come in
   // The size should be NBURST_PER_IMG, but can not use defined variable here
   // Long stream afterwards
-#pragma HLS STREAM variable = boxcar1_stream depth = 1024
-#pragma HLS STREAM variable = boxcar2_stream depth = 1024
+#pragma HLS STREAM variable = boxcar1_stream depth = 1025
+#pragma HLS STREAM variable = boxcar2_stream depth = 1025
   //#pragma HLS STREAM variable = boxcar3_stream depth = 1025
   //#pragma HLS STREAM variable = boxcar4_stream depth = 1025
   //#pragma HLS STREAM variable = boxcar5_stream depth = 1025
@@ -116,8 +116,8 @@ void knl_boxcar(
   
   // These streams hold one new income sample, the delay between them and the above streams is 1024 (NBURST_PER_IMG)
   // Short stream afterwards
-#pragma HLS STREAM variable = boxcar1_stream_hold depth = 1
-#pragma HLS STREAM variable = boxcar2_stream_hold depth = 1
+#pragma HLS STREAM variable = boxcar1_stream_hold //depth = 20
+#pragma HLS STREAM variable = boxcar2_stream_hold //depth = 20
   //#pragma HLS STREAM variable = boxcar3_stream_hold //depth = 1
   //#pragma HLS STREAM variable = boxcar4_stream_hold //depth = 1
   //#pragma HLS STREAM variable = boxcar5_stream_hold //depth = 1
@@ -173,23 +173,10 @@ void boxcar1(
 
  LOOP_BOXCAR1_I:
   for(i = 0; i < ndm; i++){
-  LOOP_BOXCAR1_M1:
-    // Read in the first image of each DM, get boxcar1 and setup for boxcar2
-    for(m = 0; m < NBURST_PER_IMG; m++){
-#pragma HLS PIPELINE
-      loc = i*NBURST_PER_IMG*ntime + m;
-      in_burst = in[loc];
-      // Boxcar1
-      out1[loc] = in_burst;
-      // Setup for boxcar2
-      // Here only setup the long stream
-      boxcar1_stream.write(in_burst);
-    }
-
   LOOP_BOXCAR1_J:
     // Read in the rest images expect the last one, get boxcar1 and setup for boxcar2
-    for(j = 1; j < (ntime - 1); j++){
-    LOOP_BOXCAR1_M2:
+    for(j = 0; j < ntime; j++){
+    LOOP_BOXCAR1_M:
       for(m = 0; m < NBURST_PER_IMG; m++){
 #pragma HLS PIPELINE
 	loc = i*ntime*NBURST_PER_IMG + j*NBURST_PER_IMG + m;
@@ -198,22 +185,13 @@ void boxcar1(
 	out1[loc] = in_burst;
 	// Setup for boxcar2
 	// Here setup both long and short stream
-	boxcar1_stream.write(in_burst);
-	boxcar1_stream_hold.write(in_burst);
+	if(j<(ntime-1)){
+	  boxcar1_stream.write(in_burst);
+	}
+	if(j>0){
+	  boxcar1_stream_hold.write(in_burst);
+	}
       }
-    }
-    
-  LOOP_BOXCAR1_M3:
-    // Read in the last image of each DM, get boxcar1 and setup for boxcar2
-    for(m = 0; m < NBURST_PER_IMG; m++){
-#pragma HLS PIPELINE
-      loc = i*ntime*NBURST_PER_IMG + (ntime-1)*NBURST_PER_IMG + m;
-      in_burst = in[loc];
-      // Boxcar1
-      out1[loc] = in_burst;
-      // Here only setup the short stream
-      // Setup for boxcar2
-      boxcar1_stream_hold.write(in_burst);
     }
   }
 }
@@ -238,31 +216,10 @@ void boxcar2(
     
  LOOP_BOXCAR2_I:
   for(i = 0; i < ndm; i++){
-  LOOP_BOXCAR2_M1:
-    // Calculate the first boxcar2 of each DM and setup for boxcar3
-    for(m = 0; m < NBURST_PER_IMG; m++){
-#pragma HLS PIPELINE
-      // Read boxcar1 long and short stream
-      burst_previous = boxcar1_stream.read();
-      burst_current  = boxcar1_stream_hold.read();
-
-      // Calculate boxcar2
-      for(n = 0; n < NSAMP_PER_BURST; n++){
-#pragma HLS UNROLL
-	burst_result.data[n] = burst_previous.data[n] + burst_current.data[n];
-      }
-      // Sendout boxcar2
-      loc = i*(ntime-1)*NBURST_PER_IMG + m;
-      out2[loc] = burst_result;
-      // Setup boxcar3
-      // Here only setup long stream
-      boxcar2_stream.write(burst_result);
-    }
-    
   LOOP_BOXCAR2_J:
     // Calculate the rest boxcar2 (except the last one) of each DM and setup for boxcar3
-    for(j = 2; j < (ntime-1); j++){
-    LOOP_BOXCAR2_M2:
+    for(j = 0; j < (ntime-1); j++){
+    LOOP_BOXCAR2_M:
       for(m = 0; m < NBURST_PER_IMG; m++){
 #pragma HLS PIPELINE
 	// Read boxcar1 long and short stream
@@ -276,35 +233,17 @@ void boxcar2(
 	}
 
 	// Sendout boxcar2
-	loc = i*(ntime-1)*NBURST_PER_IMG + (j-1)*NBURST_PER_IMG + m;
+	loc = i*(ntime-1)*NBURST_PER_IMG + j*NBURST_PER_IMG + m;
 	out2[loc] = burst_result;
 	// Setup boxcar3
 	// Here setup both long and short stream
-	boxcar2_stream.write(burst_result);
-	boxcar2_stream_hold.write(burst_current);
+	if(j<(ntime-2)){
+	  boxcar2_stream.write(burst_result);
+	}
+	if(j>0){
+	  boxcar2_stream_hold.write(burst_current);
+	}
       }
-    }
-    
-  LOOP_BOXCAR2_M3:
-    // Calculate the last boxcar2 of each DM and setup for boxcar3
-    for(m = 0; m < NBURST_PER_IMG; m++){
-#pragma HLS PIPELINE
-      // Read in boxcar1 long and short stream
-      burst_previous = boxcar1_stream.read();
-      burst_current  = boxcar1_stream_hold.read();
-
-      // Calculate boxcar2
-      for(n = 0; n < NSAMP_PER_BURST; n++){
-#pragma HLS UNROLL
-	burst_result.data[n] = burst_previous.data[n] + burst_current.data[n];
-      }
-
-      // Sendout boxcar2
-      loc = i*(ntime-1)*NBURST_PER_IMG + (ntime-2)*NBURST_PER_IMG + m;
-      out2[loc] = burst_result;
-      // Setup boxcar3
-      // Here only setup short stream
-      boxcar2_stream_hold.write(burst_current);
     }  
   }  
 }
@@ -326,29 +265,11 @@ void boxcar3(
   int loc;
     
  LOOP_BOXCAR3_I:
-  for(i = 0; i < ndm; i++){
-  LOOP_BOXCAR3_M1:
-    // Calculate the first boxcar3 of each DM
-    for(m = 0; m < NBURST_PER_IMG; m++){
-#pragma HLS PIPELINE
-      // Read boxcar2 long and short stream
-      burst_previous = boxcar2_stream.read();
-      burst_current  = boxcar2_stream_hold.read();
-
-      // Calculate boxcar3
-      for(n = 0; n < NSAMP_PER_BURST; n++){
-#pragma HLS UNROLL
-	burst_result.data[n] = burst_previous.data[n] + burst_current.data[n];
-      }
-      // Sendout boxcar3
-      loc = i*(ntime-2)*NBURST_PER_IMG + m;
-      out3[loc] = burst_result;
-    }
-    
+  for(i = 0; i < ndm; i++){    
   LOOP_BOXCAR3_J:
     // Calculate the rest boxcar3 of each DM 
-    for(j = 3; j < ntime; j++){
-    LOOP_BOXCAR3_M2:
+    for(j = 0; j < (ntime-2); j++){
+    LOOP_BOXCAR3_M:
       for(m = 0; m < NBURST_PER_IMG; m++){
 #pragma HLS PIPELINE
 	// Read boxcar2 long and short stream
@@ -362,7 +283,7 @@ void boxcar3(
 	}
 
 	// Sendout boxcar3
-	loc = i*(ntime-2)*NBURST_PER_IMG + (j-2)*NBURST_PER_IMG + m;
+	loc = i*(ntime-2)*NBURST_PER_IMG + j*NBURST_PER_IMG + m;
 	out3[loc] = burst_result;
       }
     }
