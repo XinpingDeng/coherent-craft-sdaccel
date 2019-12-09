@@ -7,32 +7,46 @@ extern "C" {
 		  burst_t *out1,
 		  burst_t *out2,
 		  burst_t *out3,
+		  burst_t *out4,
+		  burst_t *out5,
+		  burst_t *out6,
+		  burst_t *out7,
+		  burst_t *out8,
+		  burst_t *out9,
+		  burst_t *out10,
+		  burst_t *out11,
+		  burst_t *out12,
+		  burst_t *out13,
+		  burst_t *out14,
+		  burst_t *out15,
+		  burst_t *out16,
 		  int ndm,
 		  int ntime
 		  );  
-  void boxcar1(
-	       const burst_t *in,
-	       stream_t &boxcar1_stream,
-	       stream_t &in_stream_hold1,
-	       burst_t *out1,
-	       int ndm,
-	       int ntime);
+  void first_boxcar(
+		    const burst_t *in,
+		    stream_t &current,
+		    stream_t &current_hold,
+		    burst_t *first_out,
+		    int ndm,
+		    int ntime);
   
-  void boxcar2(
-	       stream_t &boxcar1_stream,
-	       stream_t &boxcar1_stream_hold,
-	       stream_t &boxcar2_stream,
-	       stream_t &boxcar2_stream_hold,
-	       burst_t *out2,
-	       int ndm,
-	       int ntime);
+  void mid_boxcar(
+		  stream_t &previous,
+		  stream_t &previous_hold,
+		  stream_t &current,
+		  stream_t &current_hold,
+		  burst_t *mid_out,
+		  int ndm,
+		  int ntime,
+		  int boxcar);
   
-  void boxcar3(
-	       stream_t &boxcar2_stream,
-	       stream_t &boxcar2_stream_hold,
-	       burst_t *out3,
-	       int ndm,
-	       int ntime);
+  void last_boxcar(
+		   stream_t &previous,
+		   stream_t &previous_hold,
+		   burst_t *last_out,
+		   int ndm,
+		   int ntime);
 }
 
 void knl_boxcar(
@@ -40,21 +54,63 @@ void knl_boxcar(
 		burst_t *out1,
 		burst_t *out2,
 		burst_t *out3,
+		burst_t *out4,
+		burst_t *out5,
+		burst_t *out6,
+		burst_t *out7,
+		burst_t *out8,
+		burst_t *out9,
+		burst_t *out10,
+		burst_t *out11,
+		burst_t *out12,
+		burst_t *out13,
+		burst_t *out14,
+		burst_t *out15,
+		burst_t *out16,
 		int ndm,
 		int ntime
 		)
 {
-#pragma HLS INTERFACE m_axi port = in   offset = slave bundle = gmem0 max_read_burst_length=64
-#pragma HLS INTERFACE m_axi port = out1 offset = slave bundle = gmem1 max_write_burst_length=64
-#pragma HLS INTERFACE m_axi port = out2 offset = slave bundle = gmem2 max_write_burst_length=64
-#pragma HLS INTERFACE m_axi port = out3 offset = slave bundle = gmem3 max_write_burst_length=64
+  const int long_stream_depth = NBURST_PER_IMG + 1;
+  const int max_burst_length = 64;
+  
+#pragma HLS INTERFACE m_axi port = in    offset = slave bundle = gmem0  max_read_burst_length =max_burst_length
+#pragma HLS INTERFACE m_axi port = out1  offset = slave bundle = gmem1  max_write_burst_length=max_burst_length
+#pragma HLS INTERFACE m_axi port = out2  offset = slave bundle = gmem2  max_write_burst_length=max_burst_length
+#pragma HLS INTERFACE m_axi port = out3  offset = slave bundle = gmem3  max_write_burst_length=max_burst_length
+#pragma HLS INTERFACE m_axi port = out4  offset = slave bundle = gmem4  max_write_burst_length=max_burst_length
+#pragma HLS INTERFACE m_axi port = out5  offset = slave bundle = gmem5  max_write_burst_length=max_burst_length
+#pragma HLS INTERFACE m_axi port = out6  offset = slave bundle = gmem6  max_write_burst_length=max_burst_length
+#pragma HLS INTERFACE m_axi port = out7  offset = slave bundle = gmem7  max_write_burst_length=max_burst_length
+#pragma HLS INTERFACE m_axi port = out8  offset = slave bundle = gmem8  max_write_burst_length=max_burst_length
+#pragma HLS INTERFACE m_axi port = out9  offset = slave bundle = gmem9  max_write_burst_length=max_burst_length
+#pragma HLS INTERFACE m_axi port = out10 offset = slave bundle = gmem10 max_write_burst_length=max_burst_length
+#pragma HLS INTERFACE m_axi port = out11 offset = slave bundle = gmem11 max_write_burst_length=max_burst_length
+#pragma HLS INTERFACE m_axi port = out12 offset = slave bundle = gmem12 max_write_burst_length=max_burst_length
+#pragma HLS INTERFACE m_axi port = out13 offset = slave bundle = gmem13 max_write_burst_length=max_burst_length
+#pragma HLS INTERFACE m_axi port = out14 offset = slave bundle = gmem14 max_write_burst_length=max_burst_length
+#pragma HLS INTERFACE m_axi port = out15 offset = slave bundle = gmem15 max_write_burst_length=max_burst_length
+#pragma HLS INTERFACE m_axi port = out16 offset = slave bundle = gmem16 max_write_burst_length=max_burst_length
 
-#pragma HLS INTERFACE s_axilite port = in     bundle = control
-#pragma HLS INTERFACE s_axilite port = out1   bundle = control
-#pragma HLS INTERFACE s_axilite port = out2   bundle = control
-#pragma HLS INTERFACE s_axilite port = out3   bundle = control
-#pragma HLS INTERFACE s_axilite port = ndm    bundle = control
-#pragma HLS INTERFACE s_axilite port = ntime  bundle = control
+#pragma HLS INTERFACE s_axilite port = in    bundle = control
+#pragma HLS INTERFACE s_axilite port = out1  bundle = control
+#pragma HLS INTERFACE s_axilite port = out2  bundle = control
+#pragma HLS INTERFACE s_axilite port = out3  bundle = control
+#pragma HLS INTERFACE s_axilite port = out4  bundle = control
+#pragma HLS INTERFACE s_axilite port = out5  bundle = control
+#pragma HLS INTERFACE s_axilite port = out6  bundle = control
+#pragma HLS INTERFACE s_axilite port = out7  bundle = control
+#pragma HLS INTERFACE s_axilite port = out8  bundle = control
+#pragma HLS INTERFACE s_axilite port = out9  bundle = control
+#pragma HLS INTERFACE s_axilite port = out10 bundle = control
+#pragma HLS INTERFACE s_axilite port = out11 bundle = control
+#pragma HLS INTERFACE s_axilite port = out12 bundle = control
+#pragma HLS INTERFACE s_axilite port = out13 bundle = control
+#pragma HLS INTERFACE s_axilite port = out14 bundle = control
+#pragma HLS INTERFACE s_axilite port = out15 bundle = control
+#pragma HLS INTERFACE s_axilite port = out16 bundle = control
+#pragma HLS INTERFACE s_axilite port = ndm   bundle = control
+#pragma HLS INTERFACE s_axilite port = ntime bundle = control
   
 #pragma HLS INTERFACE s_axilite port = return bundle = control
 
@@ -62,108 +118,212 @@ void knl_boxcar(
 #pragma HLS DATA_PACK variable = out1
 #pragma HLS DATA_PACK variable = out2
 #pragma HLS DATA_PACK variable = out3
-  
-  static stream_t boxcar1_stream;
-  static stream_t boxcar2_stream;
-  //stream_t boxcar3_stream;
-  //stream_t boxcar4_stream;
-  //stream_t boxcar5_stream;
-  //stream_t boxcar6_stream;
-  //stream_t boxcar7_stream;
-  //stream_t boxcar8_stream;
-  //stream_t boxcar9_stream;
-  //stream_t boxcar10_stream;
-  //stream_t boxcar11_stream;
-  //stream_t boxcar12_stream;
-  //stream_t boxcar13_stream;
-  //stream_t boxcar14_stream;
-  //stream_t boxcar15_stream;
-  
-  static stream_t boxcar1_stream_hold;
-  static stream_t boxcar2_stream_hold;
-  //stream_t boxcar3_stream_hold;
-  //stream_t boxcar4_stream_hold;
-  //stream_t boxcar5_stream_hold;
-  //stream_t boxcar6_stream_hold;
-  //stream_t boxcar7_stream_hold;
-  //stream_t boxcar8_stream_hold;
-  //stream_t boxcar9_stream_hold;
-  //stream_t boxcar10_stream_hold;
-  //stream_t boxcar11_stream_hold;
-  //stream_t boxcar12_stream_hold;
-  //stream_t boxcar13_stream_hold;
-  //stream_t boxcar14_stream_hold;
-  //stream_t boxcar15_stream_hold;
+#pragma HLS DATA_PACK variable = out4
+#pragma HLS DATA_PACK variable = out5
+#pragma HLS DATA_PACK variable = out6
+#pragma HLS DATA_PACK variable = out7
+#pragma HLS DATA_PACK variable = out8
+#pragma HLS DATA_PACK variable = out9
+#pragma HLS DATA_PACK variable = out10
+#pragma HLS DATA_PACK variable = out11
+#pragma HLS DATA_PACK variable = out12
+#pragma HLS DATA_PACK variable = out13
+#pragma HLS DATA_PACK variable = out14
+#pragma HLS DATA_PACK variable = out15
+#pragma HLS DATA_PACK variable = out16
   
   // These streams hold multiple images, delay for NBURST_PER_IMG, accumulate happens when new samples come in
   // The size should be NBURST_PER_IMG, but can not use defined variable here
   // Long stream afterwards
-#pragma HLS STREAM variable = boxcar1_stream depth = 1025
-#pragma HLS STREAM variable = boxcar2_stream depth = 1025
-  //#pragma HLS STREAM variable = boxcar3_stream depth = 1025
-  //#pragma HLS STREAM variable = boxcar4_stream depth = 1025
-  //#pragma HLS STREAM variable = boxcar5_stream depth = 1025
-  //#pragma HLS STREAM variable = boxcar6_stream depth = 1025
-  //#pragma HLS STREAM variable = boxcar7_stream depth = 1025
-  //#pragma HLS STREAM variable = boxcar8_stream depth = 1025
-  //#pragma HLS STREAM variable = boxcar9_stream depth = 1025
-  //#pragma HLS STREAM variable = boxcar10_stream depth = 1025
-  //#pragma HLS STREAM variable = boxcar11_stream depth = 1025
-  //#pragma HLS STREAM variable = boxcar12_stream depth = 1025
-  //#pragma HLS STREAM variable = boxcar13_stream depth = 1025
-  //#pragma HLS STREAM variable = boxcar14_stream depth = 1025
-  //#pragma HLS STREAM variable = boxcar15_stream depth = 1025
-  
+  static stream_t boxcar_stream[NBOXCAR-1];
   // These streams hold one new income sample, the delay between them and the above streams is 1024 (NBURST_PER_IMG)
   // Short stream afterwards
-#pragma HLS STREAM variable = boxcar1_stream_hold //depth = 20
-#pragma HLS STREAM variable = boxcar2_stream_hold //depth = 20
-  //#pragma HLS STREAM variable = boxcar3_stream_hold //depth = 1
-  //#pragma HLS STREAM variable = boxcar4_stream_hold //depth = 1
-  //#pragma HLS STREAM variable = boxcar5_stream_hold //depth = 1
-  //#pragma HLS STREAM variable = boxcar6_stream_hold //depth = 1
-  //#pragma HLS STREAM variable = boxcar7_stream_hold //depth = 1
-  //#pragma HLS STREAM variable = boxcar8_stream_hold //depth = 1
-  //#pragma HLS STREAM variable = boxcar9_stream_hold //depth = 1
-  //#pragma HLS STREAM variable = boxcar10_stream_hold //depth = 1
-  //#pragma HLS STREAM variable = boxcar11_stream_hold //depth = 1
-  //#pragma HLS STREAM variable = boxcar12_stream_hold //depth = 1
-  //#pragma HLS STREAM variable = boxcar13_stream_hold //depth = 1
-  //#pragma HLS STREAM variable = boxcar14_stream_hold //depth = 1
-  //#pragma HLS STREAM variable = boxcar15_stream_hold //depth = 1
+  static stream_t boxcar_stream_hold[NBOXCAR-1];
+  
+  for(int i = 0; i < NBOXCAR-1; i++){
+#pragma HLS STREAM variable = boxcar_stream[i] depth = long_stream_depth
+#pragma HLS STREAM variable = boxcar_stream_hold[i] 
+  }
 
 #pragma HLS DATAFLOW
-  boxcar1(in,
-	  boxcar1_stream,
-	  boxcar1_stream_hold,
-	  out1,
-	  ndm,
-	  ntime);
+  // First boxcar
+  first_boxcar(in,
+	       boxcar_stream[0],
+	       boxcar_stream_hold[0],
+	       out1,
+	       ndm,
+	       ntime);
   
-  boxcar2(
-	  boxcar1_stream,
-	  boxcar1_stream_hold,
-	  boxcar2_stream,
-	  boxcar2_stream_hold,
-	  out2,
-	  ndm,
-	  ntime);
+  // Boxcar2
+  mid_boxcar(
+	     boxcar_stream[0],
+	     boxcar_stream_hold[0],
+	     boxcar_stream[1],
+	     boxcar_stream_hold[1],
+	     out2,
+	     ndm,
+	     ntime,
+	     2);
   
-  boxcar3(
-	  boxcar2_stream,
-	  boxcar2_stream_hold,
-	  out3,
-	  ndm,
-	  ntime);
+  // Boxcar3
+  mid_boxcar(
+	     boxcar_stream[1],
+	     boxcar_stream_hold[1],
+	     boxcar_stream[2],
+	     boxcar_stream_hold[2],
+	     out3,
+	     ndm,
+	     ntime,
+	     3);
+  
+  // Boxcar4
+  mid_boxcar(
+	     boxcar_stream[2],
+	     boxcar_stream_hold[2],
+	     boxcar_stream[3],
+	     boxcar_stream_hold[3],
+	     out4,
+	     ndm,
+	     ntime,
+	     4);
+    
+  // Boxcar5
+  mid_boxcar(
+	     boxcar_stream[3],
+	     boxcar_stream_hold[3],
+	     boxcar_stream[4],
+	     boxcar_stream_hold[4],
+	     out5,
+	     ndm,
+	     ntime,
+	     5);
+  
+  // Boxcar6
+  mid_boxcar(
+	     boxcar_stream[4],
+	     boxcar_stream_hold[4],
+	     boxcar_stream[5],
+	     boxcar_stream_hold[5],
+	     out6,
+	     ndm,
+	     ntime,
+	     6);
+  
+  // Boxcar7
+  mid_boxcar(
+	     boxcar_stream[5],
+	     boxcar_stream_hold[5],
+	     boxcar_stream[6],
+	     boxcar_stream_hold[6],
+	     out7,
+	     ndm,
+	     ntime,
+	     7);
+  
+  // Boxcar8
+  mid_boxcar(
+	     boxcar_stream[6],
+	     boxcar_stream_hold[6],
+	     boxcar_stream[7],
+	     boxcar_stream_hold[7],
+	     out8,
+	     ndm,
+	     ntime,
+	     8);
+  
+  // Boxcar9
+  mid_boxcar(
+	     boxcar_stream[7],
+	     boxcar_stream_hold[7],
+	     boxcar_stream[8],
+	     boxcar_stream_hold[8],
+	     out9,
+	     ndm,
+	     ntime,
+	     9);
+  
+  // Boxcar10
+  mid_boxcar(
+	     boxcar_stream[8],
+	     boxcar_stream_hold[8],
+	     boxcar_stream[9],
+	     boxcar_stream_hold[9],
+	     out10,
+	     ndm,
+	     ntime,
+	     10);
+  
+  // Boxcar11
+  mid_boxcar(
+	     boxcar_stream[9],
+	     boxcar_stream_hold[9],
+	     boxcar_stream[10],
+	     boxcar_stream_hold[10],
+	     out11,
+	     ndm,
+	     ntime,
+	     11);
+  
+  // Boxcar12
+  mid_boxcar(
+	     boxcar_stream[10],
+	     boxcar_stream_hold[10],
+	     boxcar_stream[11],
+	     boxcar_stream_hold[11],
+	     out12,
+	     ndm,
+	     ntime,
+	     12);
+  
+  // Boxcar13
+  mid_boxcar(
+	     boxcar_stream[11],
+	     boxcar_stream_hold[11],
+	     boxcar_stream[12],
+	     boxcar_stream_hold[12],
+	     out13,
+	     ndm,
+	     ntime,
+	     13);
+  
+  // Boxcar14
+  mid_boxcar(
+	     boxcar_stream[12],
+	     boxcar_stream_hold[12],
+	     boxcar_stream[13],
+	     boxcar_stream_hold[13],
+	     out14,
+	     ndm,
+	     ntime,
+	     14);
+  
+  // Boxcar15
+  mid_boxcar(
+	     boxcar_stream[13],
+	     boxcar_stream_hold[13],
+	     boxcar_stream[14],
+	     boxcar_stream_hold[14],
+	     out15,
+	     ndm,
+	     ntime,
+	     15);
+  
+  // Last boxcar
+  last_boxcar(
+	      boxcar_stream[NBOXCAR-2],
+	      boxcar_stream_hold[NBOXCAR-2],
+	      out16,
+	      ndm,
+	      ntime);
 }
 
-void boxcar1(
-	     const burst_t *in,
-	     stream_t &boxcar1_stream,
-	     stream_t &boxcar1_stream_hold,
-	     burst_t *out1,
-	     int ndm,
-	     int ntime){
+void first_boxcar(
+		  const burst_t *in,
+		  stream_t &current,
+		  stream_t &current_hold,
+		  burst_t *first_out,
+		  int ndm,
+		  int ntime){
   int i;
   int j;
   int m;
@@ -171,89 +331,40 @@ void boxcar1(
   int loc;
   burst_t in_burst;
 
- LOOP_BOXCAR1_I:
+ LOOP_FIRST_BOXCAR_I:
   for(i = 0; i < ndm; i++){
-  LOOP_BOXCAR1_J:
+  LOOP_FIRST_BOXCAR_J:
     // Read in the rest images expect the last one, get boxcar1 and setup for boxcar2
     for(j = 0; j < ntime; j++){
-    LOOP_BOXCAR1_M:
+    LOOP_FIRST_BOXCAR_M:
       for(m = 0; m < NBURST_PER_IMG; m++){
 #pragma HLS PIPELINE
 	loc = i*ntime*NBURST_PER_IMG + j*NBURST_PER_IMG + m;
 	in_burst = in[loc];
 	// Boxcar1
-	out1[loc] = in_burst;
+	first_out[loc] = in_burst;
 	// Setup for boxcar2
 	// Here setup both long and short stream
 	if(j<(ntime-1)){
-	  boxcar1_stream.write(in_burst);
+	  current.write(in_burst);
 	}
 	if(j>0){
-	  boxcar1_stream_hold.write(in_burst);
+	  current_hold.write(in_burst);
 	}
       }
     }
   }
 }
 
-void boxcar2(
-	     stream_t &boxcar1_stream,
-	     stream_t &boxcar1_stream_hold,
-	     stream_t &boxcar2_stream,
-	     stream_t &boxcar2_stream_hold,
-	     burst_t *out2,
-	     int ndm,
-	     int ntime){
-  burst_t burst_previous;
-  burst_t burst_current;
-  burst_t burst_result;
-
-  int i;
-  int j;
-  int m;
-  int n;
-  int loc;
-    
- LOOP_BOXCAR2_I:
-  for(i = 0; i < ndm; i++){
-  LOOP_BOXCAR2_J:
-    // Calculate the rest boxcar2 (except the last one) of each DM and setup for boxcar3
-    for(j = 0; j < (ntime-1); j++){
-    LOOP_BOXCAR2_M:
-      for(m = 0; m < NBURST_PER_IMG; m++){
-#pragma HLS PIPELINE
-	// Read boxcar1 long and short stream
-	burst_previous = boxcar1_stream.read();
-	burst_current  = boxcar1_stream_hold.read();
-
-	// Calculate boxcar2
-	for(n = 0; n < NSAMP_PER_BURST; n++){
-#pragma HLS UNROLL
-	  burst_result.data[n] = burst_previous.data[n] + burst_current.data[n];
-	}
-
-	// Sendout boxcar2
-	loc = i*(ntime-1)*NBURST_PER_IMG + j*NBURST_PER_IMG + m;
-	out2[loc] = burst_result;
-	// Setup boxcar3
-	// Here setup both long and short stream
-	if(j<(ntime-2)){
-	  boxcar2_stream.write(burst_result);
-	}
-	if(j>0){
-	  boxcar2_stream_hold.write(burst_current);
-	}
-      }
-    }  
-  }  
-}
-
-void boxcar3(
-	     stream_t &boxcar2_stream,
-	     stream_t &boxcar2_stream_hold,
-	     burst_t *out3,
-	     int ndm,
-	     int ntime){
+void mid_boxcar(
+		stream_t &previous,
+		stream_t &previous_hold,
+		stream_t &current,
+		stream_t &current_hold,
+		burst_t *mid_out,
+		int ndm,
+		int ntime,
+		int boxcar){
   burst_t burst_previous;
   burst_t burst_current;
   burst_t burst_result;
@@ -264,17 +375,67 @@ void boxcar3(
   int n;
   int loc;
     
- LOOP_BOXCAR3_I:
+ LOOP_BOXCAR_MID_I:
+  for(i = 0; i < ndm; i++){
+  LOOP_BOXCAR_MID_J:
+    // Calculate the current boxcar of each DM and setup for next boxcar
+    for(j = 0; j < (ntime+1-boxcar); j++){
+    LOOP_BOXCAR_MID_M:
+      for(m = 0; m < NBURST_PER_IMG; m++){
+#pragma HLS PIPELINE
+	// Read boxcar1 long and short stream
+	burst_previous = previous.read();
+	burst_current  = previous_hold.read();
+
+	// Calculate current boxcar
+	for(n = 0; n < NSAMP_PER_BURST; n++){
+#pragma HLS UNROLL
+	  burst_result.data[n] = burst_previous.data[n] + burst_current.data[n];
+	}
+
+	// Sendout current boxcar
+	loc = i*(ntime+1-boxcar)*NBURST_PER_IMG + j*NBURST_PER_IMG + m;
+	mid_out[loc] = burst_result;
+	// Setup next boxcar
+	// Here setup both long and short stream
+	if(j<(ntime-boxcar)){
+	  current.write(burst_result);
+	}
+	if(j>0){
+	  current_hold.write(burst_current);
+	}
+      }
+    }  
+  }  
+}
+
+void last_boxcar(
+		 stream_t &previous,
+		 stream_t &previous_hold,
+		 burst_t *last_out,
+		 int ndm,
+		 int ntime){
+  burst_t burst_previous;
+  burst_t burst_current;
+  burst_t burst_result;
+  
+  int i;
+  int j;
+  int m;
+  int n;
+  int loc;
+    
+ LOOP_LAST_BOXCAR_I:
   for(i = 0; i < ndm; i++){    
-  LOOP_BOXCAR3_J:
-    // Calculate the rest boxcar3 of each DM 
-    for(j = 0; j < (ntime-2); j++){
-    LOOP_BOXCAR3_M:
+  LOOP_LAST_BOXCAR_J:
+    // Calculate the boxcar3 of each DM 
+    for(j = 0; j < (ntime+1-NBOXCAR); j++){
+    LOOP_LAST_BOXCAR_M:
       for(m = 0; m < NBURST_PER_IMG; m++){
 #pragma HLS PIPELINE
 	// Read boxcar2 long and short stream
-	burst_previous = boxcar2_stream.read();
-	burst_current  = boxcar2_stream_hold.read();
+	burst_previous = previous.read();
+	burst_current  = previous_hold.read();
 
 	// Calculate boxcar3
 	for(n = 0; n < NSAMP_PER_BURST; n++){
@@ -283,8 +444,8 @@ void boxcar3(
 	}
 
 	// Sendout boxcar3
-	loc = i*(ntime-2)*NBURST_PER_IMG + j*NBURST_PER_IMG + m;
-	out3[loc] = burst_result;
+	loc = i*(ntime+1-NBOXCAR)*NBURST_PER_IMG + j*NBURST_PER_IMG + m;
+	last_out[loc] = burst_result;
       }
     }
   }  

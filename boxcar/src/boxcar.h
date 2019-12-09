@@ -16,6 +16,7 @@
 #include <hls_stream.h>
 #include <inttypes.h>
 
+#define NBOXCAR             16
 #define FLOAT_DATA_TYPE     1
 //#define CORE_DATA_WIDTH     32     // We use float 32-bits real numbers
 #define CORE_DATA_WIDTH     8       // We use ap_fixed 8-bits real numbers
@@ -62,6 +63,27 @@ int boxcar(
 	   core_t *out1,
 	   core_t *out2,
 	   core_t *out3,
+	   core_t *out4,
+	   core_t *out5,
+	   core_t *out6,
+	   core_t *out7,
+	   core_t *out8,
+	   core_t *out9,
+	   core_t *out10,
+	   core_t *out11,
+	   core_t *out12,
+	   core_t *out13,
+	   core_t *out14,
+	   core_t *out15,
+	   core_t *out16,
 	   int ndm,
 	   int ntime
 	   );
+
+core_t do_boxcar(
+		 const core_t *in,
+		 int dm,
+		 int samp_in_img,
+		 int ntime,
+		 int boxcar,
+		 core_t *out);
