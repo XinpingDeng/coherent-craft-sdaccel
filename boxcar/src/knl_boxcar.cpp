@@ -333,9 +333,11 @@ void first_boxcar(
 
  LOOP_FIRST_BOXCAR_I:
   for(i = 0; i < ndm; i++){
+#pragma HLS LOOP_TRIPCOUNT min=1024 max=1024
   LOOP_FIRST_BOXCAR_J:
     // Read in the rest images expect the last one, get boxcar1 and setup for boxcar2
     for(j = 0; j < ntime; j++){
+#pragma HLS LOOP_TRIPCOUNT min=256 max=256
     LOOP_FIRST_BOXCAR_M:
       for(m = 0; m < NBURST_PER_IMG; m++){
 #pragma HLS PIPELINE
@@ -377,9 +379,11 @@ void mid_boxcar(
     
  LOOP_BOXCAR_MID_I:
   for(i = 0; i < ndm; i++){
+#pragma HLS LOOP_TRIPCOUNT min=1024 max=1024
   LOOP_BOXCAR_MID_J:
     // Calculate the current boxcar of each DM and setup for next boxcar
     for(j = 0; j < (ntime+1-boxcar); j++){
+#pragma HLS LOOP_TRIPCOUNT min=256 max=256
     LOOP_BOXCAR_MID_M:
       for(m = 0; m < NBURST_PER_IMG; m++){
 #pragma HLS PIPELINE
@@ -426,10 +430,12 @@ void last_boxcar(
   int loc;
     
  LOOP_LAST_BOXCAR_I:
-  for(i = 0; i < ndm; i++){    
+  for(i = 0; i < ndm; i++){
+#pragma HLS LOOP_TRIPCOUNT min=1024 max=1024
   LOOP_LAST_BOXCAR_J:
     // Calculate the boxcar3 of each DM 
     for(j = 0; j < (ntime+1-NBOXCAR); j++){
+#pragma HLS LOOP_TRIPCOUNT min=256 max=256
     LOOP_LAST_BOXCAR_M:
       for(m = 0; m < NBURST_PER_IMG; m++){
 #pragma HLS PIPELINE
