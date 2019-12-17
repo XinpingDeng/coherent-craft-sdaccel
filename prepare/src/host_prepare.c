@@ -84,6 +84,8 @@ int main(int argc, char* argv[]){
   for(i = 0; i < ndata1; i++){
     cal_pol1[i] = (core_data_type)(0.99*(rand()%DATA_RANGE));
     cal_pol2[i] = (core_data_type)(0.99*(rand()%DATA_RANGE));
+    //cal_pol1[i] = 0;//(core_data_type)(0.99*(rand()%DATA_RANGE));
+    //cal_pol2[i] = 0;//(core_data_type)(0.99*(rand()%DATA_RANGE));
     sky[i]      = (core_data_type)(0.99*(rand()%DATA_RANGE));
   }
   
@@ -290,10 +292,10 @@ int main(int argc, char* argv[]){
   for(i=0;i<ndata2;i++){
     if(fabs(sw_out[i]-hw_out[i]) > fabs(sw_out[i]*res)){
       if(sw_out[i]!=0){
-	fprintf(stdout, "INFO: Mismatch on OUT: %d\t%f\t%f\t%.0f\n", i, (float)sw_out[i], (float)hw_out[i], 100.0*fabs((sw_out[i]-hw_out[i])/sw_out[i]));
+  	fprintf(stdout, "INFO: Mismatch on OUT: %d\t%f\t%f\t%.0f\n", i, (float)sw_out[i], (float)hw_out[i], 100.0*fabs((sw_out[i]-hw_out[i])/sw_out[i]));
       }
       else{
-	fprintf(stdout, "INFO: Mismatch on OUT: %d\t%f\t%f\n", i, (float)sw_out[i], (float)hw_out[i]);
+  	fprintf(stdout, "INFO: Mismatch on OUT: %d\t%f\t%f\n", i, (float)sw_out[i], (float)hw_out[i]);
       }
       ndata3++;
     }

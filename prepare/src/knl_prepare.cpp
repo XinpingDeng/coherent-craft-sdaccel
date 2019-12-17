@@ -68,8 +68,8 @@ void knl_prepare(
   core_data_type cal_pol1_burst[MAX_BURST_LENGTH*NDATA_PER_BURST];	  	      
   core_data_type cal_pol2_burst[MAX_BURST_LENGTH*NDATA_PER_BURST];
   core_data_type sky_burst[MAX_BURST_LENGTH*NDATA_PER_BURST];  
-  burst_data_type average_pol1_burst[MAX_BURST_LENGTH];
-  burst_data_type average_pol2_burst[MAX_BURST_LENGTH];
+  burst_data_type average_pol1_burst[MAX_BURST_LENGTH]; // Change this to a pure array does not help much
+  burst_data_type average_pol2_burst[MAX_BURST_LENGTH]; // Change this to a pure array does not help much
         
   int i;
   int j;
@@ -85,6 +85,7 @@ void knl_prepare(
   nburst_per_time_remind = nburst_per_time%MAX_BURST_LENGTH;
 
   const int ndata_per_burst = NDATA_PER_BURST;
+  //const int max_burst_length = MAX_BURST_LENGTH;
 #pragma HLS ARRAY_RESHAPE variable=sky_burst cyclic factor=ndata_per_burst
 #pragma HLS ARRAY_RESHAPE variable=cal_pol1_burst cyclic factor=ndata_per_burst
 #pragma HLS ARRAY_RESHAPE variable=cal_pol2_burst cyclic factor=ndata_per_burst
@@ -100,7 +101,8 @@ void knl_prepare(
       loc = m*NDATA_PER_BURST+n;
       sky_burst[loc] = sky[loc_burst].data[n];
       cal_pol1_burst[loc] = cal_pol1[loc_burst].data[n];
-      cal_pol2_burst[loc] = cal_pol2[loc_burst].data[n];  
+      cal_pol2_burst[loc] = cal_pol2[loc_burst].data[n];
+      
       average_pol1_burst[m].data[n] = 0;
       average_pol2_burst[m].data[n] = 0;    
     }	  
@@ -108,10 +110,12 @@ void knl_prepare(
 
  LOOP_NTRAN_PER_TIME:
   for(i = 0; i < ntran_per_time - 1; i++){
+#pragma HLS LOOP_TRIPCOUNT min=256 max=256
     // This goes to the last second if NCHAN*NBASELINE%MAX_BURST_LENGTH = 0
     // This goes to the last third if NCHAN*NBASELINE%MAX_BURST_LENGTH != 0
   LOOP_NTIME_PER_CU1:
-    for(j = 0; j < ntime_per_cu; j++){	
+    for(j = 0; j < ntime_per_cu; j++){
+#pragma HLS LOOP_TRIPCOUNT min=256 max=256
     LOOP_CAL_AVERAGE_OUT_M1:
       for(m = 0; m < MAX_BURST_LENGTH; m++){
 #pragma HLS PIPELINE
@@ -126,7 +130,8 @@ void knl_prepare(
 	  average_pol1_burst[m].data[2*n+1] += in_pol1_burst.data[2*n+1];
 	  average_pol2_burst[m].data[2*n]   += in_pol2_burst.data[2*n];
 	  average_pol2_burst[m].data[2*n+1] += in_pol2_burst.data[2*n+1];
-	  loc = 2*(m*NDATA_PER_BURST+n);
+	  //loc = 2*(m*NDATA_PER_BURST+n);
+	  loc = m*NDATA_PER_BURST+2*n;
 	  
 	  out_burst.data[2*n] = in_pol1_burst.data[2*n]*cal_pol1_burst[loc] - in_pol1_burst.data[2*n+1]*cal_pol1_burst[loc+1] + 
 	    in_pol2_burst.data[2*n]*cal_pol2_burst[loc] - in_pol2_burst.data[2*n+1]*cal_pol2_burst[loc+1] - 
@@ -181,8 +186,9 @@ void knl_prepare(
 	average_pol1_burst[m].data[2*n+1] += in_pol1_burst.data[2*n+1];
 	average_pol2_burst[m].data[2*n]   += in_pol2_burst.data[2*n];
 	average_pol2_burst[m].data[2*n+1] += in_pol2_burst.data[2*n+1];
-	loc = 2*(m*NDATA_PER_BURST+n);
-      
+	//loc = 2*(m*NDATA_PER_BURST+n);
+	loc = m*NDATA_PER_BURST+2*n;
+	
 	out_burst.data[2*n] = in_pol1_burst.data[2*n]*cal_pol1_burst[loc] - in_pol1_burst.data[2*n+1]*cal_pol1_burst[loc+1] + 
 	  in_pol2_burst.data[2*n]*cal_pol2_burst[loc] - in_pol2_burst.data[2*n+1]*cal_pol2_burst[loc+1] - 
 	  sky_burst[loc];
@@ -238,7 +244,8 @@ void knl_prepare(
 	average_pol1_burst[m].data[2*n+1] += in_pol1_burst.data[2*n+1];
 	average_pol2_burst[m].data[2*n]   += in_pol2_burst.data[2*n];
 	average_pol2_burst[m].data[2*n+1] += in_pol2_burst.data[2*n+1];
-	loc = 2*(m*NDATA_PER_BURST+n);
+	//loc = 2*(m*NDATA_PER_BURST+n);
+	loc = m*NDATA_PER_BURST+2*n;
 	
 	out_burst.data[2*n] = in_pol1_burst.data[2*n]*cal_pol1_burst[loc] - in_pol1_burst.data[2*n+1]*cal_pol1_burst[loc+1] + 
 	  in_pol2_burst.data[2*n]*cal_pol2_burst[loc] - in_pol2_burst.data[2*n+1]*cal_pol2_burst[loc+1] - 
