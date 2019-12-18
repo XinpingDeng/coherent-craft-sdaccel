@@ -29,15 +29,16 @@ void knl_prepare(
 		 int ntime_per_cu
 		 )
 {
+  const int max_burst_length = MAX_BURST_LENGTH;
   // Setup the interface, max_*_burst_length defines the max burst length (UG902 for detail)
-#pragma HLS INTERFACE m_axi port = in_pol1      offset = slave bundle = gmem0 max_read_burst_length=64  
-#pragma HLS INTERFACE m_axi port = in_pol2      offset = slave bundle = gmem1 max_read_burst_length=64  
-#pragma HLS INTERFACE m_axi port = cal_pol1     offset = slave bundle = gmem2 max_read_burst_length=64  
-#pragma HLS INTERFACE m_axi port = cal_pol2     offset = slave bundle = gmem3 max_read_burst_length=64  
-#pragma HLS INTERFACE m_axi port = sky          offset = slave bundle = gmem4 max_read_burst_length=64  
-#pragma HLS INTERFACE m_axi port = out          offset = slave bundle = gmem5 max_write_burst_length=64 
-#pragma HLS INTERFACE m_axi port = average_pol1 offset = slave bundle = gmem6 max_write_burst_length=64 
-#pragma HLS INTERFACE m_axi port = average_pol2 offset = slave bundle = gmem7 max_write_burst_length=64 
+#pragma HLS INTERFACE m_axi port = in_pol1      offset = slave bundle = gmem0 max_read_burst_length=max_burst_length  
+#pragma HLS INTERFACE m_axi port = in_pol2      offset = slave bundle = gmem1 max_read_burst_length=max_burst_length  
+#pragma HLS INTERFACE m_axi port = cal_pol1     offset = slave bundle = gmem2 max_read_burst_length=max_burst_length  
+#pragma HLS INTERFACE m_axi port = cal_pol2     offset = slave bundle = gmem3 max_read_burst_length=max_burst_length  
+#pragma HLS INTERFACE m_axi port = sky          offset = slave bundle = gmem4 max_read_burst_length=max_burst_length  
+#pragma HLS INTERFACE m_axi port = out          offset = slave bundle = gmem5 max_write_burst_length=max_burst_length 
+#pragma HLS INTERFACE m_axi port = average_pol1 offset = slave bundle = gmem6 max_write_burst_length=max_burst_length 
+#pragma HLS INTERFACE m_axi port = average_pol2 offset = slave bundle = gmem7 max_write_burst_length=max_burst_length 
 
 #pragma HLS INTERFACE s_axilite port = in_pol1         bundle = control
 #pragma HLS INTERFACE s_axilite port = in_pol2         bundle = control
@@ -85,7 +86,6 @@ void knl_prepare(
   nburst_per_time_remind = nburst_per_time%MAX_BURST_LENGTH;
 
   const int ndata_per_burst = NDATA_PER_BURST;
-  //const int max_burst_length = MAX_BURST_LENGTH;
 #pragma HLS ARRAY_RESHAPE variable=sky_burst cyclic factor=ndata_per_burst
 #pragma HLS ARRAY_RESHAPE variable=cal_pol1_burst cyclic factor=ndata_per_burst
 #pragma HLS ARRAY_RESHAPE variable=cal_pol2_burst cyclic factor=ndata_per_burst
@@ -110,7 +110,7 @@ void knl_prepare(
 
  LOOP_NTRAN_PER_TIME:
   for(i = 0; i < ntran_per_time - 1; i++){
-#pragma HLS LOOP_TRIPCOUNT min=256 max=256
+#pragma HLS LOOP_TRIPCOUNT min=7830 max=7830
     // This goes to the last second if NCHAN*NBASELINE%MAX_BURST_LENGTH = 0
     // This goes to the last third if NCHAN*NBASELINE%MAX_BURST_LENGTH != 0
   LOOP_NTIME_PER_CU1:
@@ -171,7 +171,8 @@ void knl_prepare(
   // This goes to the last second if NCHAN*NBASELINE%MAX_BURST_LENGTH != 0
   itran = ntran_per_time - 1;
  LOOP_NTIME_PER_CU2:
-  for(j = 0; j < ntime_per_cu; j++){ 
+  for(j = 0; j < ntime_per_cu; j++){
+#pragma HLS LOOP_TRIPCOUNT min=256 max=256
   LOOP_CAL_AVERAGE_OUT_M2:
     for(m = 0; m < MAX_BURST_LENGTH; m++){
 #pragma HLS PIPELINE
@@ -211,6 +212,8 @@ void knl_prepare(
     
  LOOP_BURST_CAL_SKY_RESET_AVERAGE2:
   for(m = 0; m < nburst_per_time_remind; m++){
+#pragma HLS LOOP_TRIPCOUNT min=1 max=max_burst_length
+#pragma HLS PIPELINE 
     // Be sure that only go through and prepare for the reminding samples 
     loc_burst = (itran+1)*MAX_BURST_LENGTH+m;      
   LOOP_RESET_AVERAGE3:
@@ -229,9 +232,11 @@ void knl_prepare(
   // This goes to the last if NCHAN*NBASELINE%MAX_BURST_LENGTH != 0
   itran = ntran_per_time;
  LOOP_NTIME_PER_CU3:
-  for(j = 0; j < ntime_per_cu; j++){	
+  for(j = 0; j < ntime_per_cu; j++){
+#pragma HLS LOOP_TRIPCOUNT min=256 max=256
   LOOP_CAL_AVERAGE_OUT_M3:
     for(m = 0; m < nburst_per_time_remind; m++){
+#pragma HLS LOOP_TRIPCOUNT min=1 max=max_burst_length
 #pragma HLS PIPELINE
       loc_burst = j*nburst_per_time + itran*MAX_BURST_LENGTH + m; 
       in_pol1_burst = in_pol1[loc_burst];
@@ -262,6 +267,7 @@ void knl_prepare(
  LOOP_BURST_AVERAGE3:
   for(m = 0; m < nburst_per_time_remind; m++){
     // only average out here
+#pragma HLS LOOP_TRIPCOUNT min=1 max=max_burst_length
 #pragma HLS PIPELINE 
     loc_burst = itran*MAX_BURST_LENGTH + m;
     average_pol1[loc_burst] = average_pol1_burst[m];
