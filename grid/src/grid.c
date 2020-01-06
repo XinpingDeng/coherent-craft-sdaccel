@@ -15,22 +15,29 @@ int grid(
 	 ){
   int i;
   int j;
+  int k;
   int loc_in;
   int loc_out;
+  int start;
+  int count;
   
   for(i = 0; i < nuv_per_cu; i++){
     for(j = 0; j < NSAMP_PER_UV_OUT; j++){
       loc_out = i*NSAMP_PER_UV_OUT + j;
       out[2*loc_out]   = 0;
       out[2*loc_out+1] = 0;
-      if(coord[j]!=0){
-	loc_in  = i*NSAMP_PER_UV_IN + coord[j] - 1;
-	out[2*loc_out]   = in[2*loc_in];
-	out[2*loc_out+1] = in[2*loc_in+1];
+      count = coord[2*j+1];
+      if(count!=0){
+        start = coord[2*j];
+        for(k = 0; k < count; k++){
+          loc_in  = i*NSAMP_PER_UV_IN + start + k;
+          out[2*loc_out]   += in[2*loc_in];
+          out[2*loc_out+1] += in[2*loc_in+1];
+        }
       }
     }
   }
-
+  
   return EXIT_SUCCESS;
 }
 
@@ -46,7 +53,7 @@ int read_coord(char *fname, int flen, int *fdat){
   }
   for(int i = 0; i < flen; i++){
     fgets(line, LINE_LENGTH, fp);
-    sscanf(line, "%d", &fdat[i]);
+    sscanf(line, "%d\t%d", &fdat[2*i], &fdat[2*i+1]);
   }
   
   fclose(fp);

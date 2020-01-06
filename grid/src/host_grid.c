@@ -27,16 +27,16 @@ int main(int argc, char* argv[]){
   cl_int nuv_per_cu;
 
   if(is_hw_emulation()){
-    ndm          = 1;
+    ndm          = 2;
     ntime_per_cu = 1;
   }
   if(is_sw_emulation()){
-    ndm          = 1;
+    ndm          = 2;
     ntime_per_cu = 1;
   }
   nuv_per_cu = ntime_per_cu*ndm;
 
-  ndata1 = NSAMP_PER_UV_OUT;
+  ndata1 = 2*NSAMP_PER_UV_OUT;
   ndata2 = 2*nuv_per_cu*(uint64_t)NSAMP_PER_UV_IN;
   ndata3 = 2*nuv_per_cu*(uint64_t)NSAMP_PER_UV_OUT;
   
@@ -46,11 +46,11 @@ int main(int argc, char* argv[]){
   uv_t  *hw_out = NULL;
   cl_int *coord_int = NULL;
   
-  in        = (uv_t *)aligned_alloc(MEM_ALIGNMENT, ndata2*sizeof(uv_t));
+  in        = (uv_t *)    aligned_alloc(MEM_ALIGNMENT, ndata2*sizeof(uv_t));
   coord     = (coord_t1 *)aligned_alloc(MEM_ALIGNMENT, ndata1*sizeof(coord_t1));
-  sw_out    = (uv_t *)aligned_alloc(MEM_ALIGNMENT, ndata3*sizeof(uv_t));
-  hw_out    = (uv_t *)aligned_alloc(MEM_ALIGNMENT, ndata3*sizeof(uv_t));
-  coord_int = (cl_int *)aligned_alloc(MEM_ALIGNMENT, ndata1*sizeof(cl_int));  
+  sw_out    = (uv_t *)    aligned_alloc(MEM_ALIGNMENT, ndata3*sizeof(uv_t));
+  hw_out    = (uv_t *)    aligned_alloc(MEM_ALIGNMENT, ndata3*sizeof(uv_t));
+  coord_int = (cl_int *)  aligned_alloc(MEM_ALIGNMENT, ndata1*sizeof(cl_int));  
   
   fprintf(stdout, "INFO: %f MB memory used on host in total\n",
 	  ((ndata2 + 2*ndata3)*CORE_DATA_WIDTH + ndata1*COORD_DATA_WIDTH1)/(8*1024.*1024.));
@@ -68,13 +68,10 @@ int main(int argc, char* argv[]){
   srand(time(NULL));
   for(i = 0; i < ndata2; i++){
     in[i] = (uv_t)(0.99*(rand()%DATA_RANGE));
-    //fprintf(fp, "%f\n", in[i].to_float());
   }
-  read_coord("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/grid/src/uv_coord_single.txt", NSAMP_PER_UV_OUT, coord_int);
+  read_coord("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/grid/src/start_count.txt", NSAMP_PER_UV_OUT, coord_int);
   for(i = 0; i < ndata1; i++){
     coord[i] = (coord_t1)coord_int[i];
-    //if(coord_int[i]!=0)
-    //fprintf(stdout, "%d\n", (int)coord[i]);
   }
   memset(sw_out, 0x00, ndata3*sizeof(uv_t));
   memset(hw_out, 0x00, ndata3*sizeof(uv_t));
@@ -225,9 +222,23 @@ int main(int argc, char* argv[]){
   fprintf(stdout, "INFO: DONE MEMCPY FROM KERNEL TO HOST\n");
 
   // Check the result
+  /*
   for(i=0;i<ndata3/2;i++){
+    fprintf(fp, "%d (%d %d) (%f %f) (%f %f)\n", i, ((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE, sw_out[2*i].to_float(), sw_out[2*i+1].to_float(), hw_out[2*i].to_float(), hw_out[2*i+1].to_float());
     if((sw_out[2*i] != hw_out[2*i])||(sw_out[2*i+1] != hw_out[2*i+1])){
       fprintf(fp, "ERROR: Test failed %d (%d %d) (%f %f) (%f %f)\n", i, ((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE, sw_out[2*i].to_float(), sw_out[2*i+1].to_float(), hw_out[2*i].to_float(), hw_out[2*i+1].to_float());
+    }
+  }
+  for(i=0;i<ndata3/2;i++){
+    if((sw_out[2*i] != hw_out[2*i])||(sw_out[2*i+1] != hw_out[2*i+1])){
+      fprintf(fp, "ERROR ");
+    }
+    fprintf(fp, "%d (%d %d) (%f %f) (%f %f)\n", i, ((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE, sw_out[2*i].to_float(), sw_out[2*i+1].to_float(), hw_out[2*i].to_float(), hw_out[2*i+1].to_float());
+  }
+  */
+  for(i=0;i<ndata3/2;i++){
+    if((sw_out[2*i] != hw_out[2*i])||(sw_out[2*i+1] != hw_out[2*i+1])){
+      fprintf(fp, "%d\n", i);
     }
   }
   fclose(fp);

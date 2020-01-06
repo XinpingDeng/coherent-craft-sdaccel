@@ -20,11 +20,13 @@
 #define CORE_DATA_WIDTH     16       // We use ap_fixed 16-bits complex numbers
 #define FFT_SIZE            256
 #define NSAMP_PER_UV_OUT    65536    // FFT_SIZE^2
-#define NSAMP_PER_UV_IN     3568
+#define NSAMP_PER_UV_IN     4368
 #define NDATA_PER_UV_IN     8736
-#define COORD_DATA_WIDTH1    16       // Wider than the required width, but to 2^n
-#define COORD_DATA_WIDTH2    13       // Wide enough to cover the input index range
-
+#define COORD_DATA_WIDTH1   16       // Wider than the required width, but to 2^n
+#define COORD_DATA_WIDTH2   13       // Wide enough to cover the input index range
+#define COORD_DATA_WIDTH3   3        // Wide enough to cover the counter, assume that maximum is 8
+#define NBURST_BUFFER       3        // Assume that maximum in one output burst is 2 NDATA_PER_BURST
+#define NSAMP_PER_CELL      8        // Assume that the maximum is 8 samples go to one single output cell
 #if CORE_DATA_WIDTH == 32
 #define COMPUTE_DATA_WIDTH  64     // (2*CORE_DATA_WIDTH), complex 
 #define DATA_RANGE          4096
@@ -54,10 +56,11 @@ typedef ap_int<CORE_DATA_WIDTH> uv_t; // The size of this should be CORE_DATA_WI
 #endif
 
 typedef ap_uint<COORD_DATA_WIDTH1> coord_t1; // Use for the top-level interface
-typedef ap_uint<COORD_DATA_WIDTH2> coord_t2; // Use inside the kernel
+typedef ap_uint<COORD_DATA_WIDTH2> coord_t2; // Use inside the kernel for the index start
+typedef ap_uint<COORD_DATA_WIDTH3> coord_t3; // Use inside the kernel for the counter
 
 typedef struct burst_coord{
-  coord_t1 data[NSAMP_PER_BURST];
+  coord_t1 data[NDATA_PER_BURST];
 }burst_coord; 
 
 #define MAX_PALTFORMS       16

@@ -20,7 +20,8 @@
 #define FLOAT_DATA_TYPE     1
 //#define CORE_DATA_WIDTH     32     // We use float 32-bits real numbers
 #define CORE_DATA_WIDTH     8       // We use ap_fixed 8-bits real numbers
-#define NSAMP_PER_IMG        65536    // 256^2
+#define NSAMP_PER_IMG       65536    // 256^2
+#define MAX_BURST_LENGTH    64
 
 #if CORE_DATA_WIDTH == 32
 #define COMPUTE_DATA_WIDTH  64     // (2*CORE_DATA_WIDTH), complex 
@@ -56,7 +57,7 @@ typedef struct burst_t{
   core_t data[NSAMP_PER_BURST];
 }burst_t; // The size of this should be 512; BURST_DATA_WIDTH
 
-typedef hls::stream<burst_t> stream_t;
+//typedef hls::stream<burst_t> stream_t;
 
 int boxcar(
 	   const core_t *in,
