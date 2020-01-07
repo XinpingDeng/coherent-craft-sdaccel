@@ -222,25 +222,25 @@ int main(int argc, char* argv[]){
   fprintf(stdout, "INFO: DONE MEMCPY FROM KERNEL TO HOST\n");
 
   // Check the result
-  /*
   for(i=0;i<ndata3/2;i++){
-    fprintf(fp, "%d (%d %d) (%f %f) (%f %f)\n", i, ((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE, sw_out[2*i].to_float(), sw_out[2*i+1].to_float(), hw_out[2*i].to_float(), hw_out[2*i+1].to_float());
+    //fprintf(fp, "%d (%d %d) (%f %f) (%f %f)\n", i, ((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE, sw_out[2*i].to_float(), sw_out[2*i+1].to_float(), hw_out[2*i].to_float(), hw_out[2*i+1].to_float());
     if((sw_out[2*i] != hw_out[2*i])||(sw_out[2*i+1] != hw_out[2*i+1])){
       fprintf(fp, "ERROR: Test failed %d (%d %d) (%f %f) (%f %f)\n", i, ((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE, sw_out[2*i].to_float(), sw_out[2*i+1].to_float(), hw_out[2*i].to_float(), hw_out[2*i+1].to_float());
     }
   }
+  /*
   for(i=0;i<ndata3/2;i++){
+    if((sw_out[2*i] != hw_out[2*i])||(sw_out[2*i+1] != hw_out[2*i+1])){
+      fprintf(fp, "%d\n", i);
+    }
+  }for(i=0;i<ndata3/2;i++){
     if((sw_out[2*i] != hw_out[2*i])||(sw_out[2*i+1] != hw_out[2*i+1])){
       fprintf(fp, "ERROR ");
     }
     fprintf(fp, "%d (%d %d) (%f %f) (%f %f)\n", i, ((i)%NSAMP_PER_UV_OUT)/FFT_SIZE, ((i)%NSAMP_PER_UV_OUT)%FFT_SIZE, sw_out[2*i].to_float(), sw_out[2*i+1].to_float(), hw_out[2*i].to_float(), hw_out[2*i+1].to_float());
   }
   */
-  for(i=0;i<ndata3/2;i++){
-    if((sw_out[2*i] != hw_out[2*i])||(sw_out[2*i+1] != hw_out[2*i+1])){
-      fprintf(fp, "%d\n", i);
-    }
-  }
+  
   fclose(fp);
   
   fprintf(stdout, "INFO: DONE RESULT CHECK\n");

@@ -58,8 +58,8 @@ void knl_grid(
   int shift;
   int remind;
 
-  FILE *fp = NULL;
-  fp = fopen("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/grid/src/knl_error.txt", "w");
+  //FILE *fp = NULL;
+  //fp = fopen("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/grid/src/knl_error.txt", "w");
   
 #pragma HLS DEPENDENCE variable = loc_in_burst intra true //false 
 #pragma HLS DEPENDENCE variable = loc_in_burst inter true //false 
@@ -92,7 +92,7 @@ void knl_grid(
         in_buffer[j*NDATA_PER_BURST+2*m+1] = in[loc_in_burst0+loc_in_burst].data[2*m+1];
       }
     }
-
+    
     loc_end_burst = 0;
   LOOP_SET_UV:
     for(j = 0; j < NBURST_PER_UV_OUT; j++){
@@ -110,18 +110,18 @@ void knl_grid(
         count = coord_count[loc_coord];
         for(n = 0; n < NSAMP_PER_CELL; n++){
           if(n<count){
-            loc_in_buffer = (start + n - loc_end_burst*NSAMP_PER_BURST);//%(NBURST_BUFFER*NSAMP_PER_BURST);
-            if(!((start+1)%NSAMP_PER_BURST))
-              fprintf(fp, "%d\t%d\t%d\t%d\t%d\n", start, n, loc_in_burst, start + n - (loc_in_burst + 1 - NBURST_BUFFER)*NSAMP_PER_BURST, loc_in_buffer);
+            loc_in_buffer = start + n - loc_end_burst*NSAMP_PER_BURST;
+            //if(!((start+1)%NSAMP_PER_BURST))
+            //  fprintf(fp, "%d\t%d\t%d\t%d\t%d\t%d\n", start, n, loc_in_burst0, loc_in_burst, loc_in_burst+loc_in_burst0, loc_in_buffer);
             
             out_burst.data[2*m]   += in_buffer[2*loc_in_buffer];
-            out_burst.data[2*m+1] += in_buffer[2*loc_in_buffer+1];
+              out_burst.data[2*m+1] += in_buffer[2*loc_in_buffer+1];
           }
         }
       }
       loc_out_burst      = i*NBURST_PER_UV_OUT+j;
       out[loc_out_burst] = out_burst;
-      
+
     LOOP_GET_END:
       for(m = 0; m < NSAMP_PER_BURST; m++){
         loc_coord = j*NSAMP_PER_BURST+m;
@@ -132,7 +132,7 @@ void knl_grid(
           loc_end_burst = end/NSAMP_PER_BURST;
         }
       }
-
+      
     LOOP_GET_SHIFT_REMIND:
       shift  = 0;
       remind = 0;
@@ -166,5 +166,5 @@ void knl_grid(
       }
     }    
   }
-  fclose(fp);
+  //fclose(fp);
 }

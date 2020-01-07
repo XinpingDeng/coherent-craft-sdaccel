@@ -33,7 +33,7 @@
 #define NSAMP_PER_BURST     8
 #define NDATA_PER_BURST     16     //(2*NSAMP_PER_BURST)
 #define NBURST_PER_UV_OUT   8192   // NSAMP_PER_UV_OUT/NSAMP_PER_BURST
-#define NBURST_PER_UV_IN    446    // NSAMP_PER_UV_OUT/NSAMP_PER_BURST
+#define NBURST_PER_UV_IN    546    // NSAMP_PER_UV_OUT/NSAMP_PER_BURST
 #if FLOAT_DATA_TYPE == 1
 typedef float uv_t;
 #else
@@ -46,7 +46,7 @@ typedef int uv_t;
 #define NSAMP_PER_BURST     16
 #define NDATA_PER_BURST     32     //(2*NSAMP_PER_BURST)
 #define NBURST_PER_UV_OUT   4096   // NSAMP_PER_UV_OUT/NSAMP_PER_BURST
-#define NBURST_PER_UV_IN    223    // NSAMP_PER_UV_OUT/NSAMP_PER_BURST
+#define NBURST_PER_UV_IN    273    // NSAMP_PER_UV_OUT/NSAMP_PER_BURST
 #if FLOAT_DATA_TYPE == 1
 #define INTEGER_WIDTH       8      // Integer width of data
 typedef ap_fixed<CORE_DATA_WIDTH, INTEGER_WIDTH> uv_t; // The size of this should be CORE_DATA_WIDTH

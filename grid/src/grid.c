@@ -20,6 +20,7 @@ int grid(
   int loc_out;
   int start;
   int count;
+  FILE *fp = fopen("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/grid/src/host_error.txt", "w");
   
   for(i = 0; i < nuv_per_cu; i++){
     for(j = 0; j < NSAMP_PER_UV_OUT; j++){
@@ -31,12 +32,15 @@ int grid(
         start = coord[2*j];
         for(k = 0; k < count; k++){
           loc_in  = i*NSAMP_PER_UV_IN + start + k;
+          if(!((start+1)%NSAMP_PER_BURST))
+            fprintf(fp, "%d\t%d\t%d\n", start, k, loc_in);
           out[2*loc_out]   += in[2*loc_in];
           out[2*loc_out+1] += in[2*loc_in+1];
         }
       }
     }
   }
+  fclose(fp);
   
   return EXIT_SUCCESS;
 }
