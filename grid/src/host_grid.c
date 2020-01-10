@@ -27,11 +27,11 @@ int main(int argc, char* argv[]){
   cl_int nuv_per_cu;
 
   if(is_hw_emulation()){
-    ndm          = 2;
+    ndm          = 1;
     ntime_per_cu = 1;
   }
   if(is_sw_emulation()){
-    ndm          = 2;
+    ndm          = 1;
     ntime_per_cu = 1;
   }
   nuv_per_cu = ntime_per_cu*ndm;
