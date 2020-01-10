@@ -33,12 +33,12 @@ void knl_grid(
 #pragma HLS DATA_PACK variable = coord
 
   burst_uv out_burst;
-  uv_t in_buffer[NBURST_BUFFER*NDATA_PER_BURST]; 
+  uv_t in_buffer[NDATA_PER_BUFFER]; 
   coord_t2 coord_start[NSAMP_PER_UV_OUT];
   coord_t3 coord_count[NSAMP_PER_UV_OUT];
 
   const int nsamp_per_burst = NSAMP_PER_BURST;
-#pragma HLS ARRAY_PARTITION variable = in_buffer complete
+#pragma HLS ARRAY_PARTITION variable = in_buffer complete dim=1
 #pragma HLS ARRAY_PARTITION variable = coord_start cyclic factor=nsamp_per_burst
 #pragma HLS ARRAY_PARTITION variable = coord_count cyclic factor=nsamp_per_burst
 
@@ -57,12 +57,9 @@ void knl_grid(
   int loc_out_burst;
   int shift;
   int remind;
-
-  //FILE *fp = NULL;
-  //fp = fopen("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/grid/src/knl_error.txt", "w");
   
-#pragma HLS DEPENDENCE variable = loc_in_burst intra true //false 
-#pragma HLS DEPENDENCE variable = loc_in_burst inter true //false 
+#pragma HLS DEPENDENCE variable = loc_in_burst intra false //true //
+#pragma HLS DEPENDENCE variable = loc_in_burst inter false //true //
   
   // Burst in all coordinate
   // input [start count start count ...]
@@ -70,13 +67,13 @@ void knl_grid(
   for(i = 0; i < NBURST_PER_UV_OUT; i++){
 #pragma HLS PIPELINE
     for(j = 0; j < NSAMP_PER_BURST; j++){
-#pragma HLS UNROLL
       loc_coord = i*NSAMP_PER_BURST+j;
       coord_start[loc_coord] = coord[i].data[2*j];
       coord_count[loc_coord] = coord[i].data[2*j+1];
     }
   }
-  
+
+ LOOP_NUV_PER_CU:
   for(i = 0; i < nuv_per_cu; i++){
     // Assume maximally NBURST_BUFFER input blocks will cover one output block
     // Read in first NBURST_BUFFER blocks of each input UV
@@ -86,10 +83,14 @@ void knl_grid(
 #pragma HLS PIPELINE
       loc_in_burst  = j;
       loc_in_burst0 = i*NBURST_PER_UV_IN;
+      /*
       for(m = 0; m < NSAMP_PER_BURST; m++){
-#pragma HLS UNROLL
         in_buffer[j*NDATA_PER_BURST+2*m]   = in[loc_in_burst0+loc_in_burst].data[2*m];
         in_buffer[j*NDATA_PER_BURST+2*m+1] = in[loc_in_burst0+loc_in_burst].data[2*m+1];
+      }
+      */
+      for(m = 0; m < NDATA_PER_BURST; m++){
+        in_buffer[j*NDATA_PER_BURST+m]   = in[loc_in_burst0+loc_in_burst].data[m];
       }
     }
     
@@ -99,7 +100,6 @@ void knl_grid(
 #pragma HLS PIPELINE  
       // Get one output block ready in one clock cycle
       for(m = 0; m < NSAMP_PER_BURST; m++){
-#pragma HLS UNROLL
         // Default output block elements be 0
         out_burst.data[2*m]   = 0;
         out_burst.data[2*m+1] = 0;
@@ -111,11 +111,8 @@ void knl_grid(
         for(n = 0; n < NSAMP_PER_CELL; n++){
           if(n<count){
             loc_in_buffer = start + n - loc_end_burst*NSAMP_PER_BURST;
-            //if(!((start+1)%NSAMP_PER_BURST))
-            //  fprintf(fp, "%d\t%d\t%d\t%d\t%d\t%d\n", start, n, loc_in_burst0, loc_in_burst, loc_in_burst+loc_in_burst0, loc_in_buffer);
-            
             out_burst.data[2*m]   += in_buffer[2*loc_in_buffer];
-              out_burst.data[2*m+1] += in_buffer[2*loc_in_buffer+1];
+            out_burst.data[2*m+1] += in_buffer[2*loc_in_buffer+1];
           }
         }
       }
@@ -124,6 +121,7 @@ void knl_grid(
 
     LOOP_GET_END:
       for(m = 0; m < NSAMP_PER_BURST; m++){
+        //#pragma HLS PIPELINE
         loc_coord = j*NSAMP_PER_BURST+m;
         if(coord_count[loc_coord] != 0){
           start = coord_start[loc_coord];          
@@ -145,26 +143,44 @@ void knl_grid(
       }
 
     LOOP_SHIFT:
-      for(m = 0; m < shift; m++){
+      for(m = 0; m < NBURST_BUFFER-1; m++){
+        /*
         for(n = 0; n < NSAMP_PER_BURST; n++){
-#pragma HLS UNROLL
-          // Shift remind block/blocks               
-          in_buffer[m*NDATA_PER_BURST+2*n]   = in_buffer[(m+remind)*NDATA_PER_BURST+2*n];
-          in_buffer[m*NDATA_PER_BURST+2*n+1] = in_buffer[(m+remind)*NDATA_PER_BURST+2*n+1];
+          // Shift remind block/blocks
+          if(m<shift){
+            in_buffer[m*NDATA_PER_BURST+2*n]   = in_buffer[(m+remind)*NDATA_PER_BURST+2*n];
+            in_buffer[m*NDATA_PER_BURST+2*n+1] = in_buffer[(m+remind)*NDATA_PER_BURST+2*n+1];
+          }
+        }
+        */
+        for(n = 0; n < NDATA_PER_BURST; n++){
+          // Shift remind block/blocks
+          if(m<shift){
+            in_buffer[m*NDATA_PER_BURST+n]   = in_buffer[(m+remind)*NDATA_PER_BURST+n];
+          }
         }
       }
-
+      
     LOOP_BUFFER_IN2:
-      for(m = 0; m < remind; m++){
-        loc_in_burst = loc_end_burst+m+shift;
+      for(m = 0; m < NBURST_BUFFER-1; m++){
+        /*
         for(n = 0; n < NSAMP_PER_BURST; n++){
-#pragma HLS UNROLL
-          // Put new block/blocks to array 
-          in_buffer[(m+shift)*NDATA_PER_BURST+2*n]   = in[loc_in_burst0+loc_in_burst].data[2*n];
-          in_buffer[(m+shift)*NDATA_PER_BURST+2*n+1] = in[loc_in_burst0+loc_in_burst].data[2*n+1];
-        }        
+          // Put new block/blocks to array
+          if(m<remind){
+            loc_in_burst = loc_end_burst+m+shift;
+            in_buffer[(m+shift)*NDATA_PER_BURST+2*n]   = in[loc_in_burst0+loc_in_burst].data[2*n];
+            in_buffer[(m+shift)*NDATA_PER_BURST+2*n+1] = in[loc_in_burst0+loc_in_burst].data[2*n+1];
+          }
+        }
+        */
+        for(n = 0; n < NDATA_PER_BURST; n++){
+          // Put new block/blocks to array
+          if(m<remind){
+            loc_in_burst = loc_end_burst+m+shift;
+            in_buffer[(m+shift)*NDATA_PER_BURST+n]   = in[loc_in_burst0+loc_in_burst].data[n];
+          }
+        }
       }
     }    
   }
-  //fclose(fp);
 }
