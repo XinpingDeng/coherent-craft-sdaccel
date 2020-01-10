@@ -9,29 +9,6 @@ extern "C" {
 		int nuv_per_cu
 		);
 }
-void fill_buffer(
-                 const burst_uv *in,
-                 uv_t *buffer,
-                 int loc_inburst0,
-                 int loc_inburst1,
-                 int unused,
-                 int fill);
-
-void shift_buffer(
-                  uv_t *buffer,
-                  int used,
-                  int shift);
-
-void shift_buffer3(
-                   uv_t *buffer,
-                   int unused);
-
-void fill_buffer3(
-                  const burst_uv *in,
-                  uv_t *buffer,
-                  int loc_inburst0,
-                  int loc_inburst1,
-                  int unused);
 
 void knl_grid(
 	      const burst_uv *in,
@@ -56,6 +33,7 @@ void knl_grid(
 #pragma HLS DATA_PACK variable = coord
 
   burst_uv out_burst;
+  burst_uv in_burst;
   uv_t buffer[NDATA_PER_BUFFER]; 
   coord_t2 coord_start[NSAMP_PER_UV_OUT];
   coord_t3 coord_count[NSAMP_PER_UV_OUT];
@@ -76,13 +54,12 @@ void knl_grid(
   int loc_buffer;
   int loc_inburst1;
   int loc_inburst0;
-  int loc_inburst1_tail;
+  int loc_inburst_tail;
   int loc_outburst;
   int unused;
   
-#pragma HLS DEPENDENCE variable = loc_inburst1 intra false 
-#pragma HLS DEPENDENCE variable = loc_inburst1 inter false 
-  //#pragma HLS DEPENDENCE variable = buffer intra false
+#pragma HLS DEPENDENCE variable = loc_inburst1 intra false //true //
+#pragma HLS DEPENDENCE variable = loc_inburst1 inter false //true //
   
   // Burst in all coordinate
   // input [start count start count ...]
@@ -106,16 +83,16 @@ void knl_grid(
 #pragma HLS PIPELINE
       loc_inburst1 = j;
       loc_inburst0 = i*NBURST_PER_UV_IN;
+      in_burst = in[loc_inburst0+loc_inburst1];
       for(m = 0; m < NDATA_PER_BURST; m++){
-        buffer[j*NDATA_PER_BURST+m]   = in[loc_inburst0+loc_inburst1].data[m];
+        buffer[j*NDATA_PER_BURST+m] = in_burst.data[m];
       }
     }
     
-    loc_inburst1_tail = 0;
+    loc_inburst_tail = 0;
   LOOP_SET_UV:
     for(j = 0; j < NBURST_PER_UV_OUT; j++){
-#pragma HLS PIPELINE
-      //#pragma HLS DATAFLOW
+#pragma HLS PIPELINE  
       // Get one output block ready in one clock cycle
       for(m = 0; m < NSAMP_PER_BURST; m++){
         // Default output block elements be 0
@@ -128,7 +105,7 @@ void knl_grid(
         count = coord_count[loc_coord];
         for(n = 0; n < NSAMP_PER_CELL; n++){
           if(n<count){
-            loc_buffer = start + n - loc_inburst1_tail*NSAMP_PER_BURST;
+            loc_buffer = start + n - loc_inburst_tail*NSAMP_PER_BURST;
             out_burst.data[2*m]   += buffer[2*loc_buffer];
             out_burst.data[2*m+1] += buffer[2*loc_buffer+1];
           }
@@ -137,118 +114,55 @@ void knl_grid(
       loc_outburst      = i*NBURST_PER_UV_OUT+j;
       out[loc_outburst] = out_burst;
 
-      // To see if we need to shift buffer and read in new block
-      // Assume that unroll loop returns the last value
-      unused = 0;
+      // Check buffer status
+      unused  = 0;
       for(m = 0; m < NSAMP_PER_BURST; m++){
         loc_coord = j*NSAMP_PER_BURST+m;
         if(coord_count[loc_coord] != 0){
           start = coord_start[loc_coord];          
           count = coord_count[loc_coord];
           end   = start + count;
-          loc_inburst1_tail = end/NSAMP_PER_BURST;
+          loc_inburst_tail = end/NSAMP_PER_BURST;
         }
-      }
+      }      
       for(m = 0; m < NBURST_BUFFER-1; m++){
-        if(loc_inburst1_tail==(loc_inburst1-m)){
+        if(loc_inburst_tail==(loc_inburst1-m)){
           unused = m+1;
         }
       }
 
-      // Shift buffer when necessary
-      shift_buffer3(buffer,
-                    unused);
-
-      // Fill buffer when necesary
-      fill_buffer3(in,
-                   buffer,
-                   loc_inburst0,
-                   loc_inburst1,
-                   unused);
-      if(unused)
-        loc_inburst1 = loc_inburst1+NBURST_BUFFER-unused;
-    }
-  }
-}
-
-void shift_buffer(
-                  uv_t *buffer,
-                  int used,
-                  int shift){
-#pragma HLS inline off
-  int i;  
-  for(i = 0; i < NDATA_PER_BURST; i++){
-    // Shift unused block/blocks
-    buffer[shift*NDATA_PER_BURST+i] = buffer[(shift+used)*NDATA_PER_BURST+i];
-  }
-}
-
-void fill_buffer(
-                 const burst_uv *in,
-                 uv_t *buffer,
-                 int loc_inburst0,
-                 int loc_inburst1,
-                 int unused,
-                 int fill){
-#pragma HLS inline off
-  
-  int i;
-  
-  loc_inburst1 = loc_inburst1+fill+1;      
-  for(i = 0; i < NDATA_PER_BURST; i++){
-    // Put new block/blocks to array
-    buffer[(unused+fill)*NDATA_PER_BURST+i] = in[loc_inburst0+loc_inburst1].data[i];
-  }    
-}
-
-void shift_buffer3(
-                   uv_t *buffer,
-                   int unused){
-#pragma HLS inline off
-  // Shift unused block/blocks to the buffer beginning when necessary
-  if(unused==1){
-    shift_buffer(buffer,
-                 NBURST_BUFFER-unused,
-                 0);         
-  }
-  if(unused==2){
-    shift_buffer(buffer,
-                 NBURST_BUFFER-unused,
-                 0);
-    shift_buffer(buffer,
-                 NBURST_BUFFER-unused,
-                 1); 
-  }
-}
-
-void fill_buffer3(
-                  const burst_uv *in,
-                  uv_t *buffer,
-                  int loc_inburst0,
-                  int loc_inburst1,
-                  int unused){
-#pragma HLS inline off
-  // Put new block/blocks to the buffer end when necessary
-  if(unused==1){
-    fill_buffer(in,
-                buffer,
-                loc_inburst0,
-                loc_inburst1,
-                unused,
-                0);
-    fill_buffer(in,
-                buffer,
-                loc_inburst0,
-                loc_inburst1,
-                unused,
-                1);
-  }
-  if(unused==2){
-    fill_buffer(in,
-                buffer,
-                loc_inburst0,
-                loc_inburst1,
-                unused,
-                0);
+      // shift used block/blocks when necessary
+      if(unused==1){
+        for(m = 0; m < NDATA_PER_BURST; m++){
+          buffer[m] = buffer[2*NDATA_PER_BURST+m];
+        }
+      }
+      if(unused==2){
+        for(m = 0; m < NDATA_PER_BURST; m++){
+          buffer[m]                 = buffer[NDATA_PER_BURST+m];
+          buffer[NDATA_PER_BURST+m] = buffer[2*NDATA_PER_BURST+m];
+        }
+      }
+      // Buffer new block when necessary
+      if(unused==1){
+        loc_inburst1 = loc_inburst_tail+1;
+        in_burst = in[loc_inburst0+loc_inburst1];
+        for(m = 0; m < NDATA_PER_BURST; m++){
+          buffer[NDATA_PER_BURST+m] = in_burst.data[m];
+        }
+        loc_inburst1 = loc_inburst_tail+2;
+        in_burst = in[loc_inburst0+loc_inburst1];
+        for(m = 0; m < NDATA_PER_BURST; m++){
+          buffer[2*NDATA_PER_BURST+m] = in_burst.data[m];
+        }
+      }
+      if(unused==2){
+        loc_inburst1 = loc_inburst_tail+2;
+        in_burst = in[loc_inburst0+loc_inburst1];
+        for(m = 0; m < NDATA_PER_BURST; m++){
+          buffer[2*NDATA_PER_BURST+m] = in_burst.data[m];
+        }
+      }
+    }    
   }
 }
