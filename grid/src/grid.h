@@ -22,17 +22,20 @@
 #define NSAMP_PER_UV_OUT    65536    // FFT_SIZE^2
 #define NSAMP_PER_UV_IN     4368
 #define NDATA_PER_UV_IN     8736
+
+#define MAX_INSAMP_PER_OUTBURST      48
+#define MAX_INDATA_PER_OUTBURST      96
+
 #define COORD_DATA_WIDTH1   16       // Wider than the required width, but to 2^n
 #define COORD_DATA_WIDTH2   13       // Wide enough to cover the input index range
 #define COORD_DATA_WIDTH3   3        // Wide enough to cover the counter, assume that maximum is 8
-#define NBURST_BUFFER       3        // Assume that maximum in one output burst is 2 NDATA_PER_BURST
-#define NSAMP_PER_CELL      8        // Assume that the maximum is 8 samples go to one single output cell
+#define MAX_INSAMP_PER_OUTCELL      8        // Assume that the maximum is 8 samples go to one single output cell
+
 #if CORE_DATA_WIDTH == 32
 #define COMPUTE_DATA_WIDTH  64     // (2*CORE_DATA_WIDTH), complex 
 #define DATA_RANGE          4096
 #define NSAMP_PER_BURST     8
 #define NDATA_PER_BURST     16     //(2*NSAMP_PER_BURST)
-#define NDATA_PER_BUFFER    48     // Assume that maximum in one output burst is 2 NDATA_PER_BURST
 #define NBURST_PER_UV_OUT   8192   // NSAMP_PER_UV_OUT/NSAMP_PER_BURST
 #define NBURST_PER_UV_IN    546    // NSAMP_PER_UV_OUT/NSAMP_PER_BURST
 #if FLOAT_DATA_TYPE == 1
@@ -46,7 +49,6 @@ typedef int uv_t;
 #define DATA_RANGE          127
 #define NSAMP_PER_BURST     16
 #define NDATA_PER_BURST     32     //(2*NSAMP_PER_BURST)
-#define NDATA_PER_BUFFER    96     // Assume that maximum in one output burst is 2 NDATA_PER_BURST
 #define NBURST_PER_UV_OUT   4096   // NSAMP_PER_UV_OUT/NSAMP_PER_BURST
 #define NBURST_PER_UV_IN    273    // NSAMP_PER_UV_OUT/NSAMP_PER_BURST
 #if FLOAT_DATA_TYPE == 1
