@@ -10,6 +10,27 @@ extern "C" {
                      int ntime_per_cu,
                      int nburst_dm
                      );
+  
+  void read_in(
+               int k,
+               int i,
+               int j,
+               int nburst_per_uv_out,
+               int ntime_per_cu,
+               int nburst_dm,
+               const burst_uv *in,
+               coord_t2 coord_buffer[MSAMP_PER_UV_OUT],
+               uv_samp_t uv_tile[TILE_WIDTH][TILE_WIDTH]);
+
+  void transpose_write(
+                       int k,
+                       int i,
+                       int j,
+                       int nburst_per_uv_out,
+                       int ntime_per_cu,
+                       int nburst_dm,
+                       uv_samp_t uv_tile[TILE_WIDTH][TILE_WIDTH],
+                       burst_uv *out);
 }
 
 void knl_transpose(
@@ -49,24 +70,17 @@ void knl_transpose(
 
   int i;
   int j;
-  int m;
-  int n;
-  int m1;
-  int n1;
   int k;
-  int loc_dm;
-  int loc_uv;
-  int loc_burst;
-  burst_uv burst;
   
   coord_t2 coord_buffer[MSAMP_PER_UV_OUT];
-  uv_samp_t uv_buffer[BURST_LENGTH*NSAMP_PER_BURST][BURST_LENGTH*NSAMP_PER_BURST];
+  uv_samp_t uv_tile[TILE_WIDTH][TILE_WIDTH];
   
 #pragma HLS ARRAY_RESHAPE variable = coord_buffer cyclic factor = nsamp_per_burst
-#pragma HLS ARRAY_RESHAPE variable = uv_buffer    cyclic factor = nsamp_per_burst dim =1
-#pragma HLS ARRAY_RESHAPE variable = uv_buffer    cyclic factor = nsamp_per_burst dim =2
+#pragma HLS ARRAY_RESHAPE variable = uv_tile    cyclic factor = nsamp_per_burst dim =1
+#pragma HLS ARRAY_RESHAPE variable = uv_tile    cyclic factor = nsamp_per_burst dim =2
   
   // Burst in coord;
+ loop_burst_coord:
   for(i = 0; i < nburst_per_uv_out; i++){
 #pragma HLS PIPELINE
 #pragma HLS LOOP_TRIPCOUNT min = 1 max = mburst_per_uv_out 
@@ -75,50 +89,95 @@ void knl_transpose(
     }
   }
 
-  for(k = 0; k < ntime_per_cu; k++){
+  for(k = 0; k < ntime_per_cu; k++){        // For Time
 #pragma HLS LOOP_TRIPCOUNT min = 1 max = mtime_per_cu
     for(i = 0; i < ntran_per_uv_out; i++){  // For UV
 #pragma HLS LOOP_TRIPCOUNT min = 1 max = mtran_per_uv_out
       for(j = 0; j < ntran_dm; j++){        // For DM
 #pragma HLS LOOP_TRIPCOUNT min = 1 max = mtran_dm
-
-        // Burst in
-        for(m = 0; m < BURST_LENGTH; m++){            // For UV
-          for(m1 = 0; m1 < NSAMP_PER_BURST; m1++){    // For UV
-            loc_uv = m*NSAMP_PER_BURST+m1;
-            for(n = 0; n < BURST_LENGTH; n++){        // For DM
-#pragma HLS PIPELINE
-              loc_burst = coord_buffer[(i*BURST_LENGTH+m)*NSAMP_PER_BURST+m1]*ntime_per_cu*nburst_dm+
-                k*nburst_dm+
-                j*BURST_LENGTH +
-                n;
-              for(n1 = 0; n1 < NSAMP_PER_BURST; n1++){// For DM
-                loc_dm = n*NSAMP_PER_BURST+n1;
-                uv_buffer[loc_uv][loc_dm] = in[loc_burst].data[n1];
-              }
-            }
-          }
-        }
-
-        // Burst out, transpose at the same time
-        for(m = 0; m < BURST_LENGTH; m++){            // For DM
-          for(m1 = 0; m1 < NSAMP_PER_BURST; m1++){    // For DM
-            loc_dm = m*NSAMP_PER_BURST+m1;
-            for(n = 0; n < BURST_LENGTH; n++){        // For UV
-#pragma HLS PIPELINE              
-              loc_burst = ((j*BURST_LENGTH+m)*NSAMP_PER_BURST+m1)*ntime_per_cu*nburst_per_uv_out +
-                k*nburst_per_uv_out +
-                i*BURST_LENGTH +
-                n;
-              for(n1 = 0; n1 < NSAMP_PER_BURST; n1++){// For UV
-                loc_uv = n*NSAMP_PER_BURST+n1;
-                burst.data[n1] = uv_buffer[loc_uv][loc_dm];
-              }
-              out[loc_burst] = burst;
-            }
-          }
-        }
+#pragma HLS DATAFLOW
+        read_in(k, i, j, nburst_per_uv_out, ntime_per_cu, nburst_dm, in, coord_buffer, uv_tile);
+        transpose_write(k, i, j, nburst_per_uv_out, ntime_per_cu, nburst_dm, uv_tile, out);
       }      
+    }
+  }
+}
+         
+
+void read_in(
+             int k,
+             int i,
+             int j,          
+             int nburst_per_uv_out,
+             int ntime_per_cu,
+             int nburst_dm,
+             const burst_uv *in,
+             coord_t2 coord_buffer[MSAMP_PER_UV_OUT],
+             uv_samp_t uv_tile[TILE_WIDTH][TILE_WIDTH]){
+  int m;
+  int n;
+  int m1;
+  int n1;
+  int loc_dm;
+  int loc_burst;
+  int loc_burst0;
+  burst_uv burst;
+
+#pragma HLS dependence variable=uv_tile inter false
+
+  // Burst in
+  for(m = 0; m < TILE_WIDTH; m++){            // For UV
+    loc_burst0 = coord_buffer[i*TILE_WIDTH+m]*ntime_per_cu*nburst_dm+
+      k*nburst_dm+
+      j*BURST_LENGTH;
+  loop_burst_in:
+    for(n = 0; n < BURST_LENGTH; n++){        // For DM
+#pragma HLS PIPELINE
+      loc_burst = loc_burst0 +
+        n;
+      burst = in[loc_burst];
+      
+      for(n1 = 0; n1 < NSAMP_PER_BURST; n1++){// For DM
+        loc_dm = n*NSAMP_PER_BURST+n1;
+        uv_tile[m][loc_dm] = burst.data[n1];
+      }
+    }
+  }
+}
+
+void transpose_write(
+                     int k,
+                     int i,
+                     int j,
+                     int nburst_per_uv_out,
+                     int ntime_per_cu,
+                     int nburst_dm,
+                     uv_samp_t uv_tile[TILE_WIDTH][TILE_WIDTH],
+                     burst_uv *out){
+  int m;
+  int n;
+  int m1;
+  int n1;
+  int loc_uv;
+  int loc_burst;
+  int loc_burst0;
+  burst_uv burst;
+  
+  // Burst out, transpose at the same time
+  for(m = 0; m < TILE_WIDTH; m++){            // For DM
+    loc_burst0 = (j*TILE_WIDTH+m)*ntime_per_cu*nburst_per_uv_out +
+      k*nburst_per_uv_out +
+      i*BURST_LENGTH;
+  loop_transpose_write:
+    for(n = 0; n < BURST_LENGTH; n++){        // For UV
+#pragma HLS PIPELINE  
+      for(n1 = 0; n1 < NSAMP_PER_BURST; n1++){// For UV
+        loc_uv = n*NSAMP_PER_BURST+n1;
+        burst.data[n1] = uv_tile[loc_uv][m];
+      }            
+      loc_burst = loc_burst0 +
+        n;
+      out[loc_burst] = burst;
     }
   }
 }
