@@ -8,14 +8,14 @@
 #include "util_sdaccel.h"
 
 int prepare(
-	    core_data_type *in_pol1,
-	    core_data_type *in_pol2,
-	    core_data_type *cal_pol1,
-	    core_data_type *cal_pol2,
-	    core_data_type *sky,
-	    core_data_type *out,
-	    core_data_type *average_pol1,
-	    core_data_type *average_pol2,
+	    data_t *in_pol1,
+	    data_t *in_pol2,
+	    data_t *cal_pol1,
+	    data_t *cal_pol2,
+	    data_t *sky,
+	    data_t *out,
+	    data_t *average_pol1,
+	    data_t *average_pol2,
 	    int nsamp_per_time,
 	    int ntime_per_cu
 	    ){
@@ -23,14 +23,14 @@ int prepare(
   int j;
   int loc;
   
-  compute_data_type in_pol1_tmp;
-  compute_data_type in_pol2_tmp;
-  compute_data_type cal_pol1_tmp;
-  compute_data_type cal_pol2_tmp;
-  compute_data_type sky_tmp;
-  compute_data_type out_tmp;
-  compute_data_type average_pol1_tmp;
-  compute_data_type average_pol2_tmp;
+  complex_t in_pol1_tmp;
+  complex_t in_pol2_tmp;
+  complex_t cal_pol1_tmp;
+  complex_t cal_pol2_tmp;
+  complex_t sky_tmp;
+  complex_t out_tmp;
+  complex_t average_pol1_tmp;
+  complex_t average_pol2_tmp;
   
   for(i = 0; i < nsamp_per_time; i++){
     sky_tmp.real(sky[2*i]);
