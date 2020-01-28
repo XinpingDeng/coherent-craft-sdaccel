@@ -47,11 +47,10 @@ extern "C" {
   int get_loc_in_tail(
                       int *loc_in);
 
-  void refill_buffer(
-                     int loc_in_tail,
-                     int *loc_in_burst,
-                     uv_t *buffer,
-                     fifo_uv &in_fifo);
+  int refill_buffer(
+                    int loc_in_tail,
+                    uv_t *buffer,
+                    fifo_uv &in_fifo);
   
   void write_from_fifo(
                        int nuv_per_cu,
@@ -191,7 +190,10 @@ void grid(
       get_loc_in(j, coord_buffer, loc_in);                  // Buffer the coord for current output block    
       fill_out_fifo(loc_in, buffer, loc_in_burst, out_fifo);// Get the current output buffer block
       loc_in_tail = get_loc_in_tail(loc_in);                // Get the tail of the current output buffer block
-      refill_buffer(loc_in_tail, &loc_in_burst, buffer, in_fifo);
+      //if((loc_in_tail/NSAMP_PER_BURST)>=loc_in_burst){      // Refill the buffer when necessary
+      //  loc_in_burst = refill_buffer(loc_in_tail, buffer, in_fifo);
+      //}
+      //fprintf(stdout, "FILL:\t%d\t%d\n", i, j);
     }  
   }
 }
@@ -264,26 +266,31 @@ void fill_out_fifo(
   out_fifo.write(out_burst);
 }
 
-void refill_buffer(
-                   int loc_in_tail,
-                   int *loc_in_burst,
-                   uv_t *buffer,
-                   fifo_uv &in_fifo){
+int refill_buffer(
+                  int loc_in_tail,
+                  uv_t *buffer,
+                  fifo_uv &in_fifo){
   int i;
+  int loc_in_burst;
   burst_uv burst;
   
-  if((loc_in_tail/NSAMP_PER_BURST)>=(*loc_in_burst)){      // Refill the buffer when necessary
-    *loc_in_burst = loc_in_tail/NSAMP_PER_BURST+1;	
-    for(i = 0; i < NSAMP_PER_BURST; i++){
-      // Shift the array with one block size
-      buffer[i] = buffer[NSAMP_PER_BURST+i];
-    }
-    burst = in_fifo.read();
-    for(i = 0; i < NSAMP_PER_BURST; i++){
-      // Put the new block into the array 
-      buffer[NSAMP_PER_BURST+i] = burst.data[i];
-    }    
+  if((loc_in_tail/NSAMP_PER_BURST)>=loc_in_burst){      // Refill the buffer when necessary
+    loc_in_burst = refill_buffer(loc_in_tail, buffer, in_fifo);
+
   }
+  
+  loc_in_burst  = loc_in_tail/NSAMP_PER_BURST+1;	
+  for(i = 0; i < NSAMP_PER_BURST; i++){
+    // Shift the array with one block size
+    buffer[i] = buffer[NSAMP_PER_BURST+i];
+  }
+  burst = in_fifo.read();
+  for(i = 0; i < NSAMP_PER_BURST; i++){
+    // Put the new block into the array 
+    buffer[NSAMP_PER_BURST+i] = burst.data[i];
+  }
+  
+  return loc_in_burst;
 }
 
 void write_from_fifo(
