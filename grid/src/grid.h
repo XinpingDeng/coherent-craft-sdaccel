@@ -14,57 +14,51 @@
 #include <ap_fixed.h>
 #include <ap_int.h>
 #include <assert.h>
+#include <hls_stream.h>
 
-#define FLOAT_DATA_TYPE     1
-//#define CORE_DATA_WIDTH     32     // We use float 32-bits complex numbers
-#define CORE_DATA_WIDTH     16       // We use ap_fixed 16-bits complex numbers
-#define FFT_SIZE            256
-#define NSAMP_PER_UV_OUT    65536    // FFT_SIZE^2
-#define NSAMP_PER_UV_IN     4368
-#define NDATA_PER_UV_IN     8736
+#define FLOAT     1
+//#define DATA_WIDTH     32     // We use float 32-bits complex numbers
+#define DATA_WIDTH     16       // We use ap_fixed 16-bits complex numbers
+#define MFFT_SIZE            256
+#define COORD_WIDTH1    16       // Wider than the required width, but to 2^n
+#define COORD_WIDTH2    13       // Wide enough to cover the input index range
+#define BURST_WIDTH         512
+#define NSAMP_PER_BURST     (BURST_WIDTH/(2*DATA_WIDTH))
 
-#define MAX_INSAMP_PER_OUTBURST      48
-#define MAX_INDATA_PER_OUTBURST      96
+#define MDM                 1024
+#define MTIME               256
+#define MSAMP_PER_UV_OUT    (MFFT_SIZE*MFFT_SIZE)    // MFFT_SIZE^2
+#define MSAMP_PER_UV_IN     3568
 
-#define COORD_DATA_WIDTH1   16       // Wider than the required width, but to 2^n
-#define COORD_DATA_WIDTH2   13       // Wide enough to cover the input index range
-#define COORD_DATA_WIDTH3   3        // Wide enough to cover the counter, assume that maximum is 8
-#define MAX_INSAMP_PER_OUTCELL      8        // Assume that the maximum is 8 samples go to one single output cell
+#define MUV                 (MDM*MTIME)
+#define MBURST_PER_UV_OUT   (MSAMP_PER_UV_OUT/NSAMP_PER_BURST)
+#define MBURST_PER_UV_IN    (MSAMP_PER_UV_OUT/NSAMP_PER_BURST)
 
-#if CORE_DATA_WIDTH == 32
-#define COMPUTE_DATA_WIDTH  64     // (2*CORE_DATA_WIDTH), complex 
+#define INTEGER_WIDTH       (DATA_WIDTH/2)
+
+#if DATA_WIDTH == 32
 #define DATA_RANGE          4096
-#define NSAMP_PER_BURST     8
-#define NDATA_PER_BURST     16     //(2*NSAMP_PER_BURST)
-#define NBURST_PER_UV_OUT   8192   // NSAMP_PER_UV_OUT/NSAMP_PER_BURST
-#define NBURST_PER_UV_IN    546    // NSAMP_PER_UV_OUT/NSAMP_PER_BURST
-#if FLOAT_DATA_TYPE == 1
-typedef float uv_t;
+#if FLOAT == 1
+typedef float uv_data_t;
 #else
-typedef int uv_t;
+typedef int uv_data_t;
 #endif
 
-#elif CORE_DATA_WIDTH == 16
-#define COMPUTE_DATA_WIDTH  32     // (2*CORE_DATA_WIDTH), complex 
+#elif DATA_WIDTH == 16
 #define DATA_RANGE          127
-#define NSAMP_PER_BURST     16
-#define NDATA_PER_BURST     32     //(2*NSAMP_PER_BURST)
-#define NBURST_PER_UV_OUT   4096   // NSAMP_PER_UV_OUT/NSAMP_PER_BURST
-#define NBURST_PER_UV_IN    273    // NSAMP_PER_UV_OUT/NSAMP_PER_BURST
-#if FLOAT_DATA_TYPE == 1
-#define INTEGER_WIDTH       8      // Integer width of data
-typedef ap_fixed<CORE_DATA_WIDTH, INTEGER_WIDTH> uv_t; // The size of this should be CORE_DATA_WIDTH
+#if FLOAT == 1
+typedef ap_fixed<DATA_WIDTH, INTEGER_WIDTH> uv_data_t; // The size of this should be DATA_WIDTH
 #else
-typedef ap_int<CORE_DATA_WIDTH> uv_t; // The size of this should be CORE_DATA_WIDTH
+typedef ap_int<DATA_WIDTH> uv_data_t; // The size of this should be DATA_WIDTH
 #endif
 #endif
 
-typedef ap_uint<COORD_DATA_WIDTH1> coord_t1; // Use for the top-level interface
-typedef ap_uint<COORD_DATA_WIDTH2> coord_t2; // Use inside the kernel for the index start
-typedef ap_uint<COORD_DATA_WIDTH3> coord_t3; // Use inside the kernel for the counter
+typedef ap_uint<2*DATA_WIDTH> uv_t; // Use for the top-level interface
+typedef ap_uint<COORD_WIDTH1> coord_t1; // Use for the top-level interface
+typedef ap_uint<COORD_WIDTH2> coord_t2; // Use inside the kernel
 
 typedef struct burst_coord{
-  coord_t1 data[NDATA_PER_BURST];
+  coord_t1 data[NSAMP_PER_BURST];
 }burst_coord; 
 
 #define MAX_PALTFORMS       16
@@ -74,14 +68,18 @@ typedef struct burst_coord{
 #define LINE_LENGTH         4096
 
 typedef struct burst_uv{
-  uv_t data[NDATA_PER_BURST];
+  uv_t data[NSAMP_PER_BURST];
 }burst_uv; // The size of this should be 512; BURST_DATA_WIDTH
 
+typedef hls::stream<burst_uv> fifo_uv;
+
 int grid(
-	 uv_t *in,
+	 uv_data_t *in,
 	 coord_t1 *coord,
-	 uv_t *out,
-	 int nuv_per_cu
+	 uv_data_t *out,
+	 int nuv_per_cu,
+         int nsamp_per_uv_in,
+         int nsamp_per_uv_out
 	 );
 
 int read_coord(

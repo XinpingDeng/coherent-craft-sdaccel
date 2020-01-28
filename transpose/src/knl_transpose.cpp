@@ -17,28 +17,28 @@ extern "C" {
                  int nburst_dm,
                  const burst_uv *in,
                  const burst_coord *coord,
-                 fifo_uv &fifo_in);
+                 fifo_uv &in_fifo);
   
   void transpose(
                  int nburst_per_uv_out,
                  int ntime_per_cu,
                  int nburst_dm,
-                 fifo_uv &fifo_in,
-                 fifo_uv &fifo_out);
+                 fifo_uv &in_fifo,
+                 fifo_uv &out_fifo);
 
   void fill_tile(
-                 fifo_uv &fifo_in,
-                 uv_samp_t uv_tile[TILE_WIDTH][TILE_WIDTH]);
+                 fifo_uv &in_fifo,
+                 uv_t uv_tile[TILE_WIDTH][TILE_WIDTH]);
   
   void transpose_tile(
-                      uv_samp_t uv_tile[TILE_WIDTH][TILE_WIDTH],
-                      fifo_uv &fifo_in);
+                      uv_t uv_tile[TILE_WIDTH][TILE_WIDTH],
+                      fifo_uv &in_fifo);
   
   void write_from_fifo(
                        int nburst_per_uv_out,
                        int ntime_per_cu,
                        int nburst_dm,
-                       fifo_uv &fifo_out,
+                       fifo_uv &out_fifo,
                        burst_uv *out);
 }
 
@@ -70,11 +70,11 @@ void knl_transpose(
 #pragma HLS DATA_PACK variable = out
 #pragma HLS DATA_PACK variable = coord
 
-  fifo_uv fifo_in;
-  fifo_uv fifo_out;
+  fifo_uv in_fifo;
+  fifo_uv out_fifo;
   const int nburst_per_tran = BURST_LENGTH*BURST_LENGTH;
-#pragma HLS STREAM variable = fifo_in  depth = nburst_per_tran //256 //32
-#pragma HLS STREAM variable = fifo_out depth = nburst_per_tran //256 //32
+#pragma HLS STREAM variable = in_fifo  depth = nburst_per_tran //256 //32
+#pragma HLS STREAM variable = out_fifo depth = nburst_per_tran //256 //32
   
 #pragma HLS DATAFLOW
   
@@ -84,20 +84,20 @@ void knl_transpose(
             nburst_dm,
             in,
             coord,
-            fifo_in);
+            in_fifo);
   
   transpose(
             nburst_per_uv_out,
             ntime_per_cu,
             nburst_dm,
-            fifo_in,
-            fifo_out);
+            in_fifo,
+            out_fifo);
 
   write_from_fifo(
                   nburst_per_uv_out,
                   ntime_per_cu,
                   nburst_dm,
-                  fifo_out,
+                  out_fifo,
                   out);
 }
 
@@ -107,7 +107,7 @@ void read2fifo(
                int nburst_dm,
                const burst_uv *in,
                const burst_coord *coord,
-               fifo_uv &fifo_in){
+               fifo_uv &in_fifo){
   int i;
   int j;
   int k;
@@ -155,7 +155,7 @@ void read2fifo(
 #pragma HLS PIPELINE
             loc_burst = loc_burst0 +
               n;
-            fifo_in.write(in[loc_burst]);
+            in_fifo.write(in[loc_burst]);
           }
         }        
       }      
@@ -167,8 +167,8 @@ void transpose(
                int nburst_per_uv_out,
                int ntime_per_cu,
                int nburst_dm,
-               fifo_uv &fifo_in,
-               fifo_uv &fifo_out){
+               fifo_uv &in_fifo,
+               fifo_uv &out_fifo){
   int i;
   int j;
   int k;
@@ -180,7 +180,7 @@ void transpose(
   const int mtran_dm         = MBURST_DM/BURST_LENGTH;
   const int nsamp_per_burst  = NSAMP_PER_BURST;
   
-  uv_samp_t uv_tile[TILE_WIDTH][TILE_WIDTH];
+  uv_t uv_tile[TILE_WIDTH][TILE_WIDTH];
 #pragma HLS ARRAY_RESHAPE variable = uv_tile    cyclic factor = nsamp_per_burst dim =1
 #pragma HLS ARRAY_RESHAPE variable = uv_tile    cyclic factor = nsamp_per_burst dim =2
 
@@ -190,18 +190,18 @@ void transpose(
 #pragma HLS LOOP_TRIPCOUNT min = 1 max = mtran_per_uv_out
       for(j = 0; j < ntran_dm; j++){        // For DM
 #pragma HLS LOOP_TRIPCOUNT min = 1 max = mtran_dm
-#pragma HLS DATAFLOW
+#pragma HLS DATAFLOW // This may cause the result wrong, check it!!!
         
-        fill_tile(fifo_in, uv_tile);
-        transpose_tile(uv_tile, fifo_out);
+        fill_tile(in_fifo, uv_tile);
+        transpose_tile(uv_tile, out_fifo);
       }      
     }
   }  
 }
 
 void fill_tile(
-               fifo_uv &fifo_in,
-               uv_samp_t uv_tile[TILE_WIDTH][TILE_WIDTH]){
+               fifo_uv &in_fifo,
+               uv_t uv_tile[TILE_WIDTH][TILE_WIDTH]){
   
   int m;
   int n;
@@ -213,7 +213,7 @@ void fill_tile(
   loop_fill_tile:
     for(n = 0; n < BURST_LENGTH; n++){          // For DM
 #pragma HLS PIPELINE
-      burst = fifo_in.read();
+      burst = in_fifo.read();
       for(n1 = 0; n1 < NSAMP_PER_BURST; n1++){  // For DM
         loc_tile = n*NSAMP_PER_BURST+n1;
         uv_tile[m][loc_tile] = burst.data[n1];
@@ -223,8 +223,8 @@ void fill_tile(
 }
 
 void transpose_tile(
-                    uv_samp_t uv_tile[TILE_WIDTH][TILE_WIDTH],
-                    fifo_uv &fifo_out){
+                    uv_t uv_tile[TILE_WIDTH][TILE_WIDTH],
+                    fifo_uv &out_fifo){
   int m;
   int n;
   int n1;
@@ -239,7 +239,7 @@ void transpose_tile(
         loc_tile = n*NSAMP_PER_BURST+n1;
         burst.data[n1] = uv_tile[loc_tile][m];
       }
-      fifo_out.write(burst);
+      out_fifo.write(burst);
     }          
   }
 }
@@ -248,7 +248,7 @@ void write_from_fifo(
                      int nburst_per_uv_out,
                      int ntime_per_cu,
                      int nburst_dm,
-                     fifo_uv &fifo_out,
+                     fifo_uv &out_fifo,
                      burst_uv *out){
   int i;
   int j;
@@ -279,7 +279,7 @@ void write_from_fifo(
               k*nburst_per_uv_out +
               i*BURST_LENGTH +
               n;
-            out[loc_burst] = fifo_out.read();
+            out[loc_burst] = out_fifo.read();
           }
         }        
       }      
