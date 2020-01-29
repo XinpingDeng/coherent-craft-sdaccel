@@ -179,9 +179,9 @@ void grid(
       get_loc_in(j, coord_buffer, loc_in);                  // Buffer the coord for current output block    
       fill_out_fifo(loc_in, buffer, loc_in_burst, out_fifo);// Get the current output buffer block
       loc_in_tail = get_loc_in_tail(loc_in);                // Get the tail of the current output buffer block
-      if((loc_in_tail/NSAMP_PER_BURST)>=loc_in_burst){      // Refill the buffer when necessary
-        loc_in_burst = refill_buffer(loc_in_tail, buffer, in_fifo);
-      }
+      //if((loc_in_tail/NSAMP_PER_BURST)>=loc_in_burst){      // Refill the buffer when necessary
+      //  loc_in_burst = refill_buffer(loc_in_tail, buffer, in_fifo);
+      //}
     }  
   }
 }
@@ -192,6 +192,8 @@ void fill_buffer(
   int i;
   burst_uv burst0;
   burst_uv burst1;
+#pragma HLS DATA_PACK variable=burst0
+#pragma HLS DATA_PACK variable=burst1
   
   // Buffer two blocks, two will cover one output block
   burst0 = in_fifo.read();
@@ -239,17 +241,17 @@ void fill_out_fifo(
   int i;
   int loc_buffer;
   stream_t out_burst;
-  ap_uint<BURST_WIDTH> tmp=0;
+  ap_uint<BURST_WIDTH> burst=0;
   
   // Get one output block ready in one clock cycle
   for(i = 0; i < NSAMP_PER_BURST; i++){    
     // If there is data
     if(loc_in[i] != 0){ 
-      loc_buffer        = (loc_in[i] -1 - (loc_in_burst - 1)*NSAMP_PER_BURST)%NSAMP_PER_BURST;
-      tmp(2*(i+1)*DATA_WIDTH-1, 2*i*DATA_WIDTH) = buffer[loc_buffer];
+      loc_buffer        = (loc_in[i] -1 - (loc_in_burst - 1)*NSAMP_PER_BURST)%(2*NSAMP_PER_BURST);
+      burst(2*(i+1)*DATA_WIDTH-1, 2*i*DATA_WIDTH) = buffer[loc_buffer];
     }
   }
-  out_burst.data = tmp;
+  out_burst.data = burst;
   out_fifo.write(out_burst);
 }
 
@@ -260,6 +262,8 @@ int refill_buffer(
   int i;
   int loc_in_burst;
   burst_uv burst;
+
+#pragma HLS DATA_PACK variable=burst
   
   loc_in_burst  = loc_in_tail/NSAMP_PER_BURST+1;	
   for(i = 0; i < NSAMP_PER_BURST; i++){
