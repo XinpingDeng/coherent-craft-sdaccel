@@ -5,7 +5,7 @@ extern "C" {
   void knl_grid(
 		const burst_uv *in,
 		const burst_coord *coord,
-		burst_uv *out,
+		stream_uv &out_fifo,
 		int nuv_per_cu,
                 int nburst_per_uv_in,
                 int nburst_per_uv_out
@@ -24,7 +24,7 @@ extern "C" {
             int nburst_per_uv_out,
             const burst_coord *coord,
             fifo_uv &in_fifo,
-            fifo_uv &out_fifo
+            stream_uv &out_fifo
             );
 
   void fill_buffer(
@@ -41,7 +41,7 @@ extern "C" {
                      int *loc_in,
                      uv_t *buffer,
                      int loc_in_burst,
-                     fifo_uv &out_fifo
+                     stream_uv &out_fifo
                      );
   
   int get_loc_in_tail(
@@ -55,14 +55,14 @@ extern "C" {
   void write_from_fifo(
                        int nuv_per_cu,
                        int nburst_per_uv_out,
-                       fifo_uv &out_fifo,
+                       hls::stream<burst_uv> &out_fifo,
                        burst_uv *out);
 }
 
 void knl_grid(
 	      const burst_uv *in,
 	      const burst_coord *coord,
-	      burst_uv *out,
+              stream_uv &out_fifo,
 	      int nuv_per_cu,
               int nburst_per_uv_in,
               int nburst_per_uv_out
@@ -70,11 +70,10 @@ void knl_grid(
 {
 #pragma HLS INTERFACE m_axi port = in    offset = slave bundle = gmem0 
 #pragma HLS INTERFACE m_axi port = coord offset = slave bundle = gmem1 
-#pragma HLS INTERFACE m_axi port = out   offset = slave bundle = gmem2 //max_write_burst_length=64
+#pragma HLS INTERFACE axis  port = out_fifo
   
 #pragma HLS INTERFACE s_axilite port = in         bundle = control
 #pragma HLS INTERFACE s_axilite port = coord      bundle = control
-#pragma HLS INTERFACE s_axilite port = out        bundle = control
 #pragma HLS INTERFACE s_axilite port = nuv_per_cu bundle = control
 #pragma HLS INTERFACE s_axilite port = nburst_per_uv_in  bundle = control
 #pragma HLS INTERFACE s_axilite port = nburst_per_uv_out bundle = control
@@ -82,13 +81,10 @@ void knl_grid(
 #pragma HLS INTERFACE s_axilite port = return bundle = control
   
 #pragma HLS DATA_PACK variable = in
-#pragma HLS DATA_PACK variable = out
 #pragma HLS DATA_PACK variable = coord
   
   fifo_uv in_fifo;
-  fifo_uv out_fifo;
 #pragma HLS STREAM variable = in_fifo  //depth = nburst_per_tran //256 //32
-#pragma HLS STREAM variable = out_fifo //depth = nburst_per_tran //256 //32
 #pragma HLS DATAFLOW
   
   read2fifo(
@@ -106,12 +102,6 @@ void knl_grid(
        in_fifo,
        out_fifo
        );
-  
-  write_from_fifo(
-                  nuv_per_cu,
-                  nburst_per_uv_out,
-                  out_fifo,
-                  out);    
 }
 
 
@@ -137,7 +127,6 @@ void read2fifo(
 #pragma HLS LOOP_TRIPCOUNT max = mburst_per_uv_in
 #pragma HLS PIPELINE
       loc_burst = i*nburst_per_uv_in+j;
-      //fprintf(stdout, "%d\n", loc_burst);
       in_fifo.write(in[loc_burst]);
     }
   }
@@ -148,7 +137,7 @@ void grid(
           int nburst_per_uv_out,
           const burst_coord *coord,
           fifo_uv &in_fifo,
-          fifo_uv &out_fifo
+          stream_uv &out_fifo
           ){
   int i;
   int j;
@@ -190,10 +179,9 @@ void grid(
       get_loc_in(j, coord_buffer, loc_in);                  // Buffer the coord for current output block    
       fill_out_fifo(loc_in, buffer, loc_in_burst, out_fifo);// Get the current output buffer block
       loc_in_tail = get_loc_in_tail(loc_in);                // Get the tail of the current output buffer block
-      //if((loc_in_tail/NSAMP_PER_BURST)>=loc_in_burst){      // Refill the buffer when necessary
-      //  loc_in_burst = refill_buffer(loc_in_tail, buffer, in_fifo);
-      //}
-      //fprintf(stdout, "FILL:\t%d\t%d\n", i, j);
+      if((loc_in_tail/NSAMP_PER_BURST)>=loc_in_burst){      // Refill the buffer when necessary
+        loc_in_burst = refill_buffer(loc_in_tail, buffer, in_fifo);
+      }
     }  
   }
 }
@@ -246,23 +234,22 @@ void fill_out_fifo(
                    int *loc_in,
                    uv_t *buffer,
                    int loc_in_burst,
-                   fifo_uv &out_fifo
+                   stream_uv &out_fifo
                    ){
   int i;
   int loc_buffer;
-  burst_uv out_burst;
+  stream_t out_burst;
+  ap_uint<BURST_WIDTH> tmp=0;
   
   // Get one output block ready in one clock cycle
-  for(i = 0; i < NSAMP_PER_BURST; i++){
-    // Default output block elements be 0
-    out_burst.data[i] = 0;
-    
+  for(i = 0; i < NSAMP_PER_BURST; i++){    
     // If there is data
     if(loc_in[i] != 0){ 
       loc_buffer        = (loc_in[i] -1 - (loc_in_burst - 1)*NSAMP_PER_BURST)%NSAMP_PER_BURST;
-      out_burst.data[i] = buffer[loc_buffer];
+      tmp(2*(i+1)*DATA_WIDTH-1, 2*i*DATA_WIDTH) = buffer[loc_buffer];
     }
   }
+  out_burst.data = tmp;
   out_fifo.write(out_burst);
 }
 
@@ -273,11 +260,6 @@ int refill_buffer(
   int i;
   int loc_in_burst;
   burst_uv burst;
-  
-  if((loc_in_tail/NSAMP_PER_BURST)>=loc_in_burst){      // Refill the buffer when necessary
-    loc_in_burst = refill_buffer(loc_in_tail, buffer, in_fifo);
-
-  }
   
   loc_in_burst  = loc_in_tail/NSAMP_PER_BURST+1;	
   for(i = 0; i < NSAMP_PER_BURST; i++){

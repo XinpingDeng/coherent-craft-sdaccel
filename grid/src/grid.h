@@ -15,6 +15,7 @@
 #include <ap_int.h>
 #include <assert.h>
 #include <hls_stream.h>
+#include "ap_axi_sdata.h"
 
 #define FLOAT     1
 //#define DATA_WIDTH     32     // We use float 32-bits complex numbers
@@ -72,6 +73,9 @@ typedef struct burst_uv{
 }burst_uv; // The size of this should be 512; BURST_DATA_WIDTH
 
 typedef hls::stream<burst_uv> fifo_uv;
+
+typedef ap_axiu<BURST_WIDTH, 0, 0, 0> stream_t; 
+typedef hls::stream<stream_t> stream_uv;
 
 int grid(
 	 uv_data_t *in,
