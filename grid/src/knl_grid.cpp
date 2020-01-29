@@ -11,24 +11,19 @@ extern "C" {
                 int nburst_per_uv_out
 		);
   
-  void read2fifo(
-                 const burst_uv *in,
-                 fifo_uv &in_fifo,
-                 int nuv_per_cu,
-                 int nburst_per_uv_in,
-                 int nburst_per_uv_out               
-                 );
-  
   void grid(
             int nuv_per_cu,
+            int nburst_per_uv_in,
             int nburst_per_uv_out,
             const burst_coord *coord,
-            fifo_uv &in_fifo,
+            const burst_uv *in,
             stream_uv &out_fifo
             );
 
   void fill_buffer(
-                   fifo_uv &in_fifo,
+                   int iuv,
+                   int nburst_per_uv_in,
+                   const burst_uv *in,
                    uv_t *buffer);
   
   void get_loc_in(
@@ -48,15 +43,12 @@ extern "C" {
                       int *loc_in);
 
   int refill_buffer(
+                    int iuv,
+                    int nburst_per_uv_in,
                     int loc_in_tail,
                     uv_t *buffer,
-                    fifo_uv &in_fifo);
+                    const burst_uv *in);
   
-  void write_from_fifo(
-                       int nuv_per_cu,
-                       int nburst_per_uv_out,
-                       hls::stream<burst_uv> &out_fifo,
-                       burst_uv *out);
 }
 
 void knl_grid(
@@ -83,60 +75,23 @@ void knl_grid(
 #pragma HLS DATA_PACK variable = in
 #pragma HLS DATA_PACK variable = coord
   
-  fifo_uv in_fifo;
-#pragma HLS STREAM variable = in_fifo  //depth = nburst_per_tran //256 //32
-#pragma HLS DATAFLOW
-  
-  read2fifo(
-            in,
-            in_fifo,
-            nuv_per_cu,
-            nburst_per_uv_in,
-            nburst_per_uv_out               
-            );
-  
   grid(
        nuv_per_cu,
+       nburst_per_uv_in,
        nburst_per_uv_out,
        coord,
-       in_fifo,
+       in,
        out_fifo
        );
 }
 
 
-void read2fifo(
-               const burst_uv *in,
-               fifo_uv &in_fifo,
-               int nuv_per_cu,
-               int nburst_per_uv_in,
-               int nburst_per_uv_out               
-               ){
-  int i;
-  int j;
-  int loc_burst;
-  int loc_coord;
-  const int muv = MUV;
-  const int mburst_per_uv_in = MBURST_PER_UV_IN;
-  const int mburst_per_uv_out = MBURST_PER_UV_OUT;
-
-  for(i = 0; i < nuv_per_cu; i++){
-#pragma HLS LOOP_TRIPCOUNT max = muv
-  loop_read2fifo:
-    for(j = 0; j < nburst_per_uv_in; j++){
-#pragma HLS LOOP_TRIPCOUNT max = mburst_per_uv_in
-#pragma HLS PIPELINE
-      loc_burst = i*nburst_per_uv_in+j;
-      in_fifo.write(in[loc_burst]);
-    }
-  }
-}
-
 void grid(
           int nuv_per_cu,
+          int nburst_per_uv_in,
           int nburst_per_uv_out,
           const burst_coord *coord,
-          fifo_uv &in_fifo,
+          const burst_uv *in,
           stream_uv &out_fifo
           ){
   int i;
@@ -170,7 +125,7 @@ void grid(
   for(i = 0; i < nuv_per_cu; i++){
 #pragma HLS LOOP_TRIPCOUNT max = muv
     loc_in_burst = 1;
-    fill_buffer(in_fifo, buffer); // Fill two input block into a buffer 
+    fill_buffer(i, nburst_per_uv_in, in, buffer); // Fill two input block into a buffer 
     
   loop_grid:
     for(j = 0; j < nburst_per_uv_out; j++){
@@ -179,25 +134,31 @@ void grid(
       get_loc_in(j, coord_buffer, loc_in);                  // Buffer the coord for current output block    
       fill_out_fifo(loc_in, buffer, loc_in_burst, out_fifo);// Get the current output buffer block
       loc_in_tail = get_loc_in_tail(loc_in);                // Get the tail of the current output buffer block
-      //if((loc_in_tail/NSAMP_PER_BURST)>=loc_in_burst){      // Refill the buffer when necessary
-      //  loc_in_burst = refill_buffer(loc_in_tail, buffer, in_fifo);
-      //}
+      if((loc_in_tail/NSAMP_PER_BURST)>=loc_in_burst){      // Refill the buffer when necessary
+        loc_in_burst = refill_buffer(i, nburst_per_uv_in, loc_in_tail, buffer, in);
+      }
     }  
   }
 }
 
 void fill_buffer(
-                 fifo_uv &in_fifo,
+                 int iuv,
+                 int nburst_per_uv_in,
+                 const burst_uv *in,
                  uv_t *buffer){
   int i;
+  int loc0;
+  int loc1;
   burst_uv burst0;
   burst_uv burst1;
 #pragma HLS DATA_PACK variable=burst0
 #pragma HLS DATA_PACK variable=burst1
   
   // Buffer two blocks, two will cover one output block
-  burst0 = in_fifo.read();
-  burst1 = in_fifo.read();
+  loc0 = iuv*nburst_per_uv_in;
+  loc1 = iuv*nburst_per_uv_in + 1;
+  burst0 = in[loc0];
+  burst1 = in[loc1];
   for(i = 0; i < NSAMP_PER_BURST; i++){
 #pragma HLS UNROLL
     buffer[i]                 = burst0.data[i];
@@ -256,13 +217,15 @@ void fill_out_fifo(
 }
 
 int refill_buffer(
+                  int iuv,
+                  int nburst_per_uv_in,
                   int loc_in_tail,
                   uv_t *buffer,
-                  fifo_uv &in_fifo){
+                  const burst_uv *in){
   int i;
   int loc_in_burst;
   burst_uv burst;
-
+  
 #pragma HLS DATA_PACK variable=burst
   
   loc_in_burst  = loc_in_tail/NSAMP_PER_BURST+1;	
@@ -270,36 +233,11 @@ int refill_buffer(
     // Shift the array with one block size
     buffer[i] = buffer[NSAMP_PER_BURST+i];
   }
-  burst = in_fifo.read();
+  burst = in[iuv*nburst_per_uv_in + loc_in_burst];
   for(i = 0; i < NSAMP_PER_BURST; i++){
     // Put the new block into the array 
     buffer[NSAMP_PER_BURST+i] = burst.data[i];
   }
   
   return loc_in_burst;
-}
-
-void write_from_fifo(
-                     int nuv_per_cu,
-                     int nburst_per_uv_out,
-                     fifo_uv &out_fifo,
-                     burst_uv *out){
-  int i;
-  int j;
-  int loc;
-  
-  const int muv = MUV;
-  const int mburst_per_uv_out = MBURST_PER_UV_OUT;
-  
-  for(i = 0; i < nuv_per_cu; i++){
-#pragma HLS LOOP_TRIPCOUNT max = muv
-  loop_write_from_fifo:
-    for(j = 0; j < nburst_per_uv_out; j++){
-#pragma HLS LOOP_TRIPCOUNT max = mburst_per_uv_out
-#pragma HLS PIPELINE
-      loc = i*nburst_per_uv_out+j;
-      out[loc] = out_fifo.read();
-      fprintf(stdout, "WRITE:\t%d\t%d\n", i, j);
-    }
-  }
 }
