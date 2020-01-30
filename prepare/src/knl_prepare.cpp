@@ -16,13 +16,13 @@ extern "C" {
 		   );
   
   void initialize_prepare(
-                        int tran,
-                        const burst_t *cal1,
-                        const burst_t *cal2,
-                        const burst_t *sky,
-                        data_t *cal1_tile,
-                        data_t *cal2_tile,
-                        data_t *sky_tile);
+                          int tran,
+                          const burst_t *cal1,
+                          const burst_t *cal2,
+                          const burst_t *sky,
+                          data_t *cal1_tile,
+                          data_t *cal2_tile,
+                          data_t *sky_tile);
   
   void write_average(
                      int tran,
@@ -209,17 +209,17 @@ void process(
   data_t cal2_tile[2*TILE_WIDTH];
   data_t sky_tile[2*TILE_WIDTH];
   const int ndata_per_burst = 2*NSAMP_PER_BURST;
-#pragma HLS ARRAY_RESHAPE variable=sky_tile  cyclic factor=ndata_per_burst
-#pragma HLS ARRAY_RESHAPE variable=cal1_tile cyclic factor=ndata_per_burst
-#pragma HLS ARRAY_RESHAPE variable=cal2_tile cyclic factor=ndata_per_burst
-#pragma HLS ARRAY_RESHAPE variable=average1_tile cyclic factor=ndata_per_burst
-#pragma HLS ARRAY_RESHAPE variable=average2_tile cyclic factor=ndata_per_burst
+//#pragma HLS ARRAY_RESHAPE variable=sky_tile  cyclic factor=ndata_per_burst
+//#pragma HLS ARRAY_RESHAPE variable=cal1_tile cyclic factor=ndata_per_burst
+//#pragma HLS ARRAY_RESHAPE variable=cal2_tile cyclic factor=ndata_per_burst
+//#pragma HLS ARRAY_RESHAPE variable=average1_tile cyclic factor=ndata_per_burst
+//#pragma HLS ARRAY_RESHAPE variable=average2_tile cyclic factor=ndata_per_burst
 
-//#pragma HLS ARRAY_PARTITION variable=sky_tile  cyclic  factor=ndata_per_burst
-//#pragma HLS ARRAY_PARTITION variable=cal1_tile cyclic factor=ndata_per_burst
-//#pragma HLS ARRAY_PARTITION variable=cal2_tile cyclic factor=ndata_per_burst
-//#pragma HLS ARRAY_PARTITION variable=average1_tile cyclic factor=ndata_per_burst
-//#pragma HLS ARRAY_PARTITION variable=average2_tile cyclic factor=ndata_per_burst
+#pragma HLS ARRAY_PARTITION variable=sky_tile  cyclic  factor=ndata_per_burst
+#pragma HLS ARRAY_PARTITION variable=cal1_tile cyclic factor=ndata_per_burst
+#pragma HLS ARRAY_PARTITION variable=cal2_tile cyclic factor=ndata_per_burst
+#pragma HLS ARRAY_PARTITION variable=average1_tile cyclic factor=ndata_per_burst
+#pragma HLS ARRAY_PARTITION variable=average2_tile cyclic factor=ndata_per_burst
   
   const int mtime_per_cu    = MTIME_PER_CU;
   const int mtran_per_time  = MCHAN*MBASELINE/TILE_WIDTH;
