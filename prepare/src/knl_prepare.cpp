@@ -22,9 +22,7 @@ extern "C" {
                         const burst_t *sky,
                         data_t *cal1_tile,
                         data_t *cal2_tile,
-                        data_t *sky_tile,
-                        data_t *average1_tile,
-                        data_t *average2_tile);
+                        data_t *sky_tile);
   
   void write_average(
                      int tran,
@@ -211,7 +209,7 @@ void process(
   data_t cal2_tile[2*TILE_WIDTH];
   data_t sky_tile[2*TILE_WIDTH];
   const int ndata_per_burst = 2*NSAMP_PER_BURST;
-#pragma HLS ARRAY_RESHAPE variable=sky_tile  cyclic  factor=ndata_per_burst
+#pragma HLS ARRAY_RESHAPE variable=sky_tile  cyclic factor=ndata_per_burst
 #pragma HLS ARRAY_RESHAPE variable=cal1_tile cyclic factor=ndata_per_burst
 #pragma HLS ARRAY_RESHAPE variable=cal2_tile cyclic factor=ndata_per_burst
 #pragma HLS ARRAY_RESHAPE variable=average1_tile cyclic factor=ndata_per_burst
@@ -225,11 +223,12 @@ void process(
   
   const int mtime_per_cu    = MTIME_PER_CU;
   const int mtran_per_time  = MCHAN*MBASELINE/TILE_WIDTH;
-  int ntran_per_time = nburst_per_time/BURST_LENGTH;
+  int ntran_per_time        = nburst_per_time/BURST_LENGTH;
   
   for(i = 0; i < ntran_per_time; i++){
 #pragma HLS LOOP_TRIPCOUNT  max=mtran_per_time
-    initialize_prepare(i, cal1, cal2, sky, cal1_tile, cal2_tile, sky_tile, average1_tile, average2_tile);
+#pragma HLS DATAFLOW
+    initialize_prepare(i, cal1, cal2, sky, cal1_tile, cal2_tile, sky_tile);
     calculate_average_out(ntime_per_cu, cal1_tile, cal2_tile, sky_tile, average1_tile, average2_tile, in_fifo1, in_fifo2, out_fifo);
     write_average(i, average1_tile, average2_tile, average1, average2);        
   }  
@@ -270,9 +269,7 @@ void initialize_prepare(
                         const burst_t *sky,
                         data_t *cal1_tile,
                         data_t *cal2_tile,
-                        data_t *sky_tile,
-                        data_t *average1_tile,
-                        data_t *average2_tile){
+                        data_t *sky_tile){
 
   int m;
   int n;
@@ -288,8 +285,6 @@ void initialize_prepare(
       sky_tile[loc]  = sky[loc_burst].data[n];
       cal1_tile[loc] = cal1[loc_burst].data[n];
       cal2_tile[loc] = cal2[loc_burst].data[n];  
-      average1_tile[loc] = 0;
-      average2_tile[loc] = 0;    
     }	  
   }  
 }
@@ -340,7 +335,18 @@ void calculate_average_out(
   burst_t in1_burst;
   burst_t in2_burst;
   burst_t out_burst;
-  const int mtime_per_cu    = MTIME_PER_CU;
+  const int mtime_per_cu = MTIME_PER_CU;
+  
+ loop_reset_average:
+  for(m = 0; m < BURST_LENGTH; m++){
+#pragma HLS PIPELINE
+    for(n = 0; n < 2*NSAMP_PER_BURST; n++){
+      loc = 2*m*NSAMP_PER_BURST+n;
+      average1_tile[loc] = 0;
+      average2_tile[loc] = 0;    
+    }	  
+  }
+  
   
   for(j = 0; j < ntime_per_cu; j++){
 #pragma HLS LOOP_TRIPCOUNT max=mtime_per_cu
