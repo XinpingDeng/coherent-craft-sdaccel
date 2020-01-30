@@ -34,11 +34,11 @@ extern "C" {
   void fill_buffer(
                    fifo_uv &in_fifo,
                    int nburst_per_uv_in,
-                   uv_t *buffer
+                   uv_t buffer[MBURST_PER_UV_IN][NSAMP_PER_BURST]
                    );
 
   void buffer2grid(
-                   uv_t *buffer,
+                   uv_t buffer[MBURST_PER_UV_IN][NSAMP_PER_BURST],
                    coord_t2 *coord_buffer,
                    int nburst_per_uv_out,
                    stream_uv &out_stream
@@ -125,13 +125,16 @@ void grid(
   
   const int muv = MUV;
   const int mburst_per_uv_out = MBURST_PER_UV_OUT;
+  const int mburst_per_uv_in = MBURST_PER_UV_IN;
 
-  uv_t buffer[MSAMP_PER_UV_IN];
+  uv_t buffer[MBURST_PER_UV_IN][NSAMP_PER_BURST];
   coord_t2 coord_buffer[MSAMP_PER_UV_OUT];
   const int nsamp_per_burst = NSAMP_PER_BURST;
 #pragma HLS ARRAY_RESHAPE variable = coord_buffer cyclic factor = nsamp_per_burst
   //#pragma HLS ARRAY_RESHAPE variable = buffer cyclic factor = nsamp_per_burst
-#pragma HLS ARRAY_PARTITION variable = buffer cyclic factor = nsamp_per_burst
+  //#pragma HLS ARRAY_PARTITION variable = buffer complete dim = 1
+#pragma HLS ARRAY_PARTITION variable = buffer cyclic factor = nsamp_per_burst dim = 1
+#pragma HLS ARRAY_PARTITION variable = buffer complete dim = 2
   
   read_coord(nburst_per_uv_out, coord, coord_buffer);
   
@@ -167,11 +170,11 @@ void read_coord(
 void fill_buffer(
                  fifo_uv &in_fifo,
                  int nburst_per_uv_in,
-                 uv_t *buffer
+                 uv_t buffer[MBURST_PER_UV_IN][NSAMP_PER_BURST]
                  ){
   int i;
   int j;
-  int loc;
+  //int loc;
   burst_uv burst;
   const int mburst_per_uv_in = MBURST_PER_UV_IN;
 
@@ -182,22 +185,25 @@ void fill_buffer(
     
     burst = in_fifo.read();
     for(j = 0; j < NSAMP_PER_BURST; j++){
-      loc = i * NSAMP_PER_BURST + j;
-      buffer[loc] = burst.data[j];
+      //loc = i * NSAMP_PER_BURST + j;
+      //buffer[loc] = burst.data[j];
+      buffer[i][j] = burst.data[j];
     }
   }
 }
 
 void buffer2grid(
-                 uv_t *buffer,
+                 uv_t buffer[MBURST_PER_UV_IN][NSAMP_PER_BURST],
                  coord_t2 *coord_buffer,
                  int nburst_per_uv_out,
                  stream_uv &out_stream
                  ){
   int i;
   int j;
-  int coord;
+  uint coord;
   int loc_coord;
+  uint loc_i;
+  uint loc_j;
   
   ap_uint<BURST_WIDTH> burst;
   stream_t stream;
@@ -210,11 +216,14 @@ void buffer2grid(
     for(j = 0; j < NSAMP_PER_BURST; j++){
       loc_coord = i*NSAMP_PER_BURST+j;
       coord = coord_buffer[loc_coord];
-      if(coord==0){
-        burst(2*(j+1)*DATA_WIDTH-1, 2*j*DATA_WIDTH) = 0;
-      }
-      else{
-        burst(2*(j+1)*DATA_WIDTH-1, 2*j*DATA_WIDTH) = buffer[coord-1];
+      //if(coord==0){
+      //burst(2*(j+1)*DATA_WIDTH-1, 2*j*DATA_WIDTH) = 0;
+      //}
+      //else{
+      if(coord!=0){
+        loc_i = (coord-1)/NSAMP_PER_BURST;
+        loc_j = (coord-1)%NSAMP_PER_BURST;
+        burst(2*(j+1)*DATA_WIDTH-1, 2*j*DATA_WIDTH) = buffer[loc_i][loc_j];
       }
     }
     stream.data = burst;
