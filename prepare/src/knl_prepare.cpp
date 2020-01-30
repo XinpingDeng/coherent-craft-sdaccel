@@ -216,6 +216,12 @@ void process(
 #pragma HLS ARRAY_RESHAPE variable=cal2_tile cyclic factor=ndata_per_burst
 #pragma HLS ARRAY_RESHAPE variable=average1_tile cyclic factor=ndata_per_burst
 #pragma HLS ARRAY_RESHAPE variable=average2_tile cyclic factor=ndata_per_burst
+
+//#pragma HLS ARRAY_PARTITION variable=sky_tile  cyclic  factor=ndata_per_burst
+//#pragma HLS ARRAY_PARTITION variable=cal1_tile cyclic factor=ndata_per_burst
+//#pragma HLS ARRAY_PARTITION variable=cal2_tile cyclic factor=ndata_per_burst
+//#pragma HLS ARRAY_PARTITION variable=average1_tile cyclic factor=ndata_per_burst
+//#pragma HLS ARRAY_PARTITION variable=average2_tile cyclic factor=ndata_per_burst
   
   const int mtime_per_cu    = MTIME_PER_CU;
   const int mtran_per_time  = MCHAN*MBASELINE/TILE_WIDTH;

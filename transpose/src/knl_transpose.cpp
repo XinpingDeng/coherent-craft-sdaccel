@@ -127,6 +127,7 @@ void read2fifo(
   coord_t2 coord_buffer[MSAMP_PER_UV_OUT];
   
 #pragma HLS ARRAY_RESHAPE variable = coord_buffer cyclic factor = nsamp_per_burst
+  //#pragma HLS ARRAY_PARTITION variable = coord_buffer cyclic factor = nsamp_per_burst
   
   // Burst in coord;
  loop_burst_coord:
@@ -153,6 +154,10 @@ void read2fifo(
         loop_read2fifo:
           for(n = 0; n < BURST_LENGTH; n++){        // For DM
 #pragma HLS PIPELINE
+            //loc_burst = coord_buffer[i*TILE_WIDTH+m]*ntime_per_cu*nburst_dm+
+            //  k*nburst_dm+
+            //  j*BURST_LENGTH +
+            //  n;
             loc_burst = loc_burst0 +
               n;
             in_fifo.write(in[loc_burst]);
@@ -183,6 +188,8 @@ void transpose(
   uv_t uv_tile[TILE_WIDTH][TILE_WIDTH];
 #pragma HLS ARRAY_RESHAPE variable = uv_tile    cyclic factor = nsamp_per_burst dim =1
 #pragma HLS ARRAY_RESHAPE variable = uv_tile    cyclic factor = nsamp_per_burst dim =2
+//#pragma HLS ARRAY_PARTITION variable = uv_tile    cyclic factor = nsamp_per_burst dim =1
+//#pragma HLS ARRAY_PARTITION variable = uv_tile    cyclic factor = nsamp_per_burst dim =2
 
   for(k = 0; k < ntime_per_cu; k++){        // For Time
 #pragma HLS LOOP_TRIPCOUNT min = 1 max = mtime_per_cu
@@ -190,7 +197,7 @@ void transpose(
 #pragma HLS LOOP_TRIPCOUNT min = 1 max = mtran_per_uv_out
       for(j = 0; j < ntran_dm; j++){        // For DM
 #pragma HLS LOOP_TRIPCOUNT min = 1 max = mtran_dm
-#pragma HLS DATAFLOW // This may cause the result wrong, check it!!!
+#pragma HLS DATAFLOW 
         
         fill_tile(in_fifo, uv_tile);
         transpose_tile(uv_tile, out_fifo);
