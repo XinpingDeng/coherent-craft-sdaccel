@@ -4,7 +4,6 @@
 extern "C" {  
   void knl_transpose(
                      const burst_uv *in,
-                     const burst_coord *coord,
                      burst_uv *out,
                      int nburst_per_uv_out,
                      int ntime_per_cu,
@@ -16,7 +15,6 @@ extern "C" {
                  int ntime_per_cu,
                  int nburst_dm,
                  const burst_uv *in,
-                 const burst_coord *coord,
                  fifo_uv &in_fifo);
   
   void transpose(
@@ -44,7 +42,6 @@ extern "C" {
 
 void knl_transpose(
                    const burst_uv *in,
-                   const burst_coord *coord,
                    burst_uv *out,
                    int nburst_per_uv_out,
                    int ntime_per_cu,
@@ -54,11 +51,9 @@ void knl_transpose(
   const int burst_length      = BURST_LENGTH;
   
 #pragma HLS INTERFACE m_axi port = in    offset = slave bundle = gmem0 max_read_burst_length =burst_length
-#pragma HLS INTERFACE m_axi port = coord offset = slave bundle = gmem1 
-#pragma HLS INTERFACE m_axi port = out   offset = slave bundle = gmem2 max_write_burst_length=burst_length
+#pragma HLS INTERFACE m_axi port = out   offset = slave bundle = gmem1 max_write_burst_length=burst_length
 
 #pragma HLS INTERFACE s_axilite port = in     bundle = control
-#pragma HLS INTERFACE s_axilite port = coord  bundle = control
 #pragma HLS INTERFACE s_axilite port = out    bundle = control
 
 #pragma HLS INTERFACE s_axilite port = nburst_per_uv_out bundle = control
@@ -68,7 +63,6 @@ void knl_transpose(
 
 #pragma HLS DATA_PACK variable = in
 #pragma HLS DATA_PACK variable = out
-#pragma HLS DATA_PACK variable = coord
 
   fifo_uv in_fifo;
   fifo_uv out_fifo;
@@ -83,7 +77,6 @@ void knl_transpose(
             ntime_per_cu,
             nburst_dm,
             in,
-            coord,
             in_fifo);
   
   transpose(
@@ -106,14 +99,12 @@ void read2fifo(
                int ntime_per_cu,
                int nburst_dm,
                const burst_uv *in,
-               const burst_coord *coord,
                fifo_uv &in_fifo){
   int i;
   int j;
   int k;
   int m;
   int n;
-  int loc_burst0;
   int loc_burst;
   int ntran_dm         = nburst_dm/BURST_LENGTH;
   int ntran_per_uv_out = nburst_per_uv_out/BURST_LENGTH;
@@ -123,22 +114,7 @@ void read2fifo(
   const int mtran_per_uv_out = MBURST_PER_UV_OUT/BURST_LENGTH;
   const int mtime_per_cu     = MTIME_PER_CU;  
   const int mtran_dm         = MBURST_DM/BURST_LENGTH;
-  
-  coord_t2 coord_buffer[MSAMP_PER_UV_OUT];
-  
-#pragma HLS ARRAY_RESHAPE variable = coord_buffer cyclic factor = nsamp_per_burst
-  //#pragma HLS ARRAY_PARTITION variable = coord_buffer cyclic factor = nsamp_per_burst
-  
-  // Burst in coord;
- loop_burst_coord:
-  for(i = 0; i < nburst_per_uv_out; i++){
-#pragma HLS PIPELINE
-#pragma HLS LOOP_TRIPCOUNT min = 1 max = mburst_per_uv_out 
-    for(j = 0; j < NSAMP_PER_BURST; j++){
-      coord_buffer[i*NSAMP_PER_BURST+j] = coord[i].data[j];
-    }
-  }
-
+    
   for(k = 0; k < ntime_per_cu; k++){        // For Time
 #pragma HLS LOOP_TRIPCOUNT min = 1 max = mtime_per_cu
     for(i = 0; i < ntran_per_uv_out; i++){  // For UV
@@ -148,17 +124,12 @@ void read2fifo(
         
         // Burst in
         for(m = 0; m < TILE_WIDTH; m++){            // For UV
-          loc_burst0 = coord_buffer[i*TILE_WIDTH+m]*ntime_per_cu*nburst_dm+
-            k*nburst_dm+
-            j*BURST_LENGTH;
         loop_read2fifo:
           for(n = 0; n < BURST_LENGTH; n++){        // For DM
 #pragma HLS PIPELINE
-            //loc_burst = coord_buffer[i*TILE_WIDTH+m]*ntime_per_cu*nburst_dm+
-            //  k*nburst_dm+
-            //  j*BURST_LENGTH +
-            //  n;
-            loc_burst = loc_burst0 +
+            loc_burst = (i*TILE_WIDTH+m)*ntime_per_cu*nburst_dm+
+              k*nburst_dm+
+              j*BURST_LENGTH +
               n;
             in_fifo.write(in[loc_burst]);
           }
@@ -186,10 +157,10 @@ void transpose(
   const int nsamp_per_burst  = NSAMP_PER_BURST;
   
   uv_t uv_tile[TILE_WIDTH][TILE_WIDTH];
-#pragma HLS ARRAY_RESHAPE variable = uv_tile    cyclic factor = nsamp_per_burst dim =1
-#pragma HLS ARRAY_RESHAPE variable = uv_tile    cyclic factor = nsamp_per_burst dim =2
-//#pragma HLS ARRAY_PARTITION variable = uv_tile    cyclic factor = nsamp_per_burst dim =1
-//#pragma HLS ARRAY_PARTITION variable = uv_tile    cyclic factor = nsamp_per_burst dim =2
+  //#pragma HLS ARRAY_RESHAPE variable = uv_tile    cyclic factor = nsamp_per_burst dim =1
+  //#pragma HLS ARRAY_RESHAPE variable = uv_tile    cyclic factor = nsamp_per_burst dim =2
+#pragma HLS ARRAY_PARTITION variable = uv_tile    cyclic factor = nsamp_per_burst dim =1
+#pragma HLS ARRAY_PARTITION variable = uv_tile    cyclic factor = nsamp_per_burst dim =2
 
   for(k = 0; k < ntime_per_cu; k++){        // For Time
 #pragma HLS LOOP_TRIPCOUNT min = 1 max = mtime_per_cu
