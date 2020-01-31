@@ -27,23 +27,36 @@ extern "C" {
             );
   
   void read_coord(
-                  int nburst_per_uv_out,
+                  int nburst_per_uv_in,
                   const burst_coord *coord,
                   coord_t2 *coord_buffer);
+  
+  void set_grid_bool(
+                     int nburst_per_uv_in,
+                     int nburst_per_uv_out,
+                     coord_t2 *coord_buffer,
+                     bool grid_bool[MBURST_PER_UV_OUT][NSAMP_PER_BURST]);
   
   void fill_buffer(
                    fifo_uv &in_fifo,
                    int nburst_per_uv_in,
-                   uv_t buffer[MBURST_PER_UV_IN][NSAMP_PER_BURST]
+                   uv_t *buffer
                    );
-
+  
   void buffer2grid(
-                   uv_t buffer[MBURST_PER_UV_IN][NSAMP_PER_BURST],
+                   int nburst_per_uv_in,
                    coord_t2 *coord_buffer,
+                   uv_t *buffer,
+                   uv_t grid[MBURST_PER_UV_OUT][NSAMP_PER_BURST]
+                   );
+  
+  void stream_grid(
+                   uv_t grid[MBURST_PER_UV_OUT][NSAMP_PER_BURST],
                    int nburst_per_uv_out,
+                   bool grid_bool[MBURST_PER_UV_OUT][NSAMP_PER_BURST],
                    stream_uv &out_stream
                    );
-  }
+}
 
 void knl_grid(
 	      const burst_uv *in,
@@ -127,38 +140,43 @@ void grid(
   const int mburst_per_uv_out = MBURST_PER_UV_OUT;
   const int mburst_per_uv_in = MBURST_PER_UV_IN;
 
-  uv_t buffer[MBURST_PER_UV_IN][NSAMP_PER_BURST];
-  coord_t2 coord_buffer[MSAMP_PER_UV_OUT];
-  const int nsamp_per_burst = NSAMP_PER_BURST;
-#pragma HLS ARRAY_RESHAPE variable = coord_buffer cyclic factor = nsamp_per_burst
-  //#pragma HLS ARRAY_RESHAPE variable = buffer cyclic factor = nsamp_per_burst
-  //#pragma HLS ARRAY_PARTITION variable = buffer complete dim = 1
-#pragma HLS ARRAY_PARTITION variable = buffer cyclic factor = nsamp_per_burst dim = 1
-#pragma HLS ARRAY_PARTITION variable = buffer complete dim = 2
+  uv_t buffer[MSAMP_PER_UV_IN];
+  uv_t grid[MBURST_PER_UV_OUT][NSAMP_PER_BURST];
+  coord_t2 coord_buffer[MSAMP_PER_UV_IN];
+  bool grid_bool[MBURST_PER_UV_OUT][NSAMP_PER_BURST];
   
-  read_coord(nburst_per_uv_out, coord, coord_buffer);
+  const int nsamp_per_burst = NSAMP_PER_BURST;
+  
+#pragma HLS ARRAY_PARTITION variable = grid complete dim =2
+#pragma HLS ARRAY_PARTITION variable = grid_bool  complete dim =2
+#pragma HLS ARRAY_PARTITION variable = buffer cyclic factor = nsamp_per_burst
+#pragma HLS ARRAY_PARTITION variable = coord_buffer cyclic factor = nsamp_per_burst
+  
+  read_coord(nburst_per_uv_in, coord, coord_buffer);
+  set_grid_bool(nburst_per_uv_in, nburst_per_uv_out, coord_buffer, grid_bool);
   
   for(i = 0; i < nuv_per_cu; i++){
 #pragma HLS LOOP_TRIPCOUNT max = muv
 #pragma HLS DATAFLOW
-    fill_buffer(in_fifo, nburst_per_uv_in, buffer);     
-    buffer2grid(buffer, coord_buffer, nburst_per_uv_out, out_stream);
+    fill_buffer(in_fifo, nburst_per_uv_in, buffer);
+    buffer2grid(nburst_per_uv_in, coord_buffer, buffer, grid);
+    stream_grid(grid, nburst_per_uv_out, grid_bool, out_stream);
   }
 }
 
 void read_coord(
-                int nburst_per_uv_out,
+                int nburst_per_uv_in,
                 const burst_coord *coord,
                 coord_t2 *coord_buffer){
   int i;
   int j;
   int loc;
 
-  const int mburst_per_uv_out = MBURST_PER_UV_OUT;
+  const int mburst_per_uv_in = MBURST_PER_UV_IN;
   
  loop_read_coord:
-  for(i = 0; i < nburst_per_uv_out; i++){
-#pragma HLS LOOP_TRIPCOUNT max = mburst_per_uv_out
+  for(i = 0; i < nburst_per_uv_in; i++){
+#pragma HLS LOOP_TRIPCOUNT max = mburst_per_uv_in
 #pragma HLS PIPELINE
     for(j = 0; j < NSAMP_PER_BURST; j++){
       loc = i*NSAMP_PER_BURST+j;
@@ -170,63 +188,108 @@ void read_coord(
 void fill_buffer(
                  fifo_uv &in_fifo,
                  int nburst_per_uv_in,
-                 uv_t buffer[MBURST_PER_UV_IN][NSAMP_PER_BURST]
+                 uv_t *buffer
                  ){
   int i;
   int j;
-  //int loc;
+  int loc;
   burst_uv burst;
   const int mburst_per_uv_in = MBURST_PER_UV_IN;
-
+  
  loop_fill_buffer:
   for(i = 0; i < nburst_per_uv_in; i++){
-#pragma HLS PIPELINE
 #pragma HLS LOOP_TRIPCOUNT max=mburst_per_uv_in
+#pragma HLS PIPELINE
     
     burst = in_fifo.read();
     for(j = 0; j < NSAMP_PER_BURST; j++){
-      //loc = i * NSAMP_PER_BURST + j;
-      //buffer[loc] = burst.data[j];
-      buffer[i][j] = burst.data[j];
+      loc = i*NSAMP_PER_BURST+j;
+      buffer[loc] = burst.data[j];
     }
   }
 }
 
 void buffer2grid(
-                 uv_t buffer[MBURST_PER_UV_IN][NSAMP_PER_BURST],
+                 int nburst_per_uv_in,
                  coord_t2 *coord_buffer,
+                 uv_t *buffer,
+                 uv_t grid[MBURST_PER_UV_OUT][NSAMP_PER_BURST]
+                 ){
+  int i;
+  uint loc_i;
+  uint loc_j;
+  uint coord;
+  const int msamp_per_uv_in = MSAMP_PER_UV_IN;
+  
+ loop_buffer2grid:
+  for(i = 0; i < nburst_per_uv_in*NSAMP_PER_BURST; i++){
+#pragma HLS LOOP_TRIPCOUNT max = msamp_per_uv_in
+#pragma HLS PIPELINE
+    coord = coord_buffer[i];
+    loc_i = coord/NSAMP_PER_BURST;
+    loc_j = coord%NSAMP_PER_BURST;
+    grid[loc_i][loc_j] = buffer[i];
+  }
+}
+
+void stream_grid(
+                 uv_t grid[MBURST_PER_UV_OUT][NSAMP_PER_BURST],
                  int nburst_per_uv_out,
+                 bool grid_bool[MBURST_PER_UV_OUT][NSAMP_PER_BURST],
                  stream_uv &out_stream
                  ){
   int i;
   int j;
   uint coord;
   int loc_coord;
-  uint loc_i;
-  uint loc_j;
   
   ap_uint<BURST_WIDTH> burst;
   stream_t stream;
-  
   const int mburst_per_uv_out = MBURST_PER_UV_OUT;
+
  loop_grid:
   for(i = 0; i < nburst_per_uv_out; i++){
 #pragma HLS LOOP_TRIPCOUNT max = mburst_per_uv_out
 #pragma HLS PIPELINE
     for(j = 0; j < NSAMP_PER_BURST; j++){
-      loc_coord = i*NSAMP_PER_BURST+j;
-      coord = coord_buffer[loc_coord];
-      //if(coord==0){
-      //burst(2*(j+1)*DATA_WIDTH-1, 2*j*DATA_WIDTH) = 0;
-      //}
-      //else{
-      if(coord!=0){
-        loc_i = (coord-1)/NSAMP_PER_BURST;
-        loc_j = (coord-1)%NSAMP_PER_BURST;
-        burst(2*(j+1)*DATA_WIDTH-1, 2*j*DATA_WIDTH) = buffer[loc_i][loc_j];
-      }
+      burst(2*(j+1)*DATA_WIDTH-1, 2*j*DATA_WIDTH) = grid_bool[i][j]*grid[i][j];
     }
+    
     stream.data = burst;
     out_stream.write(stream);
   }  
+}
+
+void set_grid_bool(
+                   int nburst_per_uv_in,
+                   int nburst_per_uv_out,
+                   coord_t2 *coord_buffer,
+                   bool grid_bool[MBURST_PER_UV_OUT][NSAMP_PER_BURST]){  
+  int i;
+  int j;
+  uint loc_i;
+  uint loc_j;
+  uint coord;
+
+  const int msamp_per_uv_in = MSAMP_PER_UV_IN;
+  const int mburst_per_uv_out = MBURST_PER_UV_OUT;
+
+ loop_reset_grid_bool:
+  for(i = 0; i < nburst_per_uv_out; i++){
+#pragma HLS PIPELINE
+#pragma HLS LOOP_TRIPCOUNT max = mburst_per_uv_out
+    for(j = 0; j < NSAMP_PER_BURST; j++){
+      grid_bool[i][j] = false;
+    }
+  }
+
+ loop_set_grid_bool:
+  for(i = 0; i < nburst_per_uv_in*NSAMP_PER_BURST; i++){
+#pragma HLS PIPELINE
+#pragma HLS LOOP_TRIPCOUNT max = msamp_per_uv_in
+    coord = coord_buffer[i];
+    loc_i = coord/NSAMP_PER_BURST;
+    loc_j = coord%NSAMP_PER_BURST;
+    grid_bool[loc_i][loc_j] = true;
+  }
 }

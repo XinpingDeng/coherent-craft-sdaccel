@@ -258,7 +258,6 @@ int main(int argc, char* argv[]){
   OCL_CHECK(err, err = clFinish(queue));
   fprintf(stdout, "INFO: DONE MEMCPY FROM KERNEL TO HOST\n");
 
-  /*
   // Check the result
   cl_int ndata3 = 0;
   data_t res = 1.0E-2;
@@ -286,6 +285,8 @@ int main(int argc, char* argv[]){
       ndata3++;
     }
   }
+  fprintf(stdout, "%f\n", sw_average_pol2[i].to_float());
+  
   fprintf(stdout, "INFO: %d from %d, %.0f%% of AVERAGE_POL2 is outside %.0f%% range\n", ndata3, ndata1, 100*ndata3/(float)ndata1, 100*(float)res);
   //ndata3 = 0;
   //for(i=0;i<ndata2;i++){
@@ -300,7 +301,7 @@ int main(int argc, char* argv[]){
   //  }
   //}
   fprintf(stdout, "INFO: %d from %d, %.0f%% of OUT is outside %.0f%% range\n", ndata3, ndata2, 100*ndata3/(float)ndata2, 100*(float)res);
-  */
+  
   fprintf(stdout, "INFO: DONE RESULT CHECK\n");
   fprintf(stdout, "INFO: Elapsed time of CPU code is %E seconds\n", cpu_elapsed_time);
   fprintf(stdout, "INFO: Elapsed time of kernel is %E seconds\n", kernel_elapsed_time);
