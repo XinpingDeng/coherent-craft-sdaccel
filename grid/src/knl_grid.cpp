@@ -29,12 +29,12 @@ extern "C" {
   void read_coord(
                   int nburst_per_uv_in,
                   const burst_coord *coord,
-                  coord_t2 *coord_buffer);
+                  coord_t *coord_buffer);
   
   void set_grid_bool(
                      int nburst_per_uv_in,
                      int nburst_per_uv_out,
-                     coord_t2 *coord_buffer,
+                     coord_t *coord_buffer,
                      bool grid_bool[MBURST_PER_UV_OUT][NSAMP_PER_BURST]);
   
   void fill_buffer(
@@ -45,7 +45,7 @@ extern "C" {
   
   void buffer2grid(
                    int nburst_per_uv_in,
-                   coord_t2 *coord_buffer,
+                   coord_t *coord_buffer,
                    uv_t *buffer,
                    uv_t grid[MBURST_PER_UV_OUT][NSAMP_PER_BURST]
                    );
@@ -142,10 +142,15 @@ void grid(
 
   uv_t buffer[MSAMP_PER_UV_IN];
   uv_t grid[MBURST_PER_UV_OUT][NSAMP_PER_BURST];
-  coord_t2 coord_buffer[MSAMP_PER_UV_IN];
+  coord_t coord_buffer[MSAMP_PER_UV_IN];
   bool grid_bool[MBURST_PER_UV_OUT][NSAMP_PER_BURST];
   
   const int nsamp_per_burst = NSAMP_PER_BURST;
+  
+//#pragma HLS ARRAY_RESHAPE variable = grid complete dim =2
+//#pragma HLS ARRAY_RESHAPE variable = grid_bool  complete dim =2
+//#pragma HLS ARRAY_RESHAPE variable = buffer cyclic factor = nsamp_per_burst
+//#pragma HLS ARRAY_RESHAPE variable = coord_buffer cyclic factor = nsamp_per_burst
   
 #pragma HLS ARRAY_PARTITION variable = grid complete dim =2
 #pragma HLS ARRAY_PARTITION variable = grid_bool  complete dim =2
@@ -167,7 +172,7 @@ void grid(
 void read_coord(
                 int nburst_per_uv_in,
                 const burst_coord *coord,
-                coord_t2 *coord_buffer){
+                coord_t *coord_buffer){
   int i;
   int j;
   int loc;
@@ -211,7 +216,7 @@ void fill_buffer(
 
 void buffer2grid(
                  int nburst_per_uv_in,
-                 coord_t2 *coord_buffer,
+                 coord_t *coord_buffer,
                  uv_t *buffer,
                  uv_t grid[MBURST_PER_UV_OUT][NSAMP_PER_BURST]
                  ){
@@ -263,7 +268,7 @@ void stream_grid(
 void set_grid_bool(
                    int nburst_per_uv_in,
                    int nburst_per_uv_out,
-                   coord_t2 *coord_buffer,
+                   coord_t *coord_buffer,
                    bool grid_bool[MBURST_PER_UV_OUT][NSAMP_PER_BURST]){  
   int i;
   int j;

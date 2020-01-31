@@ -21,15 +21,14 @@
 //#define DATA_WIDTH     32     // We use float 32-bits complex numbers
 #define DATA_WIDTH     16       // We use ap_fixed 16-bits complex numbers
 #define MFFT_SIZE            256
-#define COORD_WIDTH1    16       // Wider than the required width, but to 2^n
-#define COORD_WIDTH2    13       // Wide enough to cover the input index range
+#define COORD_WIDTH    16       // Wider than the required width, but to 2^n
 #define BURST_WIDTH         512
 #define NSAMP_PER_BURST     (BURST_WIDTH/(2*DATA_WIDTH))
 
 #define MDM                 1024
 #define MTIME               256
 #define MSAMP_PER_UV_OUT    (MFFT_SIZE*MFFT_SIZE)    // MFFT_SIZE^2
-#define MSAMP_PER_UV_IN     3568
+#define MSAMP_PER_UV_IN     4368
 
 #define MUV                 (MDM*MTIME)
 #define MBURST_PER_UV_OUT   (MSAMP_PER_UV_OUT/NSAMP_PER_BURST)
@@ -55,11 +54,10 @@ typedef ap_int<DATA_WIDTH> uv_data_t; // The size of this should be DATA_WIDTH
 #endif
 
 typedef ap_uint<2*DATA_WIDTH> uv_t; // Use for the top-level interface
-typedef ap_uint<COORD_WIDTH1> coord_t1; // Use for the top-level interface
-typedef ap_uint<COORD_WIDTH2> coord_t2; // Use inside the kernel
+typedef ap_uint<COORD_WIDTH>  coord_t; // Use inside the kernel
 
 typedef struct burst_coord{
-  coord_t1 data[NSAMP_PER_BURST];
+  coord_t data[NSAMP_PER_BURST];
 }burst_coord; 
 
 #define MAX_PALTFORMS       16
@@ -79,7 +77,7 @@ typedef hls::stream<stream_t> stream_uv;
 
 int grid(
 	 uv_data_t *in,
-	 coord_t1 *coord,
+	 coord_t *coord,
 	 uv_data_t *out,
 	 int nuv_per_cu,
          int nsamp_per_uv_in,
@@ -89,4 +87,4 @@ int grid(
 int read_coord(
 	       char *fname,
 	       int flen,
-	       int *fdat);
+	       int *coord);

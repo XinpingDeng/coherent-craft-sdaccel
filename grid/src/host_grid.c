@@ -26,7 +26,7 @@ int main(int argc, char* argv[]){
   cl_int ntime_per_cu = 1;
   cl_int nuv_per_cu;
   cl_int fft_size = MFFT_SIZE;
-  cl_int nsamp_per_uv_in  = 3568;
+  cl_int nsamp_per_uv_in  = 4368;
   cl_int nsamp_per_uv_out;
   cl_int nburst_per_uv_in;
   cl_int nburst_per_uv_out;
@@ -57,19 +57,19 @@ int main(int argc, char* argv[]){
   uv_data_t  *in = NULL;
   uv_data_t  *sw_out = NULL;
   uv_data_t  *hw_out = NULL;
-  coord_t1 *coord = NULL;
+  coord_t *coord = NULL;
   cl_int   *coord_int = NULL;
   
   in        = (uv_data_t *)aligned_alloc(MEM_ALIGNMENT, ndata2*sizeof(uv_data_t));
   sw_out    = (uv_data_t *)aligned_alloc(MEM_ALIGNMENT, ndata3*sizeof(uv_data_t));
   hw_out    = (uv_data_t *)aligned_alloc(MEM_ALIGNMENT, ndata3*sizeof(uv_data_t));
-  coord     = (coord_t1 *)aligned_alloc(MEM_ALIGNMENT,  ndata1*sizeof(coord_t1));
+  coord     = (coord_t *)aligned_alloc(MEM_ALIGNMENT,  ndata1*sizeof(coord_t));
   coord_int = (cl_int *)aligned_alloc(MEM_ALIGNMENT,    ndata1*sizeof(cl_int));  
   
   fprintf(stdout, "INFO: %f MB memory used on host in total\n",
-	  ((ndata2 + 2*ndata3)*DATA_WIDTH + ndata1*COORD_WIDTH1)/(8*1024.*1024.));
+	  ((ndata2 + 2*ndata3)*DATA_WIDTH + ndata1*COORD_WIDTH)/(8*1024.*1024.));
   fprintf(stdout, "INFO: %f MB memory used on device in total\n",
-	  ((ndata2 + ndata3)*DATA_WIDTH + ndata1*COORD_WIDTH1)/(8*1024.*1024.));
+	  ((ndata2 + ndata3)*DATA_WIDTH + ndata1*COORD_WIDTH)/(8*1024.*1024.));
   fprintf(stdout, "INFO: %f MB memory used on device for raw input\n",
 	  ndata2*DATA_WIDTH/(8*1024.*1024.));  
   fprintf(stdout, "INFO: %f MB memory used on device for raw output\n",
@@ -83,9 +83,9 @@ int main(int argc, char* argv[]){
   for(i = 0; i < ndata2; i++){
     in[i] = (uv_data_t)(0.99*(rand()%DATA_RANGE));
   }
-  read_coord("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/grid/src/grid_coord.txt", ndata1, coord_int);
+  read_coord("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/grid/src/coord.txt", ndata1, coord_int);
   for(i = 0; i < ndata1; i++){
-    coord[i] = (coord_t1)coord_int[i];
+    coord[i] = (coord_t)coord_int[i];
     //if(coord_int[i]!=0)
     //  fprintf(stdout, "%d\n", (int)coord[i]);
   }
@@ -191,7 +191,7 @@ int main(int argc, char* argv[]){
   cl_mem pt[3];
 
   OCL_CHECK(err, buffer_in    = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uv_data_t)*ndata2, in, &err));
-  OCL_CHECK(err, buffer_coord = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(coord_t1)*ndata1, coord, &err));
+  OCL_CHECK(err, buffer_coord = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(coord_t)*ndata1, coord, &err));
   OCL_CHECK(err, buffer_out   = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uv_data_t)*ndata3, hw_out, &err));
   if (!(buffer_in&&
 	buffer_coord&&
