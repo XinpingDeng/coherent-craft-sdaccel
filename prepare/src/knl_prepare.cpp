@@ -37,8 +37,8 @@ extern "C" {
                int ntime_per_cu,
                const burst_t *in1,
                const burst_t *in2,
-               fifo_t &in_fifo1,
-               fifo_t &in_fifo2);
+               fifo_t &in1_fifo,
+               fifo_t &in2_fifo);
   
   void process(
                int nburst_per_time,
@@ -48,8 +48,8 @@ extern "C" {
                const burst_t *sky,
                burst_t *average1,
                burst_t *average2,
-               fifo_t &in_fifo1,
-               fifo_t &in_fifo2,
+               fifo_t &in1_fifo,
+               fifo_t &in2_fifo,
                fifo_t &out_fifo);
   
   void calculate_average_out(
@@ -59,10 +59,25 @@ extern "C" {
                              data_t *sky_tile,
                              data_t *average1_tile,
                              data_t *average2_tile,
-                             fifo_t &in_fifo1,
-                             fifo_t &in_fifo2,
+                             fifo_t &in1_fifo,
+                             fifo_t &in2_fifo,
                              fifo_t &out_fifo);
   
+  void reset_average(
+                     data_t *average1_tile,
+                     data_t *average2_tile);
+  
+  void set_average_out(
+                     int ntime_per_cu,
+                     data_t *cal1_tile,
+                     data_t *cal2_tile,
+                     data_t *sky_tile,
+                     data_t *average1_tile,
+                     data_t *average2_tile,
+                     fifo_t &in1_fifo,
+                     fifo_t &in2_fifo,
+                     fifo_t &out_fifo);
+    
   void write_out(
                  int nburst_per_time,
                  int ntime_per_cu,
@@ -117,11 +132,11 @@ void knl_prepare(
 #pragma HLS DATA_PACK variable = average2
 
 #pragma HLS DATAFLOW
-  static fifo_t in_fifo1;
-  static fifo_t in_fifo2;
+  static fifo_t in1_fifo;
+  static fifo_t in2_fifo;
   static fifo_t out_fifo;
-#pragma HLS STREAM variable=in_fifo1
-#pragma HLS STREAM variable=in_fifo2
+#pragma HLS STREAM variable=in1_fifo
+#pragma HLS STREAM variable=in2_fifo
 #pragma HLS STREAM variable=out_fifo
   
   read_in(
@@ -129,8 +144,8 @@ void knl_prepare(
           ntime_per_cu,
           in1,
           in2,
-          in_fifo1,
-          in_fifo2);
+          in1_fifo,
+          in2_fifo);
   
   process(
           nburst_per_time,
@@ -140,8 +155,8 @@ void knl_prepare(
           sky,
           average1,
           average2,
-          in_fifo1,
-          in_fifo2,
+          in1_fifo,
+          in2_fifo,
           out_fifo);
   
   write_out(
@@ -156,8 +171,8 @@ void read_in(
              int ntime_per_cu,
              const burst_t *in1,
              const burst_t *in2,
-             fifo_t &in_fifo1,
-             fifo_t &in_fifo2){
+             fifo_t &in1_fifo,
+             fifo_t &in2_fifo){
   
   int i;
   int j;
@@ -175,8 +190,8 @@ void read_in(
       for(m = 0; m < BURST_LENGTH; m++){
 #pragma HLS PIPELINE
         loc = j*nburst_per_time + i*BURST_LENGTH + m;
-        in_fifo1.write(in1[loc]);
-        in_fifo2.write(in2[loc]);
+        in1_fifo.write(in1[loc]);
+        in2_fifo.write(in2[loc]);
       }
     }
   }
@@ -190,8 +205,8 @@ void process(
              const burst_t *sky,
              burst_t *average1,
              burst_t *average2,
-             fifo_t &in_fifo1,
-             fifo_t &in_fifo2,
+             fifo_t &in1_fifo,
+             fifo_t &in2_fifo,
              fifo_t &out_fifo){
 
   int i;
@@ -209,17 +224,17 @@ void process(
   data_t cal2_tile[2*TILE_WIDTH];
   data_t sky_tile[2*TILE_WIDTH];
   const int ndata_per_burst = 2*NSAMP_PER_BURST;
-//#pragma HLS ARRAY_RESHAPE variable=sky_tile  cyclic factor=ndata_per_burst
-//#pragma HLS ARRAY_RESHAPE variable=cal1_tile cyclic factor=ndata_per_burst
-//#pragma HLS ARRAY_RESHAPE variable=cal2_tile cyclic factor=ndata_per_burst
-//#pragma HLS ARRAY_RESHAPE variable=average1_tile cyclic factor=ndata_per_burst
-//#pragma HLS ARRAY_RESHAPE variable=average2_tile cyclic factor=ndata_per_burst
+#pragma HLS ARRAY_RESHAPE variable=sky_tile  cyclic factor=ndata_per_burst
+#pragma HLS ARRAY_RESHAPE variable=cal1_tile cyclic factor=ndata_per_burst
+#pragma HLS ARRAY_RESHAPE variable=cal2_tile cyclic factor=ndata_per_burst
+#pragma HLS ARRAY_RESHAPE variable=average1_tile cyclic factor=ndata_per_burst
+#pragma HLS ARRAY_RESHAPE variable=average2_tile cyclic factor=ndata_per_burst
 
-#pragma HLS ARRAY_PARTITION variable=sky_tile  cyclic  factor=ndata_per_burst
-#pragma HLS ARRAY_PARTITION variable=cal1_tile cyclic factor=ndata_per_burst
-#pragma HLS ARRAY_PARTITION variable=cal2_tile cyclic factor=ndata_per_burst
-#pragma HLS ARRAY_PARTITION variable=average1_tile cyclic factor=ndata_per_burst
-#pragma HLS ARRAY_PARTITION variable=average2_tile cyclic factor=ndata_per_burst
+//#pragma HLS ARRAY_PARTITION variable=sky_tile  cyclic  factor=ndata_per_burst
+//#pragma HLS ARRAY_PARTITION variable=cal1_tile cyclic factor=ndata_per_burst
+//#pragma HLS ARRAY_PARTITION variable=cal2_tile cyclic factor=ndata_per_burst
+//#pragma HLS ARRAY_PARTITION variable=average1_tile cyclic factor=ndata_per_burst
+//#pragma HLS ARRAY_PARTITION variable=average2_tile cyclic factor=ndata_per_burst
   
   const int mtime_per_cu    = MTIME_PER_CU;
   const int mtran_per_time  = MCHAN*MBASELINE/TILE_WIDTH;
@@ -229,7 +244,7 @@ void process(
 #pragma HLS LOOP_TRIPCOUNT  max=mtran_per_time
 #pragma HLS DATAFLOW
     initialize_prepare(i, cal1, cal2, sky, cal1_tile, cal2_tile, sky_tile);
-    calculate_average_out(ntime_per_cu, cal1_tile, cal2_tile, sky_tile, average1_tile, average2_tile, in_fifo1, in_fifo2, out_fifo);
+    calculate_average_out(ntime_per_cu, cal1_tile, cal2_tile, sky_tile, average1_tile, average2_tile, in1_fifo, in2_fifo, out_fifo);
     write_average(i, average1_tile, average2_tile, average1, average2);        
   }  
 }
@@ -309,7 +324,7 @@ void write_average(
     for(n = 0; n < 2*NSAMP_PER_BURST; n++){
       loc = 2*m*NSAMP_PER_BURST+n;
       average1_burst.data[n] = average1_tile[loc];
-      average2_burst.data[n] = average1_tile[loc];
+      average2_burst.data[n] = average2_tile[loc];
     }
     loc_burst = tran*BURST_LENGTH + m;
     average1[loc_burst] = average1_burst;
@@ -324,18 +339,19 @@ void calculate_average_out(
                            data_t *sky_tile,
                            data_t *average1_tile,
                            data_t *average2_tile,
-                           fifo_t &in_fifo1,
-                           fifo_t &in_fifo2,
+                           fifo_t &in1_fifo,
+                           fifo_t &in2_fifo,
                            fifo_t &out_fifo){
-  int j;
+  reset_average(average1_tile, average2_tile);
+  set_average_out(ntime_per_cu, cal1_tile, cal2_tile, sky_tile, average1_tile, average2_tile, in1_fifo, in2_fifo, out_fifo);
+}
+
+void reset_average(
+                   data_t *average1_tile,
+                   data_t *average2_tile){
   int m;
   int n;
   int loc;
-  
-  burst_t in1_burst;
-  burst_t in2_burst;
-  burst_t out_burst;
-  const int mtime_per_cu = MTIME_PER_CU;
   
  loop_reset_average:
   for(m = 0; m < BURST_LENGTH; m++){
@@ -346,24 +362,44 @@ void calculate_average_out(
       average2_tile[loc] = 0;    
     }	  
   }
+}
+
+void set_average_out(
+                     int ntime_per_cu,
+                     data_t *cal1_tile,
+                     data_t *cal2_tile,
+                     data_t *sky_tile,
+                     data_t *average1_tile,
+                     data_t *average2_tile,
+                     fifo_t &in1_fifo,
+                     fifo_t &in2_fifo,
+                     fifo_t &out_fifo){
+  int j;
+  int m;
+  int n;
+  int loc;
   
-  
+  burst_t in1_burst;
+  burst_t in2_burst;
+  burst_t out_burst;
+  const int mtime_per_cu = MTIME_PER_CU;
+
   for(j = 0; j < ntime_per_cu; j++){
 #pragma HLS LOOP_TRIPCOUNT max=mtime_per_cu
   loop_process:
     for(m = 0; m < BURST_LENGTH; m++){
 #pragma HLS PIPELINE
-      in1_burst = in_fifo1.read();
-      in2_burst = in_fifo2.read();
-        
-      for(n = 0; n < 2*NSAMP_PER_BURST; n++){
-        loc = 2*m*NSAMP_PER_BURST+n;
-        average1_tile[loc] += in1_burst.data[n];
-        average2_tile[loc] += in2_burst.data[n];
-      }  
+      in1_burst = in1_fifo.read();
+      in2_burst = in2_fifo.read();
       
       for(n = 0; n < NSAMP_PER_BURST; n++){
         loc = 2*m*NSAMP_PER_BURST+2*n;
+        
+        average1_tile[loc]   += in1_burst.data[2*n];
+        average2_tile[loc]   += in2_burst.data[2*n];
+        average1_tile[loc+1] += in1_burst.data[2*n+1];
+        average2_tile[loc+1] += in2_burst.data[2*n+1];
+        
         out_burst.data[2*n] = in1_burst.data[2*n]*cal1_tile[loc] - in1_burst.data[2*n+1]*cal1_tile[loc+1] + 
           in2_burst.data[2*n]*cal2_tile[loc] - in2_burst.data[2*n+1]*cal2_tile[loc+1] - 
           sky_tile[loc];          
