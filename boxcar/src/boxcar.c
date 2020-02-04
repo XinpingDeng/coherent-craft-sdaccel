@@ -8,23 +8,23 @@
 #include "util_sdaccel.h"
 
 int boxcar(
-	   const core_t *in,
-	   core_t *out1,
-	   core_t *out2,
-	   core_t *out3,
-	   core_t *out4,
-	   core_t *out5,
-	   core_t *out6,
-	   core_t *out7,
-	   core_t *out8,
-	   core_t *out9,
-	   core_t *out10,
-	   core_t *out11,
-	   core_t *out12,
-	   core_t *out13,
-	   core_t *out14,
-	   core_t *out15,
-	   core_t *out16,
+	   const data_t *in,
+	   data_t *out1,
+	   data_t *out2,
+	   data_t *out3,
+	   data_t *out4,
+	   data_t *out5,
+	   data_t *out6,
+	   data_t *out7,
+	   data_t *out8,
+	   data_t *out9,
+	   data_t *out10,
+	   data_t *out11,
+	   data_t *out12,
+	   data_t *out13,
+	   data_t *out14,
+	   data_t *out15,
+	   data_t *out16,
 	   int ndm,
 	   int ntime
 	   ){
@@ -93,15 +93,15 @@ int boxcar(
 }
 
 
-core_t do_boxcar(
-		 const core_t *in,
+data_t do_boxcar(
+		 const data_t *in,
 		 int dm,
 		 int samp_in_img,
 		 int ntime,
 		 int boxcar,
-		 core_t *out){
-  core_t result;
-  core_t previous;
+		 data_t *out){
+  data_t result;
+  data_t previous;
   int i;
   long loc_out;
   long loc_in;

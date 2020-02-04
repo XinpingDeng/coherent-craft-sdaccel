@@ -33,32 +33,32 @@ int main(int argc, char* argv[]){
   }
   ndata0 = ndm*(uint64_t)NSAMP_PER_IMG*ntime;
   
-  core_t *in      = NULL;
-  core_t **sw_out = NULL;
-  core_t **hw_out = NULL;  
-  in = (core_t *)aligned_alloc(MEM_ALIGNMENT, ndata0*sizeof(core_t));
-  sw_out = (core_t **)calloc(NBOXCAR, sizeof(core_t*));
-  hw_out = (core_t **)calloc(NBOXCAR, sizeof(core_t*));
+  data_t *in      = NULL;
+  data_t **sw_out = NULL;
+  data_t **hw_out = NULL;  
+  in = (data_t *)aligned_alloc(MEM_ALIGNMENT, ndata0*sizeof(data_t));
+  sw_out = (data_t **)calloc(NBOXCAR, sizeof(data_t*));
+  hw_out = (data_t **)calloc(NBOXCAR, sizeof(data_t*));
   for(i = 0; i < NBOXCAR; i++){
     ndata[i] = ndm*(uint64_t)NSAMP_PER_IMG*(ntime-i);
-    sw_out[i] = (core_t *)aligned_alloc(MEM_ALIGNMENT, ndata0*sizeof(core_t));
-    hw_out[i] = (core_t *)aligned_alloc(MEM_ALIGNMENT, ndata0*sizeof(core_t));
-    memset(sw_out[i], 0x00, ndata0*sizeof(core_t));
-    memset(hw_out[i], 0x00, ndata0*sizeof(core_t));
+    sw_out[i] = (data_t *)aligned_alloc(MEM_ALIGNMENT, ndata0*sizeof(data_t));
+    hw_out[i] = (data_t *)aligned_alloc(MEM_ALIGNMENT, ndata0*sizeof(data_t));
+    memset(sw_out[i], 0x00, ndata0*sizeof(data_t));
+    memset(hw_out[i], 0x00, ndata0*sizeof(data_t));
   }    
   fprintf(stdout, "INFO: %f MB memory used on host in total\n",
-	  (2*NBOXCAR+1)*ndata0*CORE_DATA_WIDTH/(8*1024.*1024.));
+	  (2*NBOXCAR+1)*ndata0*DATA_WIDTH/(8*1024.*1024.));
   fprintf(stdout, "INFO: %f MB memory used on device in total\n",
-	  (NBOXCAR+1)*ndata0*CORE_DATA_WIDTH/(8*1024.*1024.));
+	  (NBOXCAR+1)*ndata0*DATA_WIDTH/(8*1024.*1024.));
   fprintf(stdout, "INFO: %f MB memory used on device for raw input\n",
-	  ndata0*CORE_DATA_WIDTH/(8*1024.*1024.));  
+	  ndata0*DATA_WIDTH/(8*1024.*1024.));  
   fprintf(stdout, "INFO: %f MB memory used on device for raw output\n",
-	  ndata0*NBOXCAR*CORE_DATA_WIDTH/(8*1024.*1024.));  
+	  ndata0*NBOXCAR*DATA_WIDTH/(8*1024.*1024.));  
   
   // Prepare input
   srand(time(NULL));
   for(j = 0; j < ndata0; j++){
-    in[j] = (core_t)(0.99*(rand()%DATA_RANGE));
+    in[j] = (data_t)(0.99*(rand()%DATA_RANGE));
   }
   
   // Calculate on host
@@ -160,10 +160,10 @@ int main(int argc, char* argv[]){
   cl_mem buffer_out[NBOXCAR];
   cl_mem pt[NBOXCAR+1];
   status = 1;
-  OCL_CHECK(err, buffer_in   = clCreateBuffer(context, CL_MEM_READ_ONLY  | CL_MEM_USE_HOST_PTR, sizeof(core_t)*ndata0, in, &err));
+  OCL_CHECK(err, buffer_in   = clCreateBuffer(context, CL_MEM_READ_ONLY  | CL_MEM_USE_HOST_PTR, sizeof(data_t)*ndata0, in, &err));
   status = status && buffer_in;
   for(i = 0; i < NBOXCAR; i++){
-    OCL_CHECK(err, buffer_out[i] = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR, sizeof(core_t)*ndata0, hw_out[i], &err));
+    OCL_CHECK(err, buffer_out[i] = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR, sizeof(data_t)*ndata0, hw_out[i], &err));
     status = status && hw_out[i];
   }
   if (!status) {

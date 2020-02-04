@@ -17,33 +17,31 @@
 #include <inttypes.h>
 
 #define NBOXCAR             16
-#define FLOAT_DATA_TYPE     1
-//#define CORE_DATA_WIDTH     32     // We use float 32-bits real numbers
-#define CORE_DATA_WIDTH     8       // We use ap_fixed 8-bits real numbers
+#define FLOAT     1
+//#define DATA_WIDTH     32     // We use float 32-bits real numbers
+#define DATA_WIDTH     8       // We use ap_fixed 8-bits real numbers
 #define NSAMP_PER_IMG       65536    // 256^2
-#define MAX_BURST_LENGTH    64
+#define BURST_LENGTH    64
+#define BURST_WIDTH     512
+#define NSAMP_PER_BURST (BURST_WIDTH/DATA_WIDTH)
+#define NBURST_PER_IMG  (NSAMP_PER_IMG/NSAMP_PER_BURST)
 
-#if CORE_DATA_WIDTH == 32
-#define COMPUTE_DATA_WIDTH  64     // (2*CORE_DATA_WIDTH), complex 
+#define INTEGER_WIDTH       (DATA_WIDTH/2)      // Integer width of data
+
+#if DATA_WIDTH == 32
 #define DATA_RANGE          4096
-#define NSAMP_PER_BURST     16
-#define NBURST_PER_IMG      4096   // NSAMP_PER_IMG_OUT/NSAMP_PER_BURST
-#if FLOAT_DATA_TYPE == 1
-typedef float core_t;
+#if FLOAT == 1
+typedef float data_t;
 #else
-typedef int core_t;
+typedef int data_t;
 #endif
 
-#elif CORE_DATA_WIDTH == 8
-#define COMPUTE_DATA_WIDTH  16     // (2*CORE_DATA_WIDTH), complex 
+#elif DATA_WIDTH == 8
 #define DATA_RANGE          10     // Careful with the range *****
-#define NSAMP_PER_BURST     64
-#define NBURST_PER_IMG      1024   // NSAMP_PER_IMG_OUT/NSAMP_PER_BURST
-#if FLOAT_DATA_TYPE == 1
-#define INTEGER_WIDTH       6      // Integer width of data
-typedef ap_fixed<CORE_DATA_WIDTH, INTEGER_WIDTH> core_t; // The size of this should be CORE_DATA_WIDTH
+#if FLOAT == 1
+typedef ap_fixed<DATA_WIDTH, INTEGER_WIDTH> data_t; // The size of this should be DATA_WIDTH
 #else
-typedef ap_int<CORE_DATA_WIDTH> core_t; // The size of this should be CORE_DATA_WIDTH
+typedef ap_int<DATA_WIDTH> data_t; // The size of this should be DATA_WIDTH
 #endif
 #endif
 
@@ -54,37 +52,38 @@ typedef ap_int<CORE_DATA_WIDTH> core_t; // The size of this should be CORE_DATA_
 #define LINE_LENGTH         4096
 
 typedef struct burst_t{
-  core_t data[NSAMP_PER_BURST];
+  data_t data[NSAMP_PER_BURST];
 }burst_t; // The size of this should be 512; BURST_DATA_WIDTH
 
-//typedef hls::stream<burst_t> stream_t;
+typedef hls::stream<burst_t> fifo_burst_t;
+typedef hls::stream<data_t> fifo_data_t;
 
 int boxcar(
-	   const core_t *in,
-	   core_t *out1,
-	   core_t *out2,
-	   core_t *out3,
-	   core_t *out4,
-	   core_t *out5,
-	   core_t *out6,
-	   core_t *out7,
-	   core_t *out8,
-	   core_t *out9,
-	   core_t *out10,
-	   core_t *out11,
-	   core_t *out12,
-	   core_t *out13,
-	   core_t *out14,
-	   core_t *out15,
-	   core_t *out16,
+	   const data_t *in,
+	   data_t *out1,
+	   data_t *out2,
+	   data_t *out3,
+	   data_t *out4,
+	   data_t *out5,
+	   data_t *out6,
+	   data_t *out7,
+	   data_t *out8,
+	   data_t *out9,
+	   data_t *out10,
+	   data_t *out11,
+	   data_t *out12,
+	   data_t *out13,
+	   data_t *out14,
+	   data_t *out15,
+	   data_t *out16,
 	   int ndm,
 	   int ntime
 	   );
 
-core_t do_boxcar(
-		 const core_t *in,
+data_t do_boxcar(
+		 const data_t *in,
 		 int dm,
 		 int samp_in_img,
 		 int ntime,
 		 int boxcar,
-		 core_t *out);
+		 data_t *out);
