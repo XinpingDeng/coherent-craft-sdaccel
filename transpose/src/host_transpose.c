@@ -53,16 +53,12 @@ int main(int argc, char* argv[]){
   ndata3 = 2*ntime_per_cu*ndm_per_cu*(uint64_t)nsamp_per_uv_out;
   
   uv_data_t *in = NULL;
-  coord_t1 *coord = NULL;
   uv_data_t *sw_out = NULL;
   uv_data_t *hw_out = NULL;
-  cl_int *coord_int = NULL;
   
   in        = (uv_data_t *)aligned_alloc(MEM_ALIGNMENT, ndata2*sizeof(uv_data_t));
-  coord     = (coord_t1 *) aligned_alloc(MEM_ALIGNMENT, ndata1*sizeof(coord_t1));
   sw_out    = (uv_data_t *)aligned_alloc(MEM_ALIGNMENT, ndata3*sizeof(uv_data_t));
   hw_out    = (uv_data_t *)aligned_alloc(MEM_ALIGNMENT, ndata3*sizeof(uv_data_t));
-  coord_int = (cl_int *)   aligned_alloc(MEM_ALIGNMENT, ndata1*sizeof(cl_int));  
   
   fprintf(stdout, "INFO: %f MB memory used on host in total\n",
 	  ((ndata2 + 2*ndata3)*DATA_WIDTH + ndata1*COORD_WIDTH1)/(8*1024.*1024.));
@@ -87,11 +83,6 @@ int main(int argc, char* argv[]){
   for(i = 0; i < ndata2; i++){
     in[i] = (uv_data_t)(0.99*(rand()%DATA_RANGE));
   }
-  sprintf(fname, "%s/transpose_start.txt", current_dir);
-  read_coord(fname, nsamp_per_uv_out, coord_int);
-  for(i = 0; i < ndata1; i++){
-    coord[i] = (coord_t1)coord_int[i];
-  }
   memset(sw_out, 0x00, ndata3*sizeof(uv_data_t));
   memset(hw_out, 0x00, ndata3*sizeof(uv_data_t));
   
@@ -100,7 +91,7 @@ int main(int argc, char* argv[]){
   struct timespec host_start;
   struct timespec host_finish;
   clock_gettime(CLOCK_REALTIME, &host_start);
-  transpose(in, coord, sw_out, nsamp_per_uv_out, ntime_per_cu, ndm_per_cu);
+  transpose(in, sw_out, nsamp_per_uv_out, ntime_per_cu, ndm_per_cu);
   fprintf(stdout, "INFO: DONE HOST EXECUTION\n");
   clock_gettime(CLOCK_REALTIME, &host_finish);
   cpu_elapsed_time = (host_finish.tv_sec - host_start.tv_sec) + (host_finish.tv_nsec - host_start.tv_nsec)/1.0E9L;
@@ -187,15 +178,12 @@ int main(int argc, char* argv[]){
 
   // Prepare device buffer
   cl_mem buffer_in;
-  cl_mem buffer_coord;
   cl_mem buffer_out;
-  cl_mem pt[3];
+  cl_mem pt[2];
 
   OCL_CHECK(err, buffer_in    = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uv_data_t)*ndata2, in, &err));
-  OCL_CHECK(err, buffer_coord = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(coord_t1)*ndata1, coord, &err));
   OCL_CHECK(err, buffer_out   = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uv_data_t)*ndata3, hw_out, &err));
   if (!(buffer_in&&
-	buffer_coord&&
 	buffer_out
 	)) {
     fprintf(stderr, "ERROR: Failed to allocate device memory!\n");
@@ -207,20 +195,18 @@ int main(int argc, char* argv[]){
   // Setup kernel arguments
   // To use multiple banks, this has to be before any enqueue options (e.g., clEnqueueMigrateMemObjects)
   pt[0] = buffer_in;
-  pt[1] = buffer_coord;
-  pt[2] = buffer_out;
+  pt[1] = buffer_out;
 
   OCL_CHECK(err, err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &buffer_in));
-  OCL_CHECK(err, err = clSetKernelArg(kernel, 1, sizeof(cl_mem), &buffer_coord)); 
-  OCL_CHECK(err, err = clSetKernelArg(kernel, 2, sizeof(cl_mem), &buffer_out));
-  OCL_CHECK(err, err = clSetKernelArg(kernel, 3, sizeof(cl_int), &nburst_per_uv_out));
-  OCL_CHECK(err, err = clSetKernelArg(kernel, 4, sizeof(cl_int), &ntime_per_cu));
-  OCL_CHECK(err, err = clSetKernelArg(kernel, 5, sizeof(cl_int), &nburst_dm));
+  OCL_CHECK(err, err = clSetKernelArg(kernel, 1, sizeof(cl_mem), &buffer_out));
+  OCL_CHECK(err, err = clSetKernelArg(kernel, 2, sizeof(cl_int), &nburst_per_uv_out));
+  OCL_CHECK(err, err = clSetKernelArg(kernel, 3, sizeof(cl_int), &ntime_per_cu));
+  OCL_CHECK(err, err = clSetKernelArg(kernel, 4, sizeof(cl_int), &nburst_dm));
   
   fprintf(stdout, "INFO: DONE SETUP KERNEL\n");
 
   // Migrate host memory to device
-  cl_int inputs = 2;
+  cl_int inputs = 1;
   OCL_CHECK(err, err = clEnqueueMigrateMemObjects(queue, inputs, pt, 0 ,0,NULL, NULL));
   OCL_CHECK(err, err = clFinish(queue));
   fprintf(stdout, "INFO: DONE MEMCPY FROM HOST TO KERNEL\n");
@@ -238,7 +224,7 @@ int main(int argc, char* argv[]){
 
   // Migrate data from device to host
   cl_int outputs = 1;
-  OCL_CHECK(err, err = clEnqueueMigrateMemObjects(queue, outputs, &pt[2], CL_MIGRATE_MEM_OBJECT_HOST, 0, NULL, NULL));
+  OCL_CHECK(err, err = clEnqueueMigrateMemObjects(queue, outputs, &pt[1], CL_MIGRATE_MEM_OBJECT_HOST, 0, NULL, NULL));
   OCL_CHECK(err, err = clFinish(queue));
   fprintf(stdout, "INFO: DONE MEMCPY FROM KERNEL TO HOST\n");
 
@@ -249,18 +235,6 @@ int main(int argc, char* argv[]){
       fprintf(fp, "ERROR: Test failed %d (%f %f) (%f %f)\n", i, sw_out[2*i].to_float(), sw_out[2*i+1].to_float(), hw_out[2*i].to_float(), hw_out[2*i+1].to_float());
     }
   }
-  /*
-  for(i=0;i<ndata3/2;i++){
-    if((sw_out[2*i] != hw_out[2*i])||(sw_out[2*i+1] != hw_out[2*i+1])){
-      fprintf(fp, "%d\n", i);
-    }
-  }for(i=0;i<ndata3/2;i++){
-    if((sw_out[2*i] != hw_out[2*i])||(sw_out[2*i+1] != hw_out[2*i+1])){
-      fprintf(fp, "ERROR ");
-    }
-    fprintf(fp, "%d (%f %f) (%f %f)\n", i, sw_out[2*i].to_float(), sw_out[2*i+1].to_float(), hw_out[2*i].to_float(), hw_out[2*i+1].to_float());
-  }
-  */
   
   fclose(fp);
   
@@ -271,14 +245,11 @@ int main(int argc, char* argv[]){
   
   // Cleanup
   clReleaseMemObject(buffer_in);
-  clReleaseMemObject(buffer_coord);
   clReleaseMemObject(buffer_out);
   
   free(in);
-  free(coord);
   free(sw_out);
   free(hw_out);
-  free(coord_int);
   clReleaseProgram(program);
   clReleaseKernel(kernel);
   clReleaseCommandQueue(queue);

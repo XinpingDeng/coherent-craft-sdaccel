@@ -81,14 +81,8 @@ typedef struct burst_uv{
 
 typedef hls::stream<burst_uv> fifo_uv;
 
-int read_coord(
-	       char *fname,
-	       int flen,
-	       int *fdat);
-
 int transpose(
               uv_data_t *in,
-              coord_t1 *coord,
               uv_data_t *out,
               int nsamp_per_uv_out,
               int ntime_per_cu,

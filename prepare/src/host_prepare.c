@@ -263,12 +263,12 @@ int main(int argc, char* argv[]){
   data_t res = 1.0E-2;
   for(i=0;i<ndata1;i++){
     if(fabs(sw_average_pol1[i]-hw_average_pol1[i]) > fabs(sw_average_pol1[i]*res)){
-      if(sw_average_pol1[i]!=0){
-	fprintf(stdout, "INFO: Mismatch on AVERAGE_POL1: %d\t%f\t%f\t%.0f\n", i, (float)sw_average_pol1[i], (float)hw_average_pol1[i], 100.0*fabs((sw_average_pol1[i]-hw_average_pol1[i])/sw_average_pol1[i]));
-      }
-      else{
-	fprintf(stdout, "INFO: Mismatch on AVERAGE_POL1: %d\t%f\t%f\n", i, (float)sw_average_pol1[i], (float)hw_average_pol1[i]);
-      }
+      //if(sw_average_pol1[i]!=0){
+      //  fprintf(stdout, "INFO: Mismatch on AVERAGE_POL1: %d\t%f\t%f\t%.0f\n", i, (float)sw_average_pol1[i], (float)hw_average_pol1[i], 100.0*fabs((sw_average_pol1[i]-hw_average_pol1[i])/sw_average_pol1[i]));
+      //}
+      //else{
+      //  fprintf(stdout, "INFO: Mismatch on AVERAGE_POL1: %d\t%f\t%f\n", i, (float)sw_average_pol1[i], (float)hw_average_pol1[i]);
+      //}
       ndata3++;
     }
   }
@@ -276,30 +276,29 @@ int main(int argc, char* argv[]){
   ndata3 = 0;
   for(i=0;i<ndata1;i++){
     if(fabs(sw_average_pol2[i]-hw_average_pol2[i]) > fabs(sw_average_pol2[i]*res)){
-      if(sw_average_pol2[i]!=0){
-	fprintf(stdout, "INFO: Mismatch on AVERAGE_POL2: %d\t%f\t%f\t%.0f\n", i, (float)sw_average_pol2[i], (float)hw_average_pol2[i], 100.0*fabs((sw_average_pol2[i]-hw_average_pol2[i])/sw_average_pol2[i]));
-      }
-      else{
-	fprintf(stdout, "INFO: Mismatch on AVERAGE_POL2: %d\t%f\t%f\n", i, (float)sw_average_pol2[i], (float)hw_average_pol2[i]);
-      }
+      //if(sw_average_pol2[i]!=0){
+      //  fprintf(stdout, "INFO: Mismatch on AVERAGE_POL2: %d\t%f\t%f\t%.0f\n", i, (float)sw_average_pol2[i], (float)hw_average_pol2[i], 100.0*fabs((sw_average_pol2[i]-hw_average_pol2[i])/sw_average_pol2[i]));
+      //}
+      //else{
+      //  fprintf(stdout, "INFO: Mismatch on AVERAGE_POL2: %d\t%f\t%f\n", i, (float)sw_average_pol2[i], (float)hw_average_pol2[i]);
+      //}
       ndata3++;
     }
   }
-  fprintf(stdout, "%f\n", sw_average_pol2[i].to_float());
   
   fprintf(stdout, "INFO: %d from %d, %.0f%% of AVERAGE_POL2 is outside %.0f%% range\n", ndata3, ndata1, 100*ndata3/(float)ndata1, 100*(float)res);
-  //ndata3 = 0;
-  //for(i=0;i<ndata2;i++){
-  //  if(fabs(sw_out[i]-hw_out[i]) > fabs(sw_out[i]*res)){
-  //    if(sw_out[i]!=0){
-  //      fprintf(stdout, "INFO: Mismatch on OUT: %d\t%f\t%f\t%.0f\n", i, (float)sw_out[i], (float)hw_out[i], 100.0*fabs((sw_out[i]-hw_out[i])/sw_out[i]));
-  //    }
-  //    else{
-  //      fprintf(stdout, "INFO: Mismatch on OUT: %d\t%f\t%f\n", i, (float)sw_out[i], (float)hw_out[i]);
-  //    }
-  //    ndata3++;
-  //  }
-  //}
+  ndata3 = 0;
+  for(i=0;i<ndata2;i++){
+    if(fabs(sw_out[i]-hw_out[i]) > fabs(sw_out[i]*res)){
+      //if(sw_out[i]!=0){
+      //  fprintf(stdout, "INFO: Mismatch on OUT: %d\t%f\t%f\t%.0f\n", i, (float)sw_out[i], (float)hw_out[i], 100.0*fabs((sw_out[i]-hw_out[i])/sw_out[i]));
+      //}
+      //else{
+      //  fprintf(stdout, "INFO: Mismatch on OUT: %d\t%f\t%f\n", i, (float)sw_out[i], (float)hw_out[i]);
+      //}
+      ndata3++;
+    }
+  }
   fprintf(stdout, "INFO: %d from %d, %.0f%% of OUT is outside %.0f%% range\n", ndata3, ndata2, 100*ndata3/(float)ndata2, 100*(float)res);
   
   fprintf(stdout, "INFO: DONE RESULT CHECK\n");

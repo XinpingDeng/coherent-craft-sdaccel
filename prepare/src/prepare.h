@@ -18,10 +18,10 @@
 
 //#define FLOAT          1
 //#define DATA_WIDTH     32     // We use float 32-bits complex numbers
-//#define FLOAT          1
-//#define DATA_WIDTH     16     // We use ap_fixed 16-bits complex numbers
 #define FLOAT          1
-#define DATA_WIDTH     8      // We use ap_fixed 8-bits complex numbers
+#define DATA_WIDTH     16     // We use ap_fixed 16-bits complex numbers
+//#define FLOAT          1
+//#define DATA_WIDTH     8      // We use ap_fixed 8-bits complex numbers
 #define MTIME_PER_CU   256
 #define MCHAN          288
 #define MBASELINE      435
@@ -51,7 +51,7 @@ typedef ap_int<DATA_WIDTH> data_t; // The size of this should be DATA_WIDTH
 #endif
 
 #elif DATA_WIDTH == 8
-#define DATA_RANGE          1
+#define DATA_RANGE          2
 #if FLOAT == 1
 typedef ap_fixed<DATA_WIDTH, INTEGER_WIDTH> data_t; // The size of this should be DATA_WIDTH
 #else

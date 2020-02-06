@@ -166,6 +166,7 @@ void grid(
     fill_buffer(in_fifo, nburst_per_uv_in, buffer);
     buffer2grid(nburst_per_uv_in, coord_buffer, buffer, grid);
     stream_grid(grid, nburst_per_uv_out, grid_bool, out_stream);
+    fprintf(stdout, "HERE\t%d\n", i);
   }
 }
 
