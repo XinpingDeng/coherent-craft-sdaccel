@@ -33,13 +33,13 @@ int main(int argc, char* argv[]){
   cl_int nburst_per_uv_out;
   
   if(is_hw_emulation()){
-    ndm          = 1;
-    ntime_per_cu = 1;
+    ndm          = 2;
+    ntime_per_cu = 2;
     fft_size     = 256;
   }
   if(is_sw_emulation()){
-    ndm          = 1;
-    ntime_per_cu = 1;
+    ndm          = 2;
+    ntime_per_cu = 2;
     fft_size     = 256;
   }
   nuv_per_cu = ntime_per_cu*ndm;
@@ -49,7 +49,6 @@ int main(int argc, char* argv[]){
   nsamp_per_uv_out  = nsamp_per_uv_out - nsamp_per_uv_out%NSAMP_PER_BURST;
   nburst_per_uv_in  = nsamp_per_uv_in/NSAMP_PER_BURST;
   nburst_per_uv_out = nsamp_per_uv_out/NSAMP_PER_BURST;
-  //fprintf(stdout, "%d\t%d\n", nburst_per_uv_in, nburst_per_uv_out);
 
   ndata1 = nsamp_per_uv_in;
   ndata2 = nsamp_per_uv_out;
