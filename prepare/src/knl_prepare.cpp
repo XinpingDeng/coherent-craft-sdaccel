@@ -99,14 +99,15 @@ void knl_prepare(
 		 )
 {
   // Setup the interface, max_*_burst_length defines the max burst length (UG902 for detail)
-#pragma HLS INTERFACE m_axi port = in1      offset = slave bundle = gmem0 max_read_burst_length=64  
-#pragma HLS INTERFACE m_axi port = in2      offset = slave bundle = gmem1 max_read_burst_length=64  
-#pragma HLS INTERFACE m_axi port = cal1     offset = slave bundle = gmem2 max_read_burst_length=64  
-#pragma HLS INTERFACE m_axi port = cal2     offset = slave bundle = gmem3 max_read_burst_length=64  
-#pragma HLS INTERFACE m_axi port = sky      offset = slave bundle = gmem4 max_read_burst_length=64  
-#pragma HLS INTERFACE m_axi port = out      offset = slave bundle = gmem5 max_write_burst_length=64
-#pragma HLS INTERFACE m_axi port = average1 offset = slave bundle = gmem6 max_write_burst_length=64
-#pragma HLS INTERFACE m_axi port = average2 offset = slave bundle = gmem7 max_write_burst_length=64
+  const int burst_length = BURST_WIDTH;
+#pragma HLS INTERFACE m_axi port = in1      offset = slave bundle = gmem0 max_read_burst_length=burst_length  
+#pragma HLS INTERFACE m_axi port = in2      offset = slave bundle = gmem1 max_read_burst_length=burst_length  
+#pragma HLS INTERFACE m_axi port = cal1     offset = slave bundle = gmem2 max_read_burst_length=burst_length  
+#pragma HLS INTERFACE m_axi port = cal2     offset = slave bundle = gmem3 max_read_burst_length=burst_length  
+#pragma HLS INTERFACE m_axi port = sky      offset = slave bundle = gmem4 max_read_burst_length=burst_length  
+#pragma HLS INTERFACE m_axi port = out      offset = slave bundle = gmem5 max_write_burst_length=burst_length
+#pragma HLS INTERFACE m_axi port = average1 offset = slave bundle = gmem6 max_write_burst_length=burst_length
+#pragma HLS INTERFACE m_axi port = average2 offset = slave bundle = gmem7 max_write_burst_length=burst_length
 
 #pragma HLS INTERFACE s_axilite port = in1         bundle = control
 #pragma HLS INTERFACE s_axilite port = in2         bundle = control

@@ -53,6 +53,7 @@ int read_coord(char *fname, int flen, int *coord){
     fprintf(stderr, "ERROR: Test failed ...!\n");
     exit(EXIT_FAILURE);
   }
+  
   for(i = 0; i < flen; i++){
     fgets(line, LINE_LENGTH, fp);
     sscanf(line, "%d\t%d", &coord_i, &coord_j);

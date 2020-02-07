@@ -23,6 +23,7 @@
 #define MFFT_SIZE            256
 #define COORD_WIDTH    16       // Wider than the required width, but to 2^n
 #define BURST_WIDTH         512
+#define BURST_LENGTH   16
 #define NSAMP_PER_BURST     (BURST_WIDTH/(2*DATA_WIDTH))
 
 #define MDM                 1024

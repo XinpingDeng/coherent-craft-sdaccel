@@ -21,6 +21,7 @@ int main(int argc, char* argv[]){
   uint64_t ndata1;
   uint64_t ndata2;
   uint64_t ndata3;
+  uint64_t ndata4;
   cl_int ndm          = 1024;
   //cl_int ntime_per_cu = 256;
   cl_int ntime_per_cu = 1;
@@ -49,10 +50,11 @@ int main(int argc, char* argv[]){
   nburst_per_uv_in  = nsamp_per_uv_in/NSAMP_PER_BURST;
   nburst_per_uv_out = nsamp_per_uv_out/NSAMP_PER_BURST;
   //fprintf(stdout, "%d\t%d\n", nburst_per_uv_in, nburst_per_uv_out);
-  
-  ndata1 = nsamp_per_uv_out;
-  ndata2 = 2*nuv_per_cu*(uint64_t)nsamp_per_uv_in;
-  ndata3 = 2*nuv_per_cu*(uint64_t)nsamp_per_uv_out;
+
+  ndata1 = nsamp_per_uv_in;
+  ndata2 = nsamp_per_uv_out;
+  ndata3 = 2*nuv_per_cu*ndata1;
+  ndata4 = 2*nuv_per_cu*ndata2;
   
   uv_data_t  *in = NULL;
   uv_data_t  *sw_out = NULL;
@@ -60,37 +62,37 @@ int main(int argc, char* argv[]){
   coord_t *coord = NULL;
   cl_int   *coord_int = NULL;
   
-  in        = (uv_data_t *)aligned_alloc(MEM_ALIGNMENT, ndata2*sizeof(uv_data_t));
-  sw_out    = (uv_data_t *)aligned_alloc(MEM_ALIGNMENT, ndata3*sizeof(uv_data_t));
-  hw_out    = (uv_data_t *)aligned_alloc(MEM_ALIGNMENT, ndata3*sizeof(uv_data_t));
-  coord     = (coord_t *)aligned_alloc(MEM_ALIGNMENT,  ndata1*sizeof(coord_t));
+  in        = (uv_data_t *)aligned_alloc(MEM_ALIGNMENT, ndata3*sizeof(uv_data_t));
+  sw_out    = (uv_data_t *)aligned_alloc(MEM_ALIGNMENT, ndata4*sizeof(uv_data_t));
+  hw_out    = (uv_data_t *)aligned_alloc(MEM_ALIGNMENT, ndata4*sizeof(uv_data_t));
+  coord     = (coord_t *)aligned_alloc(MEM_ALIGNMENT,   ndata1*sizeof(coord_t));
   coord_int = (cl_int *)aligned_alloc(MEM_ALIGNMENT,    ndata1*sizeof(cl_int));  
   
   fprintf(stdout, "INFO: %f MB memory used on host in total\n",
-	  ((ndata2 + 2*ndata3)*DATA_WIDTH + ndata1*COORD_WIDTH)/(8*1024.*1024.));
+	  ((ndata3 + 2*ndata4)*DATA_WIDTH + ndata1*COORD_WIDTH)/(8*1024.*1024.));
   fprintf(stdout, "INFO: %f MB memory used on device in total\n",
-	  ((ndata2 + ndata3)*DATA_WIDTH + ndata1*COORD_WIDTH)/(8*1024.*1024.));
+	  ((ndata3 + ndata4)*DATA_WIDTH + ndata1*COORD_WIDTH)/(8*1024.*1024.));
   fprintf(stdout, "INFO: %f MB memory used on device for raw input\n",
-	  ndata2*DATA_WIDTH/(8*1024.*1024.));  
-  fprintf(stdout, "INFO: %f MB memory used on device for raw output\n",
 	  ndata3*DATA_WIDTH/(8*1024.*1024.));  
+  fprintf(stdout, "INFO: %f MB memory used on device for raw output\n",
+	  ndata4*DATA_WIDTH/(8*1024.*1024.));  
 
   FILE *fp=NULL;
   fp = fopen("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/grid/src/error.txt", "w");
   // Prepare input
   uint64_t i;
   srand(time(NULL));
-  for(i = 0; i < ndata2; i++){
+  for(i = 0; i < ndata3; i++){
     in[i] = (uv_data_t)(0.99*(rand()%DATA_RANGE));
   }
   read_coord("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/grid/src/coord.txt", ndata1, coord_int);
   for(i = 0; i < ndata1; i++){
     coord[i] = (coord_t)coord_int[i];
     //if(coord_int[i]!=0)
-    //  fprintf(stdout, "%d\n", (int)coord[i]);
+    //fprintf(stdout, "%d\n", (int)coord[i]);
   }
-  memset(sw_out, 0x00, ndata3*sizeof(uv_data_t));
-  memset(hw_out, 0x00, ndata3*sizeof(uv_data_t));
+  memset(sw_out, 0x00, ndata4*sizeof(uv_data_t));
+  memset(hw_out, 0x00, ndata4*sizeof(uv_data_t));
   
   // Calculate on host
   cl_float cpu_elapsed_time;
@@ -154,7 +156,7 @@ int main(int argc, char* argv[]){
   
   // Create command queue
   cl_command_queue queue;
-  OCL_CHECK(err, queue = clCreateCommandQueue(context, device_id, CL_QUEUE_PROFILING_ENABLE, &err));
+  OCL_CHECK(err, queue = clCreateCommandQueue(context, device_id, CL_QUEUE_PROFILING_ENABLE|CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err));
   
   // Read kernel binary into memory
   char *xclbin = argv[1];
@@ -180,9 +182,9 @@ int main(int argc, char* argv[]){
 
   // Create the kernel
   cl_kernel knl_grid;
-  cl_kernel knl_write;
+  //cl_kernel knl_write;
   OCL_CHECK(err, knl_grid  = clCreateKernel(program, "knl_grid", &err));
-  OCL_CHECK(err, knl_write = clCreateKernel(program, "knl_write", &err));
+  //OCL_CHECK(err, knl_write = clCreateKernel(program, "knl_write", &err));
 
   // Prepare device buffer
   cl_mem buffer_in;
@@ -190,9 +192,9 @@ int main(int argc, char* argv[]){
   cl_mem buffer_out;
   cl_mem pt[3];
 
-  OCL_CHECK(err, buffer_in    = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uv_data_t)*ndata2, in, &err));
+  OCL_CHECK(err, buffer_in    = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uv_data_t)*ndata3, in, &err));
   OCL_CHECK(err, buffer_coord = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(coord_t)*ndata1, coord, &err));
-  OCL_CHECK(err, buffer_out   = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uv_data_t)*ndata3, hw_out, &err));
+  OCL_CHECK(err, buffer_out   = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uv_data_t)*ndata4, hw_out, &err));
   if (!(buffer_in&&
 	buffer_coord&&
 	buffer_out
@@ -210,14 +212,16 @@ int main(int argc, char* argv[]){
   pt[2] = buffer_out;
 
   OCL_CHECK(err, err = clSetKernelArg(knl_grid, 0, sizeof(cl_mem), &buffer_in));
-  OCL_CHECK(err, err = clSetKernelArg(knl_grid, 1, sizeof(cl_mem), &buffer_coord)); 
+  OCL_CHECK(err, err = clSetKernelArg(knl_grid, 1, sizeof(cl_mem), &buffer_coord));
   OCL_CHECK(err, err = clSetKernelArg(knl_grid, 3, sizeof(cl_int), &nuv_per_cu));
   OCL_CHECK(err, err = clSetKernelArg(knl_grid, 4, sizeof(cl_int), &nburst_per_uv_in));
   OCL_CHECK(err, err = clSetKernelArg(knl_grid, 5, sizeof(cl_int), &nburst_per_uv_out));
 
-  OCL_CHECK(err, err = clSetKernelArg(knl_write, 0, sizeof(cl_int), &nuv_per_cu));
-  OCL_CHECK(err, err = clSetKernelArg(knl_write, 1, sizeof(cl_int), &nburst_per_uv_out));
-  OCL_CHECK(err, err = clSetKernelArg(knl_write, 3, sizeof(cl_mem), &buffer_out));
+  OCL_CHECK(err, err = clSetKernelArg(knl_grid, 2, sizeof(cl_mem), &buffer_out));
+  
+  //OCL_CHECK(err, err = clSetKernelArg(knl_write, 0, sizeof(cl_int), &nuv_per_cu));
+  //OCL_CHECK(err, err = clSetKernelArg(knl_write, 1, sizeof(cl_int), &nburst_per_uv_out));
+  //OCL_CHECK(err, err = clSetKernelArg(knl_write, 3, sizeof(cl_mem), &buffer_out));
   
   //OCL_CHECK(err, err = clSetKernelArg(kernel, 2, sizeof(cl_mem), &buffer_out));
   
@@ -235,7 +239,7 @@ int main(int argc, char* argv[]){
   cl_float kernel_elapsed_time;
   clock_gettime(CLOCK_REALTIME, &device_start);
   OCL_CHECK(err, err = clEnqueueTask(queue, knl_grid, 0, NULL, NULL));
-  OCL_CHECK(err, err = clEnqueueTask(queue, knl_write, 0, NULL, NULL));
+  //OCL_CHECK(err, err = clEnqueueTask(queue, knl_write, 0, NULL, NULL));
   OCL_CHECK(err, err = clFinish(queue));
   fprintf(stdout, "INFO: DONE KERNEL EXECUTION\n");
   clock_gettime(CLOCK_REALTIME, &device_finish);
@@ -248,11 +252,14 @@ int main(int argc, char* argv[]){
   fprintf(stdout, "INFO: DONE MEMCPY FROM KERNEL TO HOST\n");
 
   // Check the result
-  for(i=0;i<ndata3/2;i++){
+  for(i=0;i<ndata4/2;i++){
     if((sw_out[2*i] != hw_out[2*i])||(sw_out[2*i+1] != hw_out[2*i+1])){
       //if((sw_out[2*i] == hw_out[2*i])||(sw_out[2*i+1] == hw_out[2*i+1])){
       fprintf(fp, "ERROR: Test failed %d (%d %d) (%f %f) (%f %f)\n", i, ((i)%nsamp_per_uv_out)/fft_size, ((i)%nsamp_per_uv_out)%fft_size, sw_out[2*i].to_float(), sw_out[2*i+1].to_float(), hw_out[2*i].to_float(), hw_out[2*i+1].to_float());
     }
+    //if((sw_out[2*i] != 0)||(sw_out[2*i+1] != 0)){
+    //  fprintf(fp, "ERROR: Test failed %d (%d %d) (%f %f) (%f %f)\n", i, ((i)%nsamp_per_uv_out)/fft_size, ((i)%nsamp_per_uv_out)%fft_size, sw_out[2*i].to_float(), sw_out[2*i+1].to_float(), hw_out[2*i].to_float(), hw_out[2*i+1].to_float());
+    //}
   }
   fclose(fp);
   
@@ -272,7 +279,7 @@ int main(int argc, char* argv[]){
   free(coord_int);
   clReleaseProgram(program);
   clReleaseKernel(knl_grid);
-  clReleaseKernel(knl_write);
+  //clReleaseKernel(knl_write);
   clReleaseCommandQueue(queue);
   clReleaseContext(context);
 

@@ -38,6 +38,11 @@ void knl_write(
   for(i = 0; i < nuv_per_cu; i++){
 #pragma HLS LOOP_TRIPCOUNT max = muv
   loop_write:
+    
+#ifdef __SYNTHESIS__
+    fprintf(stdout, "HERE\n");
+#endif
+    
     for(j = 0; j < nburst_per_uv_out; j++){
 #pragma HLS LOOP_TRIPCOUNT max = mburst_per_uv_out
 #pragma HLS PIPELINE
