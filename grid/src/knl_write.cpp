@@ -4,18 +4,18 @@ extern "C"{
   void knl_write(                 
                  int nuv_per_cu,
                  int nburst_per_uv_out,
-                 stream_uv &out_stream,
+                 stream_uv &in_stream,
                  burst_uv *out);
 }
 
 void knl_write(                 
                int nuv_per_cu,
                int nburst_per_uv_out,
-               stream_uv &out_stream,
+               stream_uv &in_stream,
                burst_uv *out){
-
-#pragma HLS INTERFACE m_axi port = out      offset = slave bundle = gmem2
-#pragma HLS INTERFACE axis  port = out_stream
+  const int burst_length = BURST_WIDTH;
+#pragma HLS INTERFACE m_axi port = out        offset = slave bundle = gmem2 max_write_burst_length = burst_length
+#pragma HLS INTERFACE axis  port = in_stream
 
 #pragma HLS INTERFACE s_axilite port = nuv_per_cu        bundle = control
 #pragma HLS INTERFACE s_axilite port = nburst_per_uv_out bundle = control
@@ -39,14 +39,14 @@ void knl_write(
 #pragma HLS LOOP_TRIPCOUNT max = muv
   loop_write:
     
-#ifdef __SYNTHESIS__
-    fprintf(stdout, "HERE\n");
+#ifndef __SYNTHESIS__
+    fprintf(stdout, "HERE KERNEL_WRITE\t%d\n", i);
 #endif
     
     for(j = 0; j < nburst_per_uv_out; j++){
 #pragma HLS LOOP_TRIPCOUNT max = mburst_per_uv_out
 #pragma HLS PIPELINE
-      stream = out_stream.read();
+      stream = in_stream.read();
       for(k = 0; k < NSAMP_PER_BURST; k++){
         burst.data[k] = stream.data(2*(k+1)*DATA_WIDTH-1, 2*k*DATA_WIDTH);
       }

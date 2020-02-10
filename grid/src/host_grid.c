@@ -181,9 +181,9 @@ int main(int argc, char* argv[]){
 
   // Create the kernel
   cl_kernel knl_grid;
-  //cl_kernel knl_write;
+  cl_kernel knl_write;
   OCL_CHECK(err, knl_grid  = clCreateKernel(program, "knl_grid", &err));
-  //OCL_CHECK(err, knl_write = clCreateKernel(program, "knl_write", &err));
+  OCL_CHECK(err, knl_write = clCreateKernel(program, "knl_write", &err));
 
   // Prepare device buffer
   cl_mem buffer_in;
@@ -215,15 +215,11 @@ int main(int argc, char* argv[]){
   OCL_CHECK(err, err = clSetKernelArg(knl_grid, 3, sizeof(cl_int), &nuv_per_cu));
   OCL_CHECK(err, err = clSetKernelArg(knl_grid, 4, sizeof(cl_int), &nburst_per_uv_in));
   OCL_CHECK(err, err = clSetKernelArg(knl_grid, 5, sizeof(cl_int), &nburst_per_uv_out));
+  
+  OCL_CHECK(err, err = clSetKernelArg(knl_write, 0, sizeof(cl_int), &nuv_per_cu));
+  OCL_CHECK(err, err = clSetKernelArg(knl_write, 1, sizeof(cl_int), &nburst_per_uv_out));
+  OCL_CHECK(err, err = clSetKernelArg(knl_write, 3, sizeof(cl_mem), &buffer_out));
 
-  OCL_CHECK(err, err = clSetKernelArg(knl_grid, 2, sizeof(cl_mem), &buffer_out));
-  
-  //OCL_CHECK(err, err = clSetKernelArg(knl_write, 0, sizeof(cl_int), &nuv_per_cu));
-  //OCL_CHECK(err, err = clSetKernelArg(knl_write, 1, sizeof(cl_int), &nburst_per_uv_out));
-  //OCL_CHECK(err, err = clSetKernelArg(knl_write, 3, sizeof(cl_mem), &buffer_out));
-  
-  //OCL_CHECK(err, err = clSetKernelArg(kernel, 2, sizeof(cl_mem), &buffer_out));
-  
   fprintf(stdout, "INFO: DONE SETUP KERNEL\n");
 
   // Migrate host memory to device
@@ -238,7 +234,7 @@ int main(int argc, char* argv[]){
   cl_float kernel_elapsed_time;
   clock_gettime(CLOCK_REALTIME, &device_start);
   OCL_CHECK(err, err = clEnqueueTask(queue, knl_grid, 0, NULL, NULL));
-  //OCL_CHECK(err, err = clEnqueueTask(queue, knl_write, 0, NULL, NULL));
+  OCL_CHECK(err, err = clEnqueueTask(queue, knl_write, 0, NULL, NULL));
   OCL_CHECK(err, err = clFinish(queue));
   fprintf(stdout, "INFO: DONE KERNEL EXECUTION\n");
   clock_gettime(CLOCK_REALTIME, &device_finish);
@@ -253,7 +249,8 @@ int main(int argc, char* argv[]){
   // Check the result
   for(i=0;i<ndata4/2;i++){
     if((sw_out[2*i] != hw_out[2*i])||(sw_out[2*i+1] != hw_out[2*i+1])){
-      //if((sw_out[2*i] == hw_out[2*i])||(sw_out[2*i+1] == hw_out[2*i+1])){
+    //if((sw_out[2*i] == hw_out[2*i])||(sw_out[2*i+1] == hw_out[2*i+1])){
+    //if(sw_out[2*i] || sw_out[2*i+1]){
       fprintf(fp, "ERROR: Test failed %d (%d %d) (%f %f) (%f %f)\n", i, ((i)%nsamp_per_uv_out)/fft_size, ((i)%nsamp_per_uv_out)%fft_size, sw_out[2*i].to_float(), sw_out[2*i+1].to_float(), hw_out[2*i].to_float(), hw_out[2*i+1].to_float());
     }
     //if((sw_out[2*i] != 0)||(sw_out[2*i+1] != 0)){
@@ -278,7 +275,7 @@ int main(int argc, char* argv[]){
   free(coord_int);
   clReleaseProgram(program);
   clReleaseKernel(knl_grid);
-  //clReleaseKernel(knl_write);
+  clReleaseKernel(knl_write);
   clReleaseCommandQueue(queue);
   clReleaseContext(context);
 

@@ -27,10 +27,9 @@
 #define MDM             1024
 #define MBURST_DM       (MDM/NSAMP_PER_BURST)
 
-#define MSAMP_PER_UV_IN     4368
-#define MSAMP_PER_UV_OUT    3552     // 3567 round to 16, the number is not certain
-#define MTIME_PER_CU        256
-#define MBURST_PER_UV_OUT   (MSAMP_PER_UV_OUT/NSAMP_PER_BURST)
+#define MSAMP_PER_UV     4368
+#define MTIME_PER_CU     256
+#define MBURST_PER_UV   (MSAMP_PER_UV/NSAMP_PER_BURST)
 
 #define COORD_WIDTH1   16       // Wider than the required width, but to 2^n
 #define COORD_WIDTH2   13       // Wide enough to cover the input index range
@@ -84,6 +83,6 @@ typedef hls::stream<burst_uv> fifo_uv;
 int transpose(
               uv_data_t *in,
               uv_data_t *out,
-              int nsamp_per_uv_out,
+              int nsamp_per_uv,
               int ntime_per_cu,
               int ndm_per_cu);

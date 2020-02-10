@@ -27,13 +27,17 @@ int main(int argc, char* argv[]){
 
   if(is_hw_emulation()){
     nchan        = 288;
-    ntime_per_cu = 10;
     nbaseline    = 15;
+    ntime_per_cu = 10;
+    nbaseline    = 435;
+    ntime_per_cu = 256;
   }
   if(is_sw_emulation()){
     nchan        = 288;
+    nbaseline    = 15; 
     ntime_per_cu = 10;
-    nbaseline    = 15;    
+    nbaseline    = 435;    
+    ntime_per_cu = 256;
   }
   nsamp_per_time  = nchan*nbaseline-(nchan*nbaseline)%(NSAMP_PER_BURST*BURST_LENGTH);  // 288*435 = 2^5*3^3*5*29 for all channel and baseline
   nburst_per_time = nsamp_per_time/NSAMP_PER_BURST;
@@ -76,23 +80,23 @@ int main(int argc, char* argv[]){
   
   // Prepare input
   cl_uint i;
-  srand(time(NULL));
-  for(i = 0; i < ndata2; i++){
-    in_pol1[i] = (data_t)(0.99*(rand()%DATA_RANGE));
-    in_pol2[i] = (data_t)(0.99*(rand()%DATA_RANGE));
-  }  
-  for(i = 0; i < ndata1; i++){
-    cal_pol1[i] = (data_t)(0.99*(rand()%DATA_RANGE));
-    cal_pol2[i] = (data_t)(0.99*(rand()%DATA_RANGE));
-    sky[i]      = (data_t)(0.99*(rand()%DATA_RANGE));
-  }
+  //srand(time(NULL));
+  //for(i = 0; i < ndata2; i++){
+  //  in_pol1[i] = (data_t)(0.99*(rand()%DATA_RANGE));
+  //  in_pol2[i] = (data_t)(0.99*(rand()%DATA_RANGE));
+  //}  
+  //for(i = 0; i < ndata1; i++){
+  //  cal_pol1[i] = (data_t)(0.99*(rand()%DATA_RANGE));
+  //  cal_pol2[i] = (data_t)(0.99*(rand()%DATA_RANGE));
+  //  sky[i]      = (data_t)(0.99*(rand()%DATA_RANGE));
+  //}
   
   // Calculate on host
   cl_float cpu_elapsed_time;
   struct timespec host_start;
   struct timespec host_finish;
   clock_gettime(CLOCK_REALTIME, &host_start);
-  prepare(in_pol1, in_pol2, cal_pol1, cal_pol2, sky, sw_out, sw_average_pol1, sw_average_pol2, nsamp_per_time, ntime_per_cu);
+  //prepare(in_pol1, in_pol2, cal_pol1, cal_pol2, sky, sw_out, sw_average_pol1, sw_average_pol2, nsamp_per_time, ntime_per_cu);
   fprintf(stdout, "INFO: DONE HOST EXECUTION\n");
   clock_gettime(CLOCK_REALTIME, &host_finish);
   cpu_elapsed_time = (host_finish.tv_sec - host_start.tv_sec) + (host_finish.tv_nsec - host_start.tv_nsec)/1.0E9L;

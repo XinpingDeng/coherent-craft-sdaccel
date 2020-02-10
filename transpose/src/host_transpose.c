@@ -20,54 +20,45 @@ int main(int argc, char* argv[]){
   // Prepare host buffers
   uint64_t ndata1;
   uint64_t ndata2;
-  uint64_t ndata3;
-  cl_int nsamp_per_uv_in  = 4368;
-  //cl_int nsamp_per_uv_out = 3552;
-  //cl_int nsamp_per_uv_out = 3328;
-  //cl_int ndm_per_cu       = 1024;
-  //cl_int ntime_per_cu     = 256;
-  //cl_int ndm_per_cu       = 2*TILE_WIDTH;
-  cl_int ndm_per_cu       = 1024;
-  //cl_int nsamp_per_uv_out = 3*TILE_WIDTH;
-  cl_int nsamp_per_uv_out = 3328;
-  cl_int ntime_per_cu     = 256;
+  cl_int nsamp_per_uv = 4368;
+  cl_int ndm_per_cu   = 32;
+  cl_int ntime_per_cu = 256;
 
   if(is_hw_emulation()){
-    ndm_per_cu       = 2*TILE_WIDTH;
-    nsamp_per_uv_out = 2*TILE_WIDTH;
-    ntime_per_cu     = 2;
+    ndm_per_cu    = 2*TILE_WIDTH;
+    nsamp_per_uv  = 2*TILE_WIDTH;
+    ntime_per_cu  = 2;
   }
   if(is_sw_emulation()){
-    ndm_per_cu       = 2*TILE_WIDTH;
-    nsamp_per_uv_out = 2*TILE_WIDTH;
-    ntime_per_cu     = 2;
+    ndm_per_cu   = 2*TILE_WIDTH;
+    nsamp_per_uv = 2*TILE_WIDTH;
+    ntime_per_cu = 2;
   }
-  ndm_per_cu = ndm_per_cu - ndm_per_cu%TILE_WIDTH;
-  nsamp_per_uv_out = nsamp_per_uv_out - nsamp_per_uv_out%TILE_WIDTH;
+  ndm_per_cu   = ndm_per_cu - ndm_per_cu%TILE_WIDTH;
+  nsamp_per_uv = nsamp_per_uv - nsamp_per_uv%TILE_WIDTH;
   
-  cl_int nburst_dm        = ndm_per_cu/NSAMP_PER_BURST;
-  cl_int nburst_per_uv_out = nsamp_per_uv_out/NSAMP_PER_BURST;
+  cl_int nburst_dm     = ndm_per_cu/NSAMP_PER_BURST;
+  cl_int nburst_per_uv = nsamp_per_uv/NSAMP_PER_BURST;
 
-  ndata1 = 2*nsamp_per_uv_out;
-  ndata2 = 2*ntime_per_cu*ndm_per_cu*(uint64_t)nsamp_per_uv_in;
-  ndata3 = 2*ntime_per_cu*ndm_per_cu*(uint64_t)nsamp_per_uv_out;
+  ndata1 = 2*nsamp_per_uv;
+  ndata2 = 2*ntime_per_cu*ndm_per_cu*(uint64_t)nsamp_per_uv;
   
   uv_data_t *in = NULL;
   uv_data_t *sw_out = NULL;
   uv_data_t *hw_out = NULL;
   
   in        = (uv_data_t *)aligned_alloc(MEM_ALIGNMENT, ndata2*sizeof(uv_data_t));
-  sw_out    = (uv_data_t *)aligned_alloc(MEM_ALIGNMENT, ndata3*sizeof(uv_data_t));
-  hw_out    = (uv_data_t *)aligned_alloc(MEM_ALIGNMENT, ndata3*sizeof(uv_data_t));
+  sw_out    = (uv_data_t *)aligned_alloc(MEM_ALIGNMENT, ndata2*sizeof(uv_data_t));
+  hw_out    = (uv_data_t *)aligned_alloc(MEM_ALIGNMENT, ndata2*sizeof(uv_data_t));
   
   fprintf(stdout, "INFO: %f MB memory used on host in total\n",
-	  ((ndata2 + 2*ndata3)*DATA_WIDTH + ndata1*COORD_WIDTH1)/(8*1024.*1024.));
+	  (3*ndata2*DATA_WIDTH + ndata1*COORD_WIDTH1)/(8*1024.*1024.));
   fprintf(stdout, "INFO: %f MB memory used on device in total\n",
-	  ((ndata2 + ndata3)*DATA_WIDTH + ndata1*COORD_WIDTH1)/(8*1024.*1024.));
+	  (2*ndata2*DATA_WIDTH + ndata1*COORD_WIDTH1)/(8*1024.*1024.));
   fprintf(stdout, "INFO: %f MB memory used on device for raw input\n",
 	  ndata2*DATA_WIDTH/(8*1024.*1024.));  
   fprintf(stdout, "INFO: %f MB memory used on device for raw output\n",
-	  ndata3*DATA_WIDTH/(8*1024.*1024.));  
+	  ndata2*DATA_WIDTH/(8*1024.*1024.));  
 
   FILE *fp=NULL;
   char current_dir[LINE_LENGTH];
@@ -83,15 +74,15 @@ int main(int argc, char* argv[]){
   for(i = 0; i < ndata2; i++){
     in[i] = (uv_data_t)(0.99*(rand()%DATA_RANGE));
   }
-  memset(sw_out, 0x00, ndata3*sizeof(uv_data_t));
-  memset(hw_out, 0x00, ndata3*sizeof(uv_data_t));
+  memset(sw_out, 0x00, ndata2*sizeof(uv_data_t));
+  memset(hw_out, 0x00, ndata2*sizeof(uv_data_t));
   
   // Calculate on host
   cl_float cpu_elapsed_time;
   struct timespec host_start;
   struct timespec host_finish;
   clock_gettime(CLOCK_REALTIME, &host_start);
-  transpose(in, sw_out, nsamp_per_uv_out, ntime_per_cu, ndm_per_cu);
+  transpose(in, sw_out, nsamp_per_uv, ntime_per_cu, ndm_per_cu);
   fprintf(stdout, "INFO: DONE HOST EXECUTION\n");
   clock_gettime(CLOCK_REALTIME, &host_finish);
   cpu_elapsed_time = (host_finish.tv_sec - host_start.tv_sec) + (host_finish.tv_nsec - host_start.tv_nsec)/1.0E9L;
@@ -182,7 +173,7 @@ int main(int argc, char* argv[]){
   cl_mem pt[2];
 
   OCL_CHECK(err, buffer_in    = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uv_data_t)*ndata2, in, &err));
-  OCL_CHECK(err, buffer_out   = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uv_data_t)*ndata3, hw_out, &err));
+  OCL_CHECK(err, buffer_out   = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uv_data_t)*ndata2, hw_out, &err));
   if (!(buffer_in&&
 	buffer_out
 	)) {
@@ -199,7 +190,7 @@ int main(int argc, char* argv[]){
 
   OCL_CHECK(err, err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &buffer_in));
   OCL_CHECK(err, err = clSetKernelArg(kernel, 1, sizeof(cl_mem), &buffer_out));
-  OCL_CHECK(err, err = clSetKernelArg(kernel, 2, sizeof(cl_int), &nburst_per_uv_out));
+  OCL_CHECK(err, err = clSetKernelArg(kernel, 2, sizeof(cl_int), &nburst_per_uv));
   OCL_CHECK(err, err = clSetKernelArg(kernel, 3, sizeof(cl_int), &ntime_per_cu));
   OCL_CHECK(err, err = clSetKernelArg(kernel, 4, sizeof(cl_int), &nburst_dm));
   
@@ -229,7 +220,7 @@ int main(int argc, char* argv[]){
   fprintf(stdout, "INFO: DONE MEMCPY FROM KERNEL TO HOST\n");
 
   //// Check the result
-  for(i=0;i<ndata3/2;i++){
+  for(i=0;i<ndata2/2;i++){
     //if((sw_out[2*i] == hw_out[2*i])&&(sw_out[2*i+1] == hw_out[2*i+1])){
     if((sw_out[2*i] != hw_out[2*i])||(sw_out[2*i+1] != hw_out[2*i+1])){
       fprintf(fp, "ERROR: Test failed %d (%f %f) (%f %f)\n", i, sw_out[2*i].to_float(), sw_out[2*i+1].to_float(), hw_out[2*i].to_float(), hw_out[2*i+1].to_float());
