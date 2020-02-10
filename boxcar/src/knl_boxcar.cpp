@@ -259,7 +259,6 @@ void calculate_cand(
 #pragma HLS array_reshape variable=current_history complete dim=2
   
   for(i = 0; i < ndm; i++){
-    //#pragma HLS DATAFLOW
     fifo2history(previous_history_fifo, previous_history);
     calculate_cand_worker(ntime, in, previous_history, current_history, threshold, cand);    
     history2fifo(current_history, current_history_fifo);
