@@ -1,15 +1,15 @@
 #include "boxcar.h"
 
 extern "C"{
-  void knl_boxcar(
-                  fifo_burst_t &in,
-                  burst_t *previous_history,
-                  burst_t *current_history,
-                  int ndm,
-                  int ntime,
-                  data_t threshold,
-                  data_t *out
-                  );
+  void krnl_box(
+                fifo_burst_t &in,
+                burst_t *previous_history,
+                burst_t *current_history,
+                int ndm,
+                int ntime,
+                data_t threshold,
+                data_t *out
+                );
   
   void fill_cand_fifo(
                       fifo_burst_t &in, 
@@ -79,15 +79,15 @@ extern "C"{
   
 }
 
-void knl_boxcar(
-                fifo_burst_t &in, 
-                burst_t *previous_history,
-                burst_t *current_history,
-                int ndm,
-                int ntime,
-                data_t threshold,
-                data_t *out
-                ){
+void krnl_box(
+              fifo_burst_t &in, 
+              burst_t *previous_history,
+              burst_t *current_history,
+              int ndm,
+              int ntime,
+              data_t threshold,
+              data_t *out
+              ){
   const int max_burst_length = BURST_LENGTH;
   
 #pragma HLS INTERFACE m_axi port = previous_history offset = slave bundle = gmem0 max_read_burst_length =max_burst_length
