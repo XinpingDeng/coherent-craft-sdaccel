@@ -2,21 +2,21 @@
 
 extern "C"{
   void krnl_fft(                 
-                int nplane,
+                int nplace_per_cu,
                 int nburst_per_img,
                 stream_cmplx &in_stream,
                 stream_cmplx &out_stream);
 }
 
 void krnl_fft(                 
-              int nplane,
+              int nplace_per_cu,
               int nburst_per_img,
               stream_cmplx &in_stream,
               stream_cmplx &out_stream){
 #pragma HLS INTERFACE axis port = in_stream
 #pragma HLS INTERFACE axis port = out_stream
 
-#pragma HLS INTERFACE s_axilite port = nplane         bundle = control
+#pragma HLS INTERFACE s_axilite port = nplace_per_cu         bundle = control
 #pragma HLS INTERFACE s_axilite port = nburst_per_img bundle = control
 #pragma HLS INTERFACE s_axilite port = return         bundle = control
 
@@ -26,12 +26,12 @@ void krnl_fft(
   int i;
   int j;
   
-  for(i = 0; i < nplane; i++){
+  for(i = 0; i < nplace_per_cu; i++){
 #pragma HLS LOOP_TRIPCOUNT max = max_plane
   loop_write:
     
 #ifndef __SYNTHESIS__
-    fprintf(stdout, "HERE KERNEL_WRITE\t%d\n", i);
+    fprintf(stdout, "HERE KERNEL_FFT\t%d\n", i);
 #endif
     
     for(j = 0; j < nburst_per_img; j++){

@@ -7,20 +7,20 @@ extern "C" {
                  burst_cmplx *out,
                  int nburst_per_uv,
                  int ntime,
-                 int nburst_dm
+                 int nburst_dm_per_cu
                  );
   
   void read2fifo(
                  int nburst_per_uv,
                  int ntime,
-                 int nburst_dm,
+                 int nburst_dm_per_cu,
                  const burst_cmplx *in,
                  fifo_cmplx &in_fifo);
   
   void transpose(
                  int nburst_per_uv,
                  int ntime,
-                 int nburst_dm,
+                 int nburst_dm_per_cu,
                  fifo_cmplx &in_fifo,
                  fifo_cmplx &out_fifo);
 
@@ -35,7 +35,7 @@ extern "C" {
   void write_from_fifo(
                        int nburst_per_uv,
                        int ntime,
-                       int nburst_dm,
+                       int nburst_dm_per_cu,
                        fifo_cmplx &out_fifo,
                        burst_cmplx *out);
 }
@@ -45,7 +45,7 @@ void krnl_tran(
                burst_cmplx *out,
                int nburst_per_uv,
                int ntime,
-               int nburst_dm
+               int nburst_dm_per_cu
                )
 {
   const int burst_len = BURST_LEN_TRAN;
@@ -58,7 +58,7 @@ void krnl_tran(
 
 #pragma HLS INTERFACE s_axilite port = nburst_per_uv bundle = control
 #pragma HLS INTERFACE s_axilite port = ntime         bundle = control
-#pragma HLS INTERFACE s_axilite port = nburst_dm     bundle = control
+#pragma HLS INTERFACE s_axilite port = nburst_dm_per_cu     bundle = control
 #pragma HLS INTERFACE s_axilite port = return        bundle = control
 
 #pragma HLS DATA_PACK variable = in
@@ -75,21 +75,21 @@ void krnl_tran(
   read2fifo(
             nburst_per_uv,
             ntime,
-            nburst_dm,
+            nburst_dm_per_cu,
             in,
             in_fifo);
   
   transpose(
             nburst_per_uv,
             ntime,
-            nburst_dm,
+            nburst_dm_per_cu,
             in_fifo,
             out_fifo);
 
   write_from_fifo(
                   nburst_per_uv,
                   ntime,
-                  nburst_dm,
+                  nburst_dm_per_cu,
                   out_fifo,
                   out);
 }
@@ -97,7 +97,7 @@ void krnl_tran(
 void read2fifo(
                int nburst_per_uv,
                int ntime,
-               int nburst_dm,
+               int nburst_dm_per_cu,
                const burst_cmplx *in,
                fifo_cmplx &in_fifo){
   int i;
@@ -106,7 +106,7 @@ void read2fifo(
   int m;
   int n;
   int loc_burst;
-  int ntran_dm         = nburst_dm/BURST_LEN_TRAN;
+  int ntran_dm         = nburst_dm_per_cu/BURST_LEN_TRAN;
   int ntran_per_uv     = nburst_per_uv/BURST_LEN_TRAN;
   int ncmplx_per_burst = NCMPLX_PER_BURST;
 
@@ -127,8 +127,8 @@ void read2fifo(
         loop_read2fifo:
           for(n = 0; n < BURST_LEN_TRAN; n++){        // For DM
 #pragma HLS PIPELINE
-            loc_burst = (i*TILE_WIDTH_TRAN+m)*ntime*nburst_dm+
-              k*nburst_dm+
+            loc_burst = (i*TILE_WIDTH_TRAN+m)*ntime*nburst_dm_per_cu+
+              k*nburst_dm_per_cu+
               j*BURST_LEN_TRAN +
               n;
             in_fifo.write(in[loc_burst]);
@@ -142,13 +142,13 @@ void read2fifo(
 void transpose(
                int nburst_per_uv,
                int ntime,
-               int nburst_dm,
+               int nburst_dm_per_cu,
                fifo_cmplx &in_fifo,
                fifo_cmplx &out_fifo){
   int i;
   int j;
   int k;
-  int ntran_dm     = nburst_dm/BURST_LEN_TRAN;
+  int ntran_dm     = nburst_dm_per_cu/BURST_LEN_TRAN;
   int ntran_per_uv = nburst_per_uv/BURST_LEN_TRAN;
   
   const int max_tran_per_uv     = MAX_BURST_PER_UV/BURST_LEN_TRAN;
@@ -164,6 +164,11 @@ void transpose(
 
   for(k = 0; k < ntime; k++){        // For Time
 #pragma HLS LOOP_TRIPCOUNT min = 1 max = max_time
+    
+#ifndef __SYNTHESIS__
+    fprintf(stdout, "HERE KERNEL_TRAN\t%d\n", k);
+#endif
+    
     for(i = 0; i < ntran_per_uv; i++){  // For UV
 #pragma HLS LOOP_TRIPCOUNT min = 1 max = max_tran_per_uv
       for(j = 0; j < ntran_dm; j++){        // For DM
@@ -225,7 +230,7 @@ void transpose_tile(
 void write_from_fifo(
                      int nburst_per_uv,
                      int ntime,
-                     int nburst_dm,
+                     int nburst_dm_per_cu,
                      fifo_cmplx &out_fifo,
                      burst_cmplx *out){
   int i;
@@ -234,7 +239,7 @@ void write_from_fifo(
   int m;
   int n;
   int loc_burst;
-  int ntran_dm     = nburst_dm/BURST_LEN_TRAN;
+  int ntran_dm     = nburst_dm_per_cu/BURST_LEN_TRAN;
   int ntran_per_uv = nburst_per_uv/BURST_LEN_TRAN;
   
   const int max_tran_per_uv = MAX_BURST_PER_UV/BURST_LEN_TRAN;

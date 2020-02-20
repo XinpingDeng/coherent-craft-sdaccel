@@ -2,14 +2,14 @@
 
 extern "C"{
   void krnl_write(                 
-                  int nplane,
+                  int nplace_per_cu,
                   int nburst_per_img,
                   stream_cmplx &in_stream,
                   burst_cmplx *out);
 }
 
 void krnl_write(                 
-                int nplane,
+                int nplace_per_cu,
                 int nburst_per_img,
                 stream_cmplx &in_stream,
                 burst_cmplx *out){
@@ -17,7 +17,7 @@ void krnl_write(
 #pragma HLS INTERFACE m_axi port = out       offset = slave bundle = gmem0 max_write_burst_length = burst_len
 #pragma HLS INTERFACE axis  port = in_stream
 
-#pragma HLS INTERFACE s_axilite port = nplane         bundle = control
+#pragma HLS INTERFACE s_axilite port = nplace_per_cu         bundle = control
 #pragma HLS INTERFACE s_axilite port = nburst_per_img bundle = control
 #pragma HLS INTERFACE s_axilite port = out            bundle = control
 #pragma HLS INTERFACE s_axilite port = return         bundle = control
@@ -35,7 +35,7 @@ void krnl_write(
 #pragma HLS DATA_PACK variable=out
 #pragma HLS DATA_PACK variable=burst
   
-  for(i = 0; i < nplane; i++){
+  for(i = 0; i < nplace_per_cu; i++){
 #pragma HLS LOOP_TRIPCOUNT max = max_plane
   loop_write:
     

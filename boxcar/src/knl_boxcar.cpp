@@ -134,7 +134,6 @@ void fill_cand_fifo(
                     fifo_data_t *cand){
 
   calculate_cand_wrap(in, previous_history, current_history, ndm, ntime, threshold, cand);
-  terminate_cand_fifo(cand);
 }
 
 void write_cand(
@@ -259,7 +258,8 @@ void calculate_cand(
     fifo2history(previous_history_fifo, history);
     calculate_cand_worker(ntime, in, history, history, threshold, cand);    
     history2fifo(history, current_history_fifo);
-  } 
+  }
+  terminate_cand_fifo(cand);
 }
 
 void fifo2history(
