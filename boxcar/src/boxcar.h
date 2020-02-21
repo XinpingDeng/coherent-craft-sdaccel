@@ -3,7 +3,8 @@
 ** GRID CODE HEADER FILE
 ******************************************************************************
 */
-#pragma once
+#ifndef _BOXCAR_H
+#define _BOXCAR_H
 
 #include <fcntl.h>
 #include <stdio.h>
@@ -15,33 +16,42 @@
 #include <ap_int.h>
 #include <hls_stream.h>
 #include <inttypes.h>
+#include "ap_axi_sdata.h"
 
-#define NBOXCAR             16
-#define FLOAT     1
-//#define DATA_WIDTH     32     // We use float 32-bits real numbers
-#define DATA_WIDTH     8       // We use ap_fixed 8-bits real numbers
-#define NSAMP_PER_IMG       65536    // 256^2
-#define BURST_LENGTH    64
-#define BURST_WIDTH     512
-#define NSAMP_PER_BURST (BURST_WIDTH/DATA_WIDTH)
-#define NBURST_PER_IMG  (NSAMP_PER_IMG/NSAMP_PER_BURST)
+#define NBOXCAR          16
 
-#define INTEGER_WIDTH       (DATA_WIDTH/2)      // Integer width of data
+#define REAL_TYPE        1
+//#define REAL_WIDTH      32     // We use float 32-bits real numbers
+#define REAL_WIDTH       8      // We use ap_fixed 8-bits real numbers
+#define BURST_WIDTH      512
 
-#if DATA_WIDTH == 32
-#define DATA_RANGE          4096
+#define BURST_LEN_BOXCAR 16
+#define MAX_FFTSZ        256 
+#define MAX_DM           1024
+#define MAX_TIME         256
+
+#define NREAL_PER_BURST   (BURST_WIDTH/REAL_WIDTH)
+#define MAX_PLANE         (MAX_TIME*MAX_DM)
+#define MAX_SMP_PER_IMG   (MAX_FFTSZ*MAX_FFTSZ)
+#define MAX_BURST_PER_IMG (MAX_SMP_PER_IMG/NREAL_PER_BURST)
+#define INT_WIDTH         (REAL_WIDTH/2)      // Integer width of data
+#define MAX_BURST_HISTORY ((NBOXCAR-1)*MAX_DM*MAX_BURST_PER_IMG)
+#define MAX_BURST_HISTORY_PER_DM ((NBOXCAR-1)*MAX_BURST_PER_IMG)
+
+#if REAL_WIDTH == 32
+#define DATA_RNG         4096
 #if FLOAT == 1
-typedef float data_t;
+typedef float real_t;
 #else
-typedef int data_t;
+typedef int real_t;
 #endif
 
-#elif DATA_WIDTH == 8
-#define DATA_RANGE          10     // Careful with the range *****
+#elif REAL_WIDTH == 8
+#define DATA_RNG         16
 #if FLOAT == 1
-typedef ap_fixed<DATA_WIDTH, INTEGER_WIDTH> data_t; // The size of this should be DATA_WIDTH
+typedef ap_fixed<REAL_WIDTH, INTEGER_WIDTH> real_t; // The size of this should be REAL_WIDTH
 #else
-typedef ap_int<DATA_WIDTH> data_t; // The size of this should be DATA_WIDTH
+typedef ap_int<REAL_WIDTH> real_t; // The size of this should be REAL_WIDTH
 #endif
 #endif
 
@@ -51,39 +61,45 @@ typedef ap_int<DATA_WIDTH> data_t; // The size of this should be DATA_WIDTH
 #define MEM_ALIGNMENT       4096  // memory alignment on device
 #define LINE_LENGTH         4096
 
-typedef struct burst_t{
-  data_t data[NSAMP_PER_BURST];
-}burst_t; // The size of this should be 512; BURST_DATA_WIDTH
+typedef struct burst_real{
+  real_t data[NREAL_PER_BURST];
+}burst_real; // The size of this should be 512; BURST_REAL_WIDTH
 
-typedef hls::stream<burst_t> fifo_burst_t;
-typedef hls::stream<data_t> fifo_data_t;
+typedef hls::stream<burst_real> fifo_burst;
+typedef hls::stream<real_t>     fifo_real;
+typedef ap_axiu<BURST_WIDTH, 0, 0, 0> stream_burst_core;
+typedef ap_axiu<REAL_WIDTH, 0, 0, 0>  stream_real_core;
+typedef hls::stream<stream_burst_core> stream_burst;
+typedef hls::stream<stream_real_core>  stream_real;
 
 int boxcar(
-	   const data_t *in,
-	   data_t *out1,
-	   data_t *out2,
-	   data_t *out3,
-	   data_t *out4,
-	   data_t *out5,
-	   data_t *out6,
-	   data_t *out7,
-	   data_t *out8,
-	   data_t *out9,
-	   data_t *out10,
-	   data_t *out11,
-	   data_t *out12,
-	   data_t *out13,
-	   data_t *out14,
-	   data_t *out15,
-	   data_t *out16,
+	   const real_t *in,
+	   real_t *out1,
+	   real_t *out2,
+	   real_t *out3,
+	   real_t *out4,
+	   real_t *out5,
+	   real_t *out6,
+	   real_t *out7,
+	   real_t *out8,
+	   real_t *out9,
+	   real_t *out10,
+	   real_t *out11,
+	   real_t *out12,
+	   real_t *out13,
+	   real_t *out14,
+	   real_t *out15,
+	   real_t *out16,
 	   int ndm,
 	   int ntime
 	   );
 
-data_t do_boxcar(
-		 const data_t *in,
+real_t do_boxcar(
+		 const real_t *in,
 		 int dm,
 		 int samp_in_img,
 		 int ntime,
 		 int boxcar,
-		 data_t *out);
+		 real_t *out);
+
+#endif
