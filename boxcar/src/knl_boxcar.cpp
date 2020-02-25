@@ -99,7 +99,7 @@ void boxcar_threshold_cand(
 
 #pragma HLS array_partition variable=boxcar complete
 #pragma HLS array_partition variable=max_boxcar complete
-#pragma HLS array_reshape variable=history cyclic factor=nsamp_per_burst dim=1
+#pragma HLS array_partition variable=history cyclic factor=nsamp_per_burst dim=1
   
 #pragma HLS DEPENDENCE variable=history intra false
 #pragma HLS DEPENDENCE variable=history inter false
@@ -116,7 +116,7 @@ void boxcar_threshold_cand(
 	loc_boxcar = m/NBURST_PER_IMG;
 	loc_img    = (m%NBURST_PER_IMG)*NSAMP_PER_BURST + n;
 	
-	history[loc_img][loc_boxcar] = previous_history[m].data[n];
+	//history[loc_img][loc_boxcar] = previous_history[m].data[n];
       }
     }
     
@@ -132,7 +132,7 @@ void boxcar_threshold_cand(
 	  loc_img = m*NSAMP_PER_BURST + n;
 	  
 	  // Last boxcar
-	  boxcar[NBOXCAR-1] = history[loc_img][NBOXCAR-2] + in_tmp.data[n];
+	  //boxcar[NBOXCAR-1] = history[loc_img][NBOXCAR-2] + in_tmp.data[n];
 	  if(boxcar>max_boxcar[n]){
 	    max_boxcar[n]=boxcar[NBOXCAR-1];
 	  }
@@ -143,13 +143,13 @@ void boxcar_threshold_cand(
 	      max_boxcar[n]=boxcar[k];
 	    }
 	  }	
-	  for(k = NBOXCAR - 2; k > 0; k--){
-	    history[loc_img][k] = boxcar[k];
-	  }
+	  //for(k = NBOXCAR - 2; k > 0; k--){
+	  //  history[loc_img][k] = boxcar[k];
+	  //}
 	  
 	  // First boxcar
-	  boxcar[0]  = in_tmp.data[n];
-	  history[loc_img][0] = boxcar[0];
+	  boxcar[0] = in_tmp.data[n];
+	  //history[loc_img][0] = boxcar[0];
 	  if(boxcar>max_boxcar[n]){
 	    max_boxcar[n]=boxcar[0];
 	  }
@@ -168,7 +168,7 @@ void boxcar_threshold_cand(
 #pragma HLS UNROLL
 	loc_boxcar = m/NBURST_PER_IMG;
 	loc_img    = (m%NBURST_PER_IMG)*NSAMP_PER_BURST + n;
-	current_history[m].data[n] = history[loc_img][loc_boxcar];
+	//current_history[m].data[n] = history[loc_img][loc_boxcar];
       }
     }    
   }
