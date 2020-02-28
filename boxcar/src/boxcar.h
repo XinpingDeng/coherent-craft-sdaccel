@@ -1,105 +1,62 @@
-/*
-******************************************************************************
-** GRID CODE HEADER FILE
-******************************************************************************
-*/
 #ifndef _BOXCAR_H
 #define _BOXCAR_H
 
-#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <stdbool.h>
+#include <assert.h>
+#include <math.h>
+#include <stdint.h>
+
 #include <ap_fixed.h>
-#include <ap_int.h>
 #include <hls_stream.h>
-#include <inttypes.h>
-#include "ap_axi_sdata.h"
+#include <ap_axi_sdata.h>
 
-#define NBOXCAR          16
-
-#define REAL_TYPE        1
-//#define REAL_WIDTH      32     // We use float 32-bits real numbers
-#define REAL_WIDTH       8      // We use ap_fixed 8-bits real numbers
 #define BURST_WIDTH      512
+#define REAL_WIDTH       16
+#define MAX_CAND         1024*16 // Maximum number of candidates to generate
+#define INT_WIDTH_BOXCAR 5
+#define INT_WIDTH_ACCUM  10
 
-#define BURST_LEN_BOXCAR 16
-#define MAX_FFTSZ        256 
-#define MAX_DM           1024
-#define MAX_TIME         256
+#define NPIX            256 // Number of pixels on a side of the image
+#define NBOXCAR         16  // Number of boxcars to create
+#define NTIME           256 // Number of time samples to process
+#define NDM             1024 // Number of DMs to search
 
-#define NREAL_PER_BURST   (BURST_WIDTH/REAL_WIDTH)
-#define MAX_PLANE         (MAX_TIME*MAX_DM)
-#define NSMP_PER_IMG      (MAX_FFTSZ*MAX_FFTSZ)
-#define NBURST_PER_IMG    (NSMP_PER_IMG/NREAL_PER_BURST)
-#define INT_WIDTH         (REAL_WIDTH/2)      // Integer width of data
-#define MAX_BURST_HISTORY ((NBOXCAR-1)*MAX_DM*NBURST_PER_IMG)
-#define MAX_BURST_HISTORY_PER_DM ((NBOXCAR-1)*NBURST_PER_IMG)
+//#define NPIX            8 // Number of pixels on a side of the image
+//#define NBOXCAR         8 // Number of boxcars to create
+//#define NTIME           8 // Number of time samples to process
+//#define NDM             4 // Number of DMs to search
 
-#if REAL_WIDTH == 32
-#define DATA_RNG         4096
-#if FLOAT == 1
-typedef float real_t;
-#else
-typedef int real_t;
-#endif
+#define NREAL_PER_BURST (BURST_WIDTH/REAL_WIDTH) // Number of PIXELS to process at a time
+#define NPIX2           (NPIX*NPIX) // Number of pixels in the (square) image
+#define NBURST_PER_IMG  (NPIX2/NREAL_PER_BURST) // Number of processing block per image
 
-#elif REAL_WIDTH == 8
-#define DATA_RNG         16
-#if FLOAT == 1
-typedef ap_fixed<REAL_WIDTH, INTEGER_WIDTH> real_t; // The size of this should be REAL_WIDTH
-#else
-typedef ap_int<REAL_WIDTH> real_t; // The size of this should be REAL_WIDTH
-#endif
-#endif
+// For boxcar samples
+typedef ap_fixed<REAL_WIDTH, INT_WIDTH_BOXCAR, AP_RND, AP_SAT> real_t;
+// For accumulated boxcar samples
+typedef ap_fixed<REAL_WIDTH, INT_WIDTH_ACCUM,  AP_RND, AP_SAT> accum_t;
 
-#define MAX_PALTFORMS       16
-#define MAX_DEVICES         16
-#define PARAM_VALUE_SIZE    1024
-#define MEM_ALIGNMENT       4096  // memory alignment on device
-#define LINE_LENGTH         4096
+// For top-level STREAM
+typedef ap_axiu<BURST_WIDTH, 0, 0, 0>  stream_burst_core;
+typedef hls::stream<stream_burst_core> stream_burst;
+
+typedef struct cand_t {
+  accum_t  snr;          // S/N
+  uint16_t loc_img;      // pixel index
+  uint8_t  boxcar_width; // boxcar
+  
+  uint8_t  t;        // sample number where max S/N occurs
+  uint16_t dm_index; // DM index
+}cand_t;
+
+const real_t THRESHOLD   = real_t(10); 
+const cand_t FINISH_CAND = {accum_t(-1), uint16_t(0), uint8_t(0), uint8_t(0), uint16_t(0)};
 
 typedef struct burst_real{
   real_t data[NREAL_PER_BURST];
-}burst_real; // The size of this should be 512; BURST_REAL_WIDTH
+}burst_real;
 
 typedef hls::stream<burst_real> fifo_burst;
-typedef hls::stream<real_t>     fifo_real;
-typedef ap_axiu<BURST_WIDTH, 0, 0, 0> stream_burst_core;
-typedef ap_axiu<REAL_WIDTH, 0, 0, 0>  stream_real_core;
-typedef hls::stream<stream_burst_core> stream_burst;
-typedef hls::stream<stream_real_core>  stream_real;
-
-int boxcar(
-	   const real_t *in,
-	   real_t *out1,
-	   real_t *out2,
-	   real_t *out3,
-	   real_t *out4,
-	   real_t *out5,
-	   real_t *out6,
-	   real_t *out7,
-	   real_t *out8,
-	   real_t *out9,
-	   real_t *out10,
-	   real_t *out11,
-	   real_t *out12,
-	   real_t *out13,
-	   real_t *out14,
-	   real_t *out15,
-	   real_t *out16,
-	   int ndm,
-	   int ntime
-	   );
-
-real_t do_boxcar(
-		 const real_t *in,
-		 int dm,
-		 int samp_in_img,
-		 int ntime,
-		 int boxcar,
-		 real_t *out);
+typedef hls::stream<cand_t>     fifo_cand;
 
 #endif
