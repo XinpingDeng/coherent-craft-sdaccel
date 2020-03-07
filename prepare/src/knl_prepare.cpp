@@ -136,9 +136,9 @@ void knl_prepare(
   static fifo_t in1_fifo;
   static fifo_t in2_fifo;
   static fifo_t out_fifo;
-#pragma HLS STREAM variable=in1_fifo
-#pragma HLS STREAM variable=in2_fifo
-#pragma HLS STREAM variable=out_fifo
+//#pragma HLS STREAM variable=in1_fifo
+//#pragma HLS STREAM variable=in2_fifo
+//#pragma HLS STREAM variable=out_fifo
   
   read_in(
           nburst_per_time,

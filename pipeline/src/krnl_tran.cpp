@@ -67,8 +67,8 @@ void krnl_tran(
   fifo_cmplx in_fifo;
   fifo_cmplx out_fifo;
   const int nburst_per_tran = BURST_LEN_TRAN*BURST_LEN_TRAN;
-#pragma HLS STREAM variable = in_fifo  depth = nburst_per_tran //256 //32
-#pragma HLS STREAM variable = out_fifo depth = nburst_per_tran //256 //32
+  //#pragma HLS STREAM variable = in_fifo  depth = nburst_per_tran //256 //32
+  //#pragma HLS STREAM variable = out_fifo depth = nburst_per_tran //256 //32
   
 #pragma HLS DATAFLOW
   

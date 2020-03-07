@@ -76,7 +76,7 @@ void krnl_grid(
 #pragma HLS DATA_PACK variable = coord
 
   fifo_cmplx in_fifo;
-#pragma HLS STREAM variable=in_fifo
+  //#pragma HLS STREAM variable=in_fifo
 #pragma HLS DATAFLOW
   
   read_in(

@@ -10,12 +10,16 @@
 #include <ap_fixed.h>
 #include <hls_stream.h>
 #include <ap_axi_sdata.h>
+#include <ap_int.h>
+#include <hls_math.h>
+
+//extern "C" float sqrtf(float);
 
 #define BURST_WIDTH      512
-#define REAL_WIDTH       16
+#define REAL_WIDTH       8
 #define MAX_CAND         1024*16 // Maximum number of candidates to generate
-#define INT_WIDTH_BOXCAR 5
-#define INT_WIDTH_ACCUM  10
+#define INT_WIDTH_BOXCAR 4
+#define INT_WIDTH_ACCUM  5
 
 #define NPIX            256 // Number of pixels on a side of the image
 #define NBOXCAR         16  // Number of boxcars to create
@@ -40,23 +44,12 @@ typedef ap_fixed<REAL_WIDTH, INT_WIDTH_ACCUM,  AP_RND, AP_SAT> accum_t;
 typedef ap_axiu<BURST_WIDTH, 0, 0, 0>  stream_burst_core;
 typedef hls::stream<stream_burst_core> stream_burst;
 
-typedef struct cand_t {
-  accum_t  snr;          // S/N
-  uint16_t loc_img;      // pixel index
-  uint8_t  boxcar_width; // boxcar
-  
-  uint8_t  t;        // sample number where max S/N occurs
-  uint16_t dm_index; // DM index
-}cand_t;
+typedef ap_uint<64> cand_t;
 
-const real_t THRESHOLD   = real_t(10); 
-const cand_t FINISH_CAND = {accum_t(-1), uint16_t(0), uint8_t(0), uint8_t(0), uint16_t(0)};
-
-typedef struct burst_real{
-  real_t data[NREAL_PER_BURST];
-}burst_real;
-
+typedef ap_uint<BURST_WIDTH>    burst_real;
 typedef hls::stream<burst_real> fifo_burst;
 typedef hls::stream<cand_t>     fifo_cand;
+
+const accum_t THRESHOLD  = accum_t(10);
 
 #endif
