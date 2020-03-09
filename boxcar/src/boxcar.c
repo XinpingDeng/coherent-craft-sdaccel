@@ -8,23 +8,24 @@
 #include "util_sdaccel.h"
 
 int boxcar(
-	   const data_t *in,
+	   const real_t *in,
            int ndm,
            int ntime,
            int nsmp_per_img,
-           real_t *history0,
-           real_t *history1,
-           cand_test_t *out
+           real_t *history_in,
+           real_t *history_out,
+           cand_t *out
 	   ){
   int i;
   int j;
   int m;
   int n;
   int loc;
-  real_t history[NPIX2][NBOXCAR-1];
+  real_t history[MAX_SMP_PER_IMG][NBOXCAR-1];
   real_t history_tile[NBOXCAR];
   accum_t boxcar;
-  cand_test_t cand;
+  accum_t scaled_boxcar;
+  cand_t cand;
   int out_index = 0;
   
   for(i = 0; i < ndm; i++){
@@ -34,7 +35,7 @@ int boxcar(
         loc = i*nsmp_per_img*(NBOXCAR-1)
           + m*(NBOXCAR-1)
           + n;
-        history[m][n] = history0[loc];
+        history[m][n] = history_in[loc];
       }
     }
 
@@ -55,7 +56,7 @@ int boxcar(
         cand.snr = 0;
         for(n = 0; n < NBOXCAR; n++){
           boxcar       += history_tile[n];
-          scaled_boxcar = boxcar*rsqrtf(n+1);
+          scaled_boxcar = boxcar*(accum_t)hls::rsqrtf(n+1);
           if(scaled_boxcar>cand.snr){
             cand.snr          = scaled_boxcar;
             cand.loc_img      = loc;
@@ -66,7 +67,7 @@ int boxcar(
         }
 
         // Write out candidate if the maximun is bigger than threshold
-        if(cand.snr>=THRESHOLD){
+        if((cand.snr>=THRESHOLD) &&(out_index<MAX_CAND)){
           out[out_index] = cand;
           out_index++;
         }
@@ -84,7 +85,7 @@ int boxcar(
         loc = i*nsmp_per_img*(NBOXCAR-1)
           + m*(NBOXCAR-1)
           + n;
-        history1[loc] = history[m][n];
+        history_out[loc] = history[m][n];
       }
     }
   }

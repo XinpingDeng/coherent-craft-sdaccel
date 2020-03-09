@@ -1,15 +1,15 @@
 #include "boxcar.h"
 
 extern "C"{
-  void krnl_boxcar2cand(
-                        stream_burst &in,                        
-                        int ndm,
-                        int ntime,
-                        int nburst_per_img,
-                        burst_real *history0,
-                        burst_real *history1,
-                        cand_t *out
-                        );
+  void krnl_boxcar(
+                   stream_burst &in,                        
+                   int ndm,
+                   int ntime,
+                   int nburst_per_img,
+                   burst_real *history_in,
+                   burst_real *history_out,
+                   cand_krnl_t *out
+                   );
   
   void read_history(                    
                     int ndm,
@@ -21,13 +21,13 @@ extern "C"{
   void fifo2history(
                     int nburst_per_img,
                     fifo_burst &history_fifo,
-                    burst_real history[NBURST_PER_IMG][NBOXCAR-1]
+                    burst_real history[MAX_BURST_PER_IMG][NBOXCAR-1]
                     );
 
   void history2fifo(
                     int nburst_per_img,
                     fifo_burst &history_fifo,
-                    burst_real history[NBURST_PER_IMG][NBOXCAR-1]
+                    burst_real history[MAX_BURST_PER_IMG][NBOXCAR-1]
                     );
   
   void process(                                     
@@ -35,9 +35,9 @@ extern "C"{
                int ntime,
                int nburst_per_img,
                stream_burst &in, 
-               fifo_burst &history0_fifo,
-               fifo_burst &history1_fifo,
-               cand_t *out
+               fifo_burst &history_in_fifo,
+               fifo_burst &history_out_fifo,
+               cand_krnl_t *out
                                                     );
   
   void write_history(
@@ -52,13 +52,13 @@ extern "C"{
                    int ntime,
                    int nburst_per_img,
                    stream_burst &in,
-                   fifo_burst &history0_fifo,
-                   fifo_burst &history1_fifo,
+                   fifo_burst &history_in_fifo,
+                   fifo_burst &history_out_fifo,
                    fifo_cand cand_fifo[NREAL_PER_BURST]
                                                                            );
   
   void write_cand(
-                  cand_t *out,
+                  cand_krnl_t *out,
                   fifo_cand cand_fifo[NREAL_PER_BURST]
                   );
   
@@ -68,7 +68,7 @@ extern "C"{
                       int nburst_per_img,
                       stream_burst &in,
                       accum_t scale_factor[NBOXCAR],
-                      burst_real history[NBURST_PER_IMG][NBOXCAR-1],
+                      burst_real history[MAX_BURST_PER_IMG][NBOXCAR-1],
                       fifo_cand cand_fifo[NREAL_PER_BURST]
                       );
 
@@ -78,7 +78,7 @@ extern "C"{
                         int nburst_per_img,
                         stream_burst &in,
                         accum_t scale_factor[NBOXCAR],
-                        burst_real history[NBURST_PER_IMG][NBOXCAR-1],
+                        burst_real history[MAX_BURST_PER_IMG][NBOXCAR-1],
                         fifo_cand cand_fifo[NREAL_PER_BURST]
                         );
 }
@@ -86,39 +86,39 @@ extern "C"{
 // This is the top level function
 // reads data from memory 512 bits wide, computes boxcar and writes out candidates
 // above the S/N threshold.
-void krnl_boxcar2cand(
-                      stream_burst &in,                     
-                      int ndm,
-                      int ntime,
-                      int nburst_per_img,
-                      burst_real *history0,
-                      burst_real *history1,
-                      cand_t *out){
+void krnl_boxcar(
+                 stream_burst &in,                     
+                 int ndm,
+                 int ntime,
+                 int nburst_per_img,
+                 burst_real *history_in,
+                 burst_real *history_out,
+                 cand_krnl_t *out){
   // Output of Alex's FFT will be an hls::stream  512 bits wide I think.
   // Which will send 32 numbers per clock
   // Rastering throught the output image for a single image until it gets to the next image time
   // Then the next DM.
   
 #pragma HLS INTERFACE axis      port = in
-#pragma HLS INTERFACE m_axi     port = history0 offset = slave bundle = gmem0
-#pragma HLS INTERFACE m_axi     port = history1 offset = slave bundle = gmem1
+#pragma HLS INTERFACE m_axi     port = history_in offset = slave bundle = gmem0
+#pragma HLS INTERFACE m_axi     port = history_out offset = slave bundle = gmem1
 #pragma HLS INTERFACE m_axi     port = out      offset = slave bundle = gmem2
 
 #pragma HLS INTERFACE s_axilite port = ndm            bundle = control
 #pragma HLS INTERFACE s_axilite port = ntime          bundle = control
 #pragma HLS INTERFACE s_axilite port = nburst_per_img bundle = control
-#pragma HLS INTERFACE s_axilite port = history0       bundle = control
-#pragma HLS INTERFACE s_axilite port = history1       bundle = control
+#pragma HLS INTERFACE s_axilite port = history_in       bundle = control
+#pragma HLS INTERFACE s_axilite port = history_out       bundle = control
 #pragma HLS INTERFACE s_axilite port = out            bundle = control
 #pragma HLS INTERFACE s_axilite port = return         bundle = control
   
-  fifo_burst history0_fifo;
-  fifo_burst history1_fifo;
+  fifo_burst history_in_fifo;
+  fifo_burst history_out_fifo;
 #pragma HLS DATAFLOW
   
-  read_history(ndm, nburst_per_img, history0, history0_fifo);
-  process(ndm, ntime, nburst_per_img, in, history0_fifo, history1_fifo, out);
-  write_history(ndm, nburst_per_img, history1, history1_fifo);
+  read_history(ndm, nburst_per_img, history_in, history_in_fifo);
+  process(ndm, ntime, nburst_per_img, in, history_in_fifo, history_out_fifo, out);
+  write_history(ndm, nburst_per_img, history_out, history_out_fifo);
 }
 
 void read_history(
@@ -128,7 +128,7 @@ void read_history(
                   fifo_burst &history_fifo
                   ){
   int i;
-  const int max_loop_i = NDM*NBURST_PER_IMG*(NBOXCAR-1);
+  const int max_loop_i = MAX_DM*MAX_BURST_PER_IMG*(NBOXCAR-1);
   
  loop_read_history:
   for(i = 0; i < ndm*nburst_per_img*(NBOXCAR-1); i++){
@@ -143,13 +143,13 @@ void process(
              int ntime,
              int nburst_per_img,
              stream_burst &in, 
-             fifo_burst &history0_fifo,
-             fifo_burst &history1_fifo,
-             cand_t *out){
+             fifo_burst &history_in_fifo,
+             fifo_burst &history_out_fifo,
+             cand_krnl_t *out){
   
   fifo_cand cand_fifo[NREAL_PER_BURST];
 #pragma HLS DATAFLOW
-  boxcar2cand(ndm, ntime, nburst_per_img, in, history0_fifo, history1_fifo, cand_fifo);
+  boxcar2cand(ndm, ntime, nburst_per_img, in, history_in_fifo, history_out_fifo, cand_fifo);
   write_cand(out, cand_fifo);
 }
 
@@ -160,7 +160,7 @@ void write_history(
                    fifo_burst &history_fifo
                    ){
   int i;
-  const int max_loop_i = NDM*NBURST_PER_IMG*(NBOXCAR-1);
+  const int max_loop_i = MAX_DM*MAX_BURST_PER_IMG*(NBOXCAR-1);
   
  loop_write_history:
   for(i = 0; i < ndm*nburst_per_img*(NBOXCAR-1); i++){
@@ -175,16 +175,16 @@ void boxcar2cand(
                  int ntime,
                  int nburst_per_img,
                  stream_burst &in,
-                 fifo_burst &history0_fifo,
-                 fifo_burst &history1_fifo,
+                 fifo_burst &history_in_fifo,
+                 fifo_burst &history_out_fifo,
                  fifo_cand cand_fifo[NREAL_PER_BURST]){
 
   int i;
   int dm;
-  burst_real history[NBURST_PER_IMG][NBOXCAR-1];
+  burst_real history[MAX_BURST_PER_IMG][NBOXCAR-1];
   accum_t scale_factor[NBOXCAR];
 
-  const int max_loop_dm = NDM;
+  const int max_loop_dm = MAX_DM;
 
   //#pragma HLS ARRAY_PARTITION variable=history dim=2 complete
 #pragma HLS ARRAY_RESHAPE variable=history dim=2 complete
@@ -193,19 +193,19 @@ void boxcar2cand(
 #pragma HLS ARRAY_RESHAPE variable=scale_factor
   for(i = 0; i < NBOXCAR; i++){
 #pragma HLS UNROLL
-    scale_factor[i] = hls::rsqrt(i+1);
+    scale_factor[i] = hls::rsqrtf(i+1);
   }
   
  loop_boxcar2cand:
   for(dm = 0; dm < ndm; dm++){
 #pragma HLS LOOP_TRIPCOUNT max=max_loop_dm
-    fifo2history(nburst_per_img, history0_fifo, history);
+    fifo2history(nburst_per_img, history_in_fifo, history);
     boxcar2cand_dm(dm, ntime, nburst_per_img, in, scale_factor, history, cand_fifo);
-    history2fifo(nburst_per_img, history1_fifo, history);
+    history2fifo(nburst_per_img, history_out_fifo, history);
   }
   
   // write termination to each fifo so the next process will quit
-  cand_t finish_cand;
+  cand_krnl_t finish_cand;
   finish_cand(0,15) = -1;
  loop_terminate:
   for(i = 0; i < NREAL_PER_BURST; i++){
@@ -215,14 +215,14 @@ void boxcar2cand(
 }
 
 void write_cand(
-                cand_t *out,
+                cand_krnl_t *out,
                 fifo_cand cand_fifo[NREAL_PER_BURST]){
   
   int i;
   int nvalid = NREAL_PER_BURST;
   int ncand  = 0;
   
-  cand_t cand;
+  cand_krnl_t cand;
   
   while(nvalid > 0){
 #pragma HLS LOOP_TRIPCOUNT max=1024
@@ -250,12 +250,12 @@ void boxcar2cand_dm(
                     int nburst_per_img,
                     stream_burst &in,
                     accum_t scale_factor[NBOXCAR],
-                    burst_real history[NBURST_PER_IMG][NBOXCAR-1],
+                    burst_real history[MAX_BURST_PER_IMG][NBOXCAR-1],
                     fifo_cand cand_fifo[NREAL_PER_BURST]){
   int time;
-  const int max_loop_time = NTIME;
+  const int max_loop_time = MAX_TIME;
   
-  for(time = 0; time < NTIME; time++){
+  for(time = 0; time < ntime; time++){
 #pragma HLS LOOP_TRIPCOUNT max=max_loop_time
     boxcar2cand_time(dm, time, nburst_per_img, in, scale_factor, history, cand_fifo);
   }
@@ -267,18 +267,18 @@ void boxcar2cand_time(
                       int nburst_per_img,
                       stream_burst &in,
                       accum_t scale_factor[NBOXCAR],
-                      burst_real history[NBURST_PER_IMG][NBOXCAR-1],
+                      burst_real history[MAX_BURST_PER_IMG][NBOXCAR-1],
                       fifo_cand cand_fifo[NREAL_PER_BURST]){
   int i;
   int j;
   int k;
   int loc_img;
-  cand_t cand;
+  cand_krnl_t cand;
   accum_t boxcar;
   accum_t top_boxcar;
   accum_t scaled_boxcar;
   stream_burst_core burst;
-  const int max_loop_i = NBURST_PER_IMG;
+  const int max_loop_i = MAX_BURST_PER_IMG;
   
   burst_real tile[NBOXCAR];
 #pragma HLS ARRAY_RESHAPE variable=tile
@@ -328,11 +328,11 @@ void boxcar2cand_time(
 void fifo2history(
                   int nburst_per_img,
                   fifo_burst &history_fifo,
-                  burst_real history[NBURST_PER_IMG][NBOXCAR-1]
+                  burst_real history[MAX_BURST_PER_IMG][NBOXCAR-1]
                   ){
   int i;
   int j;
-  const int max_loop_i = NBURST_PER_IMG;
+  const int max_loop_i = MAX_BURST_PER_IMG;
   
   for(i = 0; i < nburst_per_img; i++){
 #pragma HLS LOOP_TRIPCOUNT max = max_loop_i
@@ -347,13 +347,13 @@ void fifo2history(
 void history2fifo(
                   int nburst_per_img,
                   fifo_burst &history_fifo,
-                  burst_real history[NBURST_PER_IMG][NBOXCAR-1]
+                  burst_real history[MAX_BURST_PER_IMG][NBOXCAR-1]
                   ){
   int i;
   int j;
-  const int max_loop_i = NBURST_PER_IMG;
+  const int max_loop_i = MAX_BURST_PER_IMG;
     
-  for(i = 0; i < NBURST_PER_IMG; i++){
+  for(i = 0; i < nburst_per_img; i++){
 #pragma HLS LOOP_TRIPCOUNT max = max_loop_i
   loop_fifo2history:
     for(j = 0; j < NBOXCAR-1; j++){

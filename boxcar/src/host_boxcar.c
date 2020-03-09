@@ -17,48 +17,66 @@ int main(int argc, char* argv[]){
   }	
 
   // Prepare host buffers
-  int i;
-  uint64_t j;
-  uint64_t ndata0;
-  uint64_t ndata[NBOXCAR];
+  cl_int npix  = 256;
   cl_int ndm   = 16;
-  cl_int ntime = 64;
+  cl_int ntime = 64;  
   if(is_hw_emulation()){
     ndm   = 2;
     ntime = 32;
+    npix  = 32;
   }
   if(is_sw_emulation()){
     ndm   = 2;
     ntime = 32;
+    npix  = 32;
   }
-  ndata0 = ndm*(uint64_t)NSAMP_PER_IMG*ntime;
+  cl_int nsmp_per_img    = npix*npix;
+  cl_int nburst_per_img  = nsmp_per_img/NREAL_PER_BURST;
+  uint64_t ndata_in      = ndm*ntime*nsmp_per_img;
+  uint64_t ndata_history = ndm*nsmp_per_img*(NBOXCAR-1);
   
-  data_t *in      = NULL;
-  data_t **sw_out = NULL;
-  data_t **hw_out = NULL;  
-  in = (data_t *)aligned_alloc(MEM_ALIGNMENT, ndata0*sizeof(data_t));
-  sw_out = (data_t **)calloc(NBOXCAR, sizeof(data_t*));
-  hw_out = (data_t **)calloc(NBOXCAR, sizeof(data_t*));
-  for(i = 0; i < NBOXCAR; i++){
-    ndata[i] = ndm*(uint64_t)NSAMP_PER_IMG*(ntime-i);
-    sw_out[i] = (data_t *)aligned_alloc(MEM_ALIGNMENT, ndata0*sizeof(data_t));
-    hw_out[i] = (data_t *)aligned_alloc(MEM_ALIGNMENT, ndata0*sizeof(data_t));
-    memset(sw_out[i], 0x00, ndata0*sizeof(data_t));
-    memset(hw_out[i], 0x00, ndata0*sizeof(data_t));
-  }    
+  real_t *in             = NULL;
+  real_t *history_in     = NULL;
+  real_t *sw_history_out = NULL;
+  real_t *hw_history_out = NULL;
+  cand_t *hw_cand        = NULL;  
+  cand_t *sw_cand        = NULL;
+  
+  in             = (real_t *)aligned_alloc(MEM_ALIGNMENT, ndata_in*sizeof(real_t));
+  history_in     = (real_t *)aligned_alloc(MEM_ALIGNMENT, ndata_history*sizeof(real_t));
+  sw_history_out = (real_t *)aligned_alloc(MEM_ALIGNMENT, ndata_history*sizeof(real_t));
+  hw_history_out = (real_t *)aligned_alloc(MEM_ALIGNMENT, ndata_history*sizeof(real_t));
+  sw_cand        = (cand_t *)aligned_alloc(MEM_ALIGNMENT, MAX_CAND*sizeof(cand_t));
+  hw_cand        = (cand_t *)aligned_alloc(MEM_ALIGNMENT, MAX_CAND*sizeof(cand_t));
+  
   fprintf(stdout, "INFO: %f MB memory used on host in total\n",
-	  (2*NBOXCAR+1)*ndata0*DATA_WIDTH/(8*1024.*1024.));
+	  ((ndata_in + 3*ndata_history)*sizeof(real_t)
+           + 2*MAX_CAND*sizeof(cand_t))
+          /(1024.*1024.)
+          );
   fprintf(stdout, "INFO: %f MB memory used on device in total\n",
-	  (NBOXCAR+1)*ndata0*DATA_WIDTH/(8*1024.*1024.));
+	  ((ndata_in + 2*ndata_history)*sizeof(real_t)
+           + MAX_CAND*sizeof(cand_t))
+          /(1024.*1024.)
+          );
   fprintf(stdout, "INFO: %f MB memory used on device for raw input\n",
-	  ndata0*DATA_WIDTH/(8*1024.*1024.));  
+	  ((ndata_in + ndata_history)*sizeof(real_t))
+          /(1024.*1024.)
+          );
   fprintf(stdout, "INFO: %f MB memory used on device for raw output\n",
-	  ndata0*NBOXCAR*DATA_WIDTH/(8*1024.*1024.));  
+	  (ndata_history*sizeof(real_t)
+           + MAX_CAND*sizeof(cand_t))
+          /(1024.*1024.)
+          );
   
   // Prepare input
+  int i;
   srand(time(NULL));
-  for(j = 0; j < ndata0; j++){
-    in[j] = (data_t)(0.99*(rand()%DATA_RANGE));
+  for(i = 0; i < ndata_in; i++){
+    in[i] = (real_t)(0.99*(rand()%REAL_RNG));
+  }
+  for(i = 0; i < ndata_history; i++){
+    history_in[i] = (real_t)(0.99*(rand()%REAL_RNG));
   }
   
   // Calculate on host
@@ -66,11 +84,13 @@ int main(int argc, char* argv[]){
   struct timespec host_start;
   struct timespec host_finish;
   clock_gettime(CLOCK_REALTIME, &host_start);
-  boxcar(in, sw_out[0], sw_out[1], sw_out[2], sw_out[3],
-	 sw_out[4], sw_out[5], sw_out[6], sw_out[7],
-	 sw_out[8], sw_out[9], sw_out[10], sw_out[11],
-	 sw_out[12], sw_out[13], sw_out[14], sw_out[15],
-	 ndm, ntime);
+  boxcar(in, 
+	 ndm,
+         ntime,
+         nsmp_per_img,
+         history_in,
+         sw_history_out,
+         sw_cand);
   fprintf(stdout, "INFO: DONE HOST EXECUTION\n");
   clock_gettime(CLOCK_REALTIME, &host_finish);
   cpu_elapsed_time = (host_finish.tv_sec - host_start.tv_sec) + (host_finish.tv_nsec - host_start.tv_nsec)/1.0E9L;
@@ -152,20 +172,23 @@ int main(int argc, char* argv[]){
   OCL_CHECK(err, err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL));
 
   // Create the kernel
-  cl_kernel kernel;
-  OCL_CHECK(err, kernel = clCreateKernel(program, "knl_boxcar", &err));
+  cl_kernel kernel_boxcar;
+  cl_kernel kernel_stream;
+  OCL_CHECK(err, kernel_boxcar = clCreateKernel(program, "krnl_boxcar", &err));
+  OCL_CHECK(err, kernel_stream = clCreateKernel(program, "krnl_stream", &err));
 
   // Prepare device buffer
   cl_mem buffer_in;
-  cl_mem buffer_out[NBOXCAR];
-  cl_mem pt[NBOXCAR+1];
+  cl_mem buffer_history_in;
+  cl_mem buffer_history_out;
+  cl_mem buffer_cand;
+  cl_mem pt[4];
   status = 1;
-  OCL_CHECK(err, buffer_in   = clCreateBuffer(context, CL_MEM_READ_ONLY  | CL_MEM_USE_HOST_PTR, sizeof(data_t)*ndata0, in, &err));
-  status = status && buffer_in;
-  for(i = 0; i < NBOXCAR; i++){
-    OCL_CHECK(err, buffer_out[i] = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR, sizeof(data_t)*ndata0, hw_out[i], &err));
-    status = status && hw_out[i];
-  }
+  OCL_CHECK(err, buffer_in          = clCreateBuffer(context, CL_MEM_READ_ONLY  | CL_MEM_USE_HOST_PTR, sizeof(real_t)*ndata_in, in, &err));
+  OCL_CHECK(err, buffer_history_in  = clCreateBuffer(context, CL_MEM_READ_ONLY  | CL_MEM_USE_HOST_PTR, sizeof(real_t)*ndata_history, history_in, &err));
+  OCL_CHECK(err, buffer_history_out = clCreateBuffer(context, CL_MEM_READ_ONLY  | CL_MEM_USE_HOST_PTR, sizeof(real_t)*ndata_history, hw_history_out, &err));
+  OCL_CHECK(err, buffer_cand        = clCreateBuffer(context, CL_MEM_READ_ONLY  | CL_MEM_USE_HOST_PTR, sizeof(cand_t)*MAX_CAND, hw_cand, &err));
+  status = status && buffer_in && buffer_history_in && buffer_history_out && buffer_cand;
   if (!status) {
     fprintf(stderr, "ERROR: Failed to allocate device memory!\n");
     fprintf(stderr, "ERROR: Please look into the file \"%s\" above line [%d]!\n", __FILE__, __LINE__);
@@ -176,19 +199,26 @@ int main(int argc, char* argv[]){
   // Setup kernel arguments
   // To use multiple banks, this has to be before any enqueue options (e.g., clEnqueueMigrateMemObjects)
   pt[0] = buffer_in;
-  for(i = 0; i < NBOXCAR; i++){
-    pt[i+1] = buffer_out[i];
-  }
-  OCL_CHECK(err, err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &buffer_in));
-  for(i = 0; i < NBOXCAR; i++){
-    OCL_CHECK(err, err = clSetKernelArg(kernel, i+1, sizeof(cl_mem), &buffer_out[i]));
-  }
-  OCL_CHECK(err, err = clSetKernelArg(kernel, NBOXCAR+1, sizeof(cl_int), &ndm));
-  OCL_CHECK(err, err = clSetKernelArg(kernel, NBOXCAR+2, sizeof(cl_int), &ntime));
+  pt[1] = buffer_history_in;
+  pt[2] = buffer_history_out;
+  pt[3] = buffer_cand;
+  
+  OCL_CHECK(err, err = clSetKernelArg(kernel_stream, 0, sizeof(cl_mem), &buffer_in));
+  OCL_CHECK(err, err = clSetKernelArg(kernel_stream, 1, sizeof(cl_int), &ndm));
+  OCL_CHECK(err, err = clSetKernelArg(kernel_stream, 2, sizeof(cl_int), &ntime));
+  OCL_CHECK(err, err = clSetKernelArg(kernel_stream, 3, sizeof(cl_int), &nburst_per_img));
+  
+  OCL_CHECK(err, err = clSetKernelArg(kernel_boxcar, 1, sizeof(cl_int), &ndm));
+  OCL_CHECK(err, err = clSetKernelArg(kernel_boxcar, 2, sizeof(cl_int), &ntime));
+  OCL_CHECK(err, err = clSetKernelArg(kernel_boxcar, 3, sizeof(cl_int), &nburst_per_img));
+  OCL_CHECK(err, err = clSetKernelArg(kernel_boxcar, 4, sizeof(cl_mem), &buffer_history_in));
+  OCL_CHECK(err, err = clSetKernelArg(kernel_boxcar, 5, sizeof(cl_mem), &buffer_history_out));
+  OCL_CHECK(err, err = clSetKernelArg(kernel_boxcar, 6, sizeof(cl_mem), &buffer_cand));
+  
   fprintf(stdout, "INFO: DONE SETUP KERNEL\n");
-
+  
   // Migrate host memory to device
-  cl_int inputs = 1;
+  cl_int inputs = 2;
   OCL_CHECK(err, err = clEnqueueMigrateMemObjects(queue, inputs, pt, 0 ,0,NULL, NULL));
   OCL_CHECK(err, err = clFinish(queue));
   fprintf(stdout, "INFO: DONE MEMCPY FROM HOST TO KERNEL\n");
@@ -198,63 +228,51 @@ int main(int argc, char* argv[]){
   struct timespec device_finish;
   cl_float kernel_elapsed_time;
   clock_gettime(CLOCK_REALTIME, &device_start);
-  OCL_CHECK(err, err = clEnqueueTask(queue, kernel, 0, NULL, NULL));
+  OCL_CHECK(err, err = clEnqueueTask(queue, kernel_stream, 0, NULL, NULL));
+  OCL_CHECK(err, err = clEnqueueTask(queue, kernel_boxcar, 0, NULL, NULL));
   OCL_CHECK(err, err = clFinish(queue));
   fprintf(stdout, "INFO: DONE KERNEL EXECUTION\n");
   clock_gettime(CLOCK_REALTIME, &device_finish);
   kernel_elapsed_time = (device_finish.tv_sec - device_start.tv_sec) + (device_finish.tv_nsec - device_start.tv_nsec)/1.0E9L;
 
   // Migrate data from device to host
-  cl_int outputs = NBOXCAR;
-  OCL_CHECK(err, err = clEnqueueMigrateMemObjects(queue, outputs, &pt[1], CL_MIGRATE_MEM_OBJECT_HOST, 0, NULL, NULL));
+  cl_int outputs = 2;
+  OCL_CHECK(err, err = clEnqueueMigrateMemObjects(queue, outputs, &pt[2], CL_MIGRATE_MEM_OBJECT_HOST, 0, NULL, NULL));
   OCL_CHECK(err, err = clFinish(queue));
   fprintf(stdout, "INFO: DONE MEMCPY FROM KERNEL TO HOST\n");
 
   // Save result to files for further check
   FILE *fp=NULL;
   char fname[LINE_LENGTH];
-  for(i = 0; i < NBOXCAR; i++){
-    sprintf(fname, "/data/FRIGG_2/Workspace/coherent-craft-sdaccel/boxcar/src/out%d.txt", i);
-    fp = fopen(fname, "w");
-    for(j = 0; j < ndata0; j++) {
-      fprintf(fp, "%f\n", sw_out[i][j].to_float());
-    }
-    fclose(fp);
+  
+  sprintf(fname, "/data/FRIGG_2/Workspace/coherent-craft-sdaccel/boxcar/src/out.txt");
+  fp = fopen(fname, "w");
+  for(i = 0; i < MAX_CAND; i++) {
+    fprintf(fp, "%f\t%d\t%d\t%d\t%d\n", sw_cand[i].snr.to_float(), (int)sw_cand[i].loc_img, (int)sw_cand[i].boxcar_width, (int)sw_cand[i].time, (int)sw_cand[i].dm);
+    fprintf(fp, "%f\t%d\t%d\t%d\t%d\n\n", hw_cand[i].snr.to_float(), (int)hw_cand[i].loc_img, (int)hw_cand[i].boxcar_width, (int)hw_cand[i].time, (int)hw_cand[i].dm);
   }
-	
-  // Check the result
-  uint64_t counter;
-  for(i = 0; i < NBOXCAR; i++){
-    counter = 0;
-    for(j = 0; j<ndata[i]; j++){
-      if(sw_out[i][j]!=0){
-	counter++;
-      }    
-      if(sw_out[i][j] != hw_out[i][j]){
-	fprintf(stderr, "ERROR: Test failed %"PRIu64" (%f %f)\n", i, sw_out[i][j].to_float(), hw_out[i][j].to_float());
-	break;
-      }
-    }
-    fprintf(stdout, "INFO: %"PRIu64" none zero boxcar%d out of %"PRIu64", which is %.0f\%\n", counter, i+1, ndata[i], 100.0*(float)counter/ndata[i]);
-  }  
+  fclose(fp);
+    
   fprintf(stdout, "INFO: DONE RESULT CHECK\n");
   fprintf(stdout, "INFO: Elapsed time of CPU code is %E seconds\n", cpu_elapsed_time);
   fprintf(stdout, "INFO: Elapsed time of kernel is %E seconds\n", kernel_elapsed_time);
-  
+    
   // Cleanup
   clReleaseMemObject(buffer_in);
-  for(i = 0; i < NBOXCAR; i++){
-    clReleaseMemObject(buffer_out[i]);
-  }
+  clReleaseMemObject(buffer_history_in);
+  clReleaseMemObject(buffer_history_out);
+  clReleaseMemObject(buffer_cand);
   
   free(in);
-  for(i = 0; i < NBOXCAR; i++){
-    free(sw_out[i]);
-    free(hw_out[i]);
-  }
-  
+  free(history_in);
+  free(sw_history_out);
+  free(hw_history_out);
+  free(sw_cand);
+  free(hw_cand);
+    
   clReleaseProgram(program);
-  clReleaseKernel(kernel);
+  clReleaseKernel(kernel_boxcar);
+  clReleaseKernel(kernel_stream);
   clReleaseCommandQueue(queue);
   clReleaseContext(context);
 
