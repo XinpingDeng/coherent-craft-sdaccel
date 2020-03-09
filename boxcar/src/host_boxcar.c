@@ -141,7 +141,7 @@ int main(int argc, char* argv[]){
     fprintf(stderr, "ERROR: Test failed ...!\n");
     return EXIT_FAILURE;
   }
-
+  
   // Create program binary with kernel binary
   cl_int status;
   cl_program program;

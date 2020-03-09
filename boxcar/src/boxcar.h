@@ -16,10 +16,10 @@
 //extern "C" float sqrtf(float);
 
 #define BURST_WIDTH      512
-#define REAL_WIDTH       8
+#define REAL_WIDTH       16
 #define MAX_CAND         1024*16 // Maximum number of candidates to generate
-#define INT_WIDTH_BOXCAR 4
-#define INT_WIDTH_ACCUM  5
+#define INT_WIDTH_BOXCAR 8
+#define INT_WIDTH_ACCUM  10
 
 #define NPIX            256 // Number of pixels on a side of the image
 #define NBOXCAR         16  // Number of boxcars to create
@@ -52,4 +52,21 @@ typedef hls::stream<cand_t>     fifo_cand;
 
 const accum_t THRESHOLD  = accum_t(10);
 
+typedef struct cand_test_t{
+  accum_t  snr;
+  uint16_t loc_img;
+  uint8_t  boxcar_width;
+  uint8_t  time;
+  uint16_t dm;
+}cand_test_t;
+
+int boxcar(
+	   const data_t *in,
+           int ndm,
+           int ntime,
+           int nsmp_per_img,
+           real_t *history0,
+           real_t *history1,
+           cand_test_t *out
+	   );
 #endif

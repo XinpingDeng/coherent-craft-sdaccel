@@ -6,19 +6,19 @@ extern "C" {
                  const burst_cmplx *in,
                  const burst_coord *coord,
                  stream_cmplx &out_stream,
-                 int nplace_per_cu,
+                 int nplane_per_cu,
                  int nburst_per_uv,
                  int nburst_per_img
                  );
 
   void read_in(
-               int nplace_per_cu,
+               int nplane_per_cu,
                int nburst_per_uv,
                const burst_cmplx *in,
                fifo_cmplx &in_fifo);
   
   void grid(
-            int nplace_per_cu,
+            int nplane_per_cu,
             int nburst_per_uv,
             int nburst_per_img,
             const burst_coord *coord,
@@ -55,7 +55,7 @@ void krnl_grid(
                const burst_cmplx *in,
                const burst_coord *coord,
                stream_cmplx &out_stream,
-               int nplace_per_cu,
+               int nplane_per_cu,
                int nburst_per_uv,
                int nburst_per_img
                ){
@@ -66,7 +66,7 @@ void krnl_grid(
   
 #pragma HLS INTERFACE s_axilite port = in         bundle = control
 #pragma HLS INTERFACE s_axilite port = coord      bundle = control
-#pragma HLS INTERFACE s_axilite port = nplace_per_cu bundle = control
+#pragma HLS INTERFACE s_axilite port = nplane_per_cu bundle = control
 #pragma HLS INTERFACE s_axilite port = nburst_per_uv  bundle = control
 #pragma HLS INTERFACE s_axilite port = nburst_per_img bundle = control
   
@@ -80,13 +80,13 @@ void krnl_grid(
 #pragma HLS DATAFLOW
   
   read_in(
-          nplace_per_cu,
+          nplane_per_cu,
           nburst_per_uv,
           in,
           in_fifo);
   
   grid(
-       nplace_per_cu,
+       nplane_per_cu,
        nburst_per_uv,
        nburst_per_img,
        coord,
@@ -96,7 +96,7 @@ void krnl_grid(
 }
 
 void read_in(
-             int nplace_per_cu,
+             int nplane_per_cu,
              int nburst_per_uv,
              const burst_cmplx *in,
              fifo_cmplx &in_fifo){
@@ -107,7 +107,7 @@ void read_in(
   int j;
   int loc;
 
-  for(i = 0; i < nplace_per_cu; i++){
+  for(i = 0; i < nplane_per_cu; i++){
 #pragma HLS LOOP_TRIPCOUNT max=max_uv
   loop_read_in:
     for(j = 0; j < nburst_per_uv; j++){
@@ -120,7 +120,7 @@ void read_in(
 }
 
 void grid(
-          int nplace_per_cu,
+          int nplane_per_cu,
           int nburst_per_uv,
           int nburst_per_img,
           const burst_coord *coord,
@@ -149,7 +149,7 @@ void grid(
   
   read_coord(nburst_per_uv, coord, coord_buffer);
   
-  for(i = 0; i < nplace_per_cu; i++){
+  for(i = 0; i < nplane_per_cu; i++){
 #pragma HLS LOOP_TRIPCOUNT max = max_plane
 #pragma HLS DATAFLOW
     fill_buffer(in_fifo, nburst_per_uv, buffer);
