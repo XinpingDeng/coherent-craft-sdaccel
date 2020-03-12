@@ -22,13 +22,13 @@ int main(int argc, char* argv[]){
   cl_int ntime = 64;  
   if(is_hw_emulation()){
     ndm   = 2;
-    ntime = 32;
-    npix  = 32;
+    ntime = 2;
+    npix  = 8;
   }
   if(is_sw_emulation()){
     ndm   = 2;
-    ntime = 32;
-    npix  = 32;
+    ntime = 2;
+    npix  = 8;
   }
   cl_int nsmp_per_img    = npix*npix;
   cl_int nburst_per_img  = nsmp_per_img/NREAL_PER_BURST;
@@ -74,6 +74,7 @@ int main(int argc, char* argv[]){
   srand(time(NULL));
   for(i = 0; i < ndata_in; i++){
     in[i] = (real_t)(0.99*(rand()%REAL_RNG));
+    fprintf(stdout, "INPUT from host %f\n", in[i].to_float());
   }
   for(i = 0; i < ndata_history; i++){
     history_in[i] = (real_t)(0.99*(rand()%REAL_RNG));
@@ -243,13 +244,13 @@ int main(int argc, char* argv[]){
 
   // Save result to files for further check
   FILE *fp=NULL;
-  char fname[LINE_LENGTH];
   
-  sprintf(fname, "/data/FRIGG_2/Workspace/coherent-craft-sdaccel/boxcar/src/out.txt");
-  fp = fopen(fname, "w");
+  fp = fopen("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/boxcar/src/out_host.txt", "w");
   for(i = 0; i < MAX_CAND; i++) {
-    fprintf(fp, "%f\t%d\t%d\t%d\t%d\n", sw_cand[i].snr.to_float(), (int)sw_cand[i].loc_img, (int)sw_cand[i].boxcar_width, (int)sw_cand[i].time, (int)sw_cand[i].dm);
-    fprintf(fp, "%f\t%d\t%d\t%d\t%d\n\n", hw_cand[i].snr.to_float(), (int)hw_cand[i].loc_img, (int)hw_cand[i].boxcar_width, (int)hw_cand[i].time, (int)hw_cand[i].dm);
+    if(sw_cand[i].snr.to_float()!=0){
+      fprintf(fp, "%f\t%d\t%d\t%d\t%d\n", sw_cand[i].snr.to_float(), (int)sw_cand[i].loc_img, (int)sw_cand[i].boxcar_width, (int)sw_cand[i].time, (int)sw_cand[i].dm);
+      fprintf(fp, "%f\t%d\t%d\t%d\t%d\n", hw_cand[i].snr.to_float(), (int)hw_cand[i].loc_img, (int)hw_cand[i].boxcar_width, (int)hw_cand[i].time, (int)hw_cand[i].dm);
+    }
   }
   fclose(fp);
     

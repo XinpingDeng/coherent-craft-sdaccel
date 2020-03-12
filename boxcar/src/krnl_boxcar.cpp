@@ -185,7 +185,7 @@ void boxcar2cand(
   accum_t scale_factor[NBOXCAR];
 
   const int max_loop_dm = MAX_DM;
-
+  
   //#pragma HLS ARRAY_PARTITION variable=history dim=2 complete
 #pragma HLS ARRAY_RESHAPE variable=history dim=2 complete
   
@@ -206,7 +206,9 @@ void boxcar2cand(
   
   // write termination to each fifo so the next process will quit
   cand_krnl_t finish_cand;
-  finish_cand(0,15) = -1;
+  accum_t finish_snr = -1.0;
+  finish_cand(15,0) = finish_snr.range();
+  
  loop_terminate:
   for(i = 0; i < NREAL_PER_BURST; i++){
 #pragma HLS PIPELINE
@@ -221,6 +223,7 @@ void write_cand(
   int i;
   int nvalid = NREAL_PER_BURST;
   int ncand  = 0;
+  accum_t snr;
   
   cand_krnl_t cand;
   
@@ -229,7 +232,8 @@ void write_cand(
     for(i = 0; i < NREAL_PER_BURST; i++){
 #pragma HLS PIPELINE
       if(cand_fifo[i].read_nb(cand)){ // successfull
-        if(cand(0,15) == -1){ // finished signal
+        snr.range() = cand(15,0);
+        if(snr == -1){ // finished signal
           nvalid--;
         }
         else{
@@ -272,16 +276,24 @@ void boxcar2cand_time(
   int i;
   int j;
   int k;
-  int loc_img;
+  ap_uint<16> loc_img;
+  ap_uint<8>  boxcar_width;
+  ap_uint<8>  time_cand;
+  ap_uint<16> dm_cand;
   cand_krnl_t cand;
-  accum_t boxcar;
-  accum_t top_boxcar;
-  accum_t scaled_boxcar;
+  real_t  power;
+  accum_t snr;
+  accum_t top_snr;
+  accum_t scaled_snr;
   stream_burst_core burst;
   const int max_loop_i = MAX_BURST_PER_IMG;
   
   burst_real tile[NBOXCAR];
 #pragma HLS ARRAY_RESHAPE variable=tile
+  
+//#ifndef __SYNTHESIS__
+//  FILE *fp = fopen("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/boxcar/src/out_kernel.txt", "w");
+//#endif
   
   for(i = 0; i < nburst_per_img; i++){
 #pragma HLS LOOP_TRIPCOUNT max = max_loop_i
@@ -293,27 +305,49 @@ void boxcar2cand_time(
       tile[j] = history[i][j-1];
     }
     
-    // get boxcar
+    // get snr
     for(j = 0; j < NREAL_PER_BURST; j++){
-      cand    = 0;
-      boxcar  = 0;
+      cand = 0;
+      snr  = 0;
       loc_img = i*NREAL_PER_BURST+j;
       
+//#ifndef __SYNTHESIS__
+//      power.range() = tile[14]((j+1)*REAL_WIDTH-1, j*REAL_WIDTH);
+//      fprintf(fp, "Tile to check %f\n", power.to_float());
+//#endif
       for(k = 0; k < NBOXCAR; k++){
-        boxcar       += tile[k]((j+1)*REAL_WIDTH-1, j*REAL_WIDTH);
-        scaled_boxcar = boxcar*scale_factor[k];
-        if(scaled_boxcar > cand(0,15)){
-          cand(0, 15)  = scaled_boxcar;
-          cand(16, 31) = loc_img;
-          cand(32, 39) = k+1;          
-          cand(40, 47) = time;
-          cand(48, 63) = dm;
+        power.range()   = tile[k]((j+1)*REAL_WIDTH-1, j*REAL_WIDTH);
+        snr            += power;
+        scaled_snr      = snr*scale_factor[k]; 
+        
+        top_snr.range() = cand(15,0);        
+        if(scaled_snr > top_snr){       
+//#ifndef __SYNTHESIS__
+//          fprintf(fp, "Tile to check %d\t%d\t%f\t%f\t%f\n", i*NREAL_PER_BURST+j, k+1, power.to_float(), snr.to_float(), scaled_snr.to_float());
+//#endif
+          boxcar_width = k+1;
+          time_cand    = time;
+          dm_cand      = dm;
+          
+          cand(15,0)   = scaled_snr.range();
+          cand(31,16)  = loc_img.range();
+          cand(39,32)  = boxcar_width.range();          
+          cand(47,40)  = time_cand.range();
+          cand(63,48)  = dm_cand.range();
         }
       }
       
       // index cand to fifo
-      top_boxcar = cand(0, 15);
-      if(top_boxcar >= THRESHOLD){
+      top_snr.range() = cand(15,0);
+      if(top_snr >= THRESHOLD){
+//#ifndef __SYNTHESIS__
+//        scaled_snr.range()   = cand(15,0);
+//        loc_img.range()      = cand(31,16);
+//        boxcar_width.range() = cand(39,32);
+//        time_cand.range()    = cand(47,40);
+//        dm_cand.range()      = cand(63,48);
+//        fprintf(fp, "%f\t%d\t%d\t%d\t%d\n\n", scaled_snr.to_float(), (int)loc_img, (int)boxcar_width, (int)time_cand, (int)dm_cand);
+//#endif
         cand_fifo[j].write_nb(cand); 
       }
     }
@@ -323,6 +357,10 @@ void boxcar2cand_time(
       history[i][j] = tile[j];
     }
   }
+  
+//#ifndef __SYNTHESIS__
+//  fclose(fp);
+//#endif
 }
 
 void fifo2history(
