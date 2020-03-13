@@ -193,7 +193,7 @@ void boxcar2cand(
 #pragma HLS ARRAY_RESHAPE variable=scale_factor
   for(i = 0; i < NBOXCAR; i++){
 #pragma HLS UNROLL
-    scale_factor[i] = hls::rsqrtf(i+1);
+    scale_factor[i] = hls::rsqrtf(i+1.0);
   }
   
  loop_boxcar2cand:
@@ -207,7 +207,7 @@ void boxcar2cand(
   // write termination to each fifo so the next process will quit
   cand_krnl_t finish_cand;
   accum_t finish_snr = -1.0;
-  finish_cand(15,0) = finish_snr.range();
+  finish_cand(15,0)  = finish_snr.range();
   
  loop_terminate:
   for(i = 0; i < NREAL_PER_BURST; i++){
@@ -282,18 +282,14 @@ void boxcar2cand_time(
   ap_uint<16> dm_cand;
   cand_krnl_t cand;
   real_t  power;
+  accum_t accum_power;
+  accum_t threshold_snr;
   accum_t snr;
-  accum_t top_snr;
-  accum_t scaled_snr;
   stream_burst_core burst;
   const int max_loop_i = MAX_BURST_PER_IMG;
   
   burst_real tile[NBOXCAR];
 #pragma HLS ARRAY_RESHAPE variable=tile
-  
-//#ifndef __SYNTHESIS__
-//  FILE *fp = fopen("/data/FRIGG_2/Workspace/coherent-craft-sdaccel/boxcar/src/out_kernel.txt", "w");
-//#endif
   
   for(i = 0; i < nburst_per_img; i++){
 #pragma HLS LOOP_TRIPCOUNT max = max_loop_i
@@ -307,29 +303,22 @@ void boxcar2cand_time(
     
     // get snr
     for(j = 0; j < NREAL_PER_BURST; j++){
-      cand = 0;
-      snr  = 0;
-      loc_img = i*NREAL_PER_BURST+j;
+      cand        = 0;
+      accum_power = 0;
+      loc_img     = i*NREAL_PER_BURST+j;
       
-//#ifndef __SYNTHESIS__
-//      power.range() = tile[14]((j+1)*REAL_WIDTH-1, j*REAL_WIDTH);
-//      fprintf(fp, "Tile to check %f\n", power.to_float());
-//#endif
       for(k = 0; k < NBOXCAR; k++){
-        power.range()   = tile[k]((j+1)*REAL_WIDTH-1, j*REAL_WIDTH);
-        snr            += power;
-        scaled_snr      = snr*scale_factor[k]; 
-        
-        top_snr.range() = cand(15,0);        
-        if(scaled_snr > top_snr){       
-//#ifndef __SYNTHESIS__
-//          fprintf(fp, "Tile to check %d\t%d\t%f\t%f\t%f\n", i*NREAL_PER_BURST+j, k+1, power.to_float(), snr.to_float(), scaled_snr.to_float());
-//#endif
-          boxcar_width = k+1;
-          time_cand    = time;
-          dm_cand      = dm;
+        power.range() = tile[k]((j+1)*REAL_WIDTH-1, j*REAL_WIDTH);
+        accum_power  += power;
+        snr           = accum_power*scale_factor[k]; 
+
+        threshold_snr.range() = cand(15,0);
+        if(snr > threshold_snr){
+          boxcar_width  = k+1;
+          time_cand     = time;
+          dm_cand       = dm;
           
-          cand(15,0)   = scaled_snr.range();
+          cand(15,0)   = snr.range();
           cand(31,16)  = loc_img.range();
           cand(39,32)  = boxcar_width.range();          
           cand(47,40)  = time_cand.range();
@@ -338,16 +327,8 @@ void boxcar2cand_time(
       }
       
       // index cand to fifo
-      top_snr.range() = cand(15,0);
-      if(top_snr >= THRESHOLD){
-//#ifndef __SYNTHESIS__
-//        scaled_snr.range()   = cand(15,0);
-//        loc_img.range()      = cand(31,16);
-//        boxcar_width.range() = cand(39,32);
-//        time_cand.range()    = cand(47,40);
-//        dm_cand.range()      = cand(63,48);
-//        fprintf(fp, "%f\t%d\t%d\t%d\t%d\n\n", scaled_snr.to_float(), (int)loc_img, (int)boxcar_width, (int)time_cand, (int)dm_cand);
-//#endif
+      threshold_snr.range() = cand(15,0);
+      if(threshold_snr >= THRESHOLD){
         cand_fifo[j].write_nb(cand); 
       }
     }
@@ -357,10 +338,6 @@ void boxcar2cand_time(
       history[i][j] = tile[j];
     }
   }
-  
-//#ifndef __SYNTHESIS__
-//  fclose(fp);
-//#endif
 }
 
 void fifo2history(
